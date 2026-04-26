@@ -568,14 +568,18 @@ Resumen del intercambio que produjo este plan, para futuros lectores:
 
 ## Commits asociados
 
-(Se completarán durante la ejecución. Lista esperada, ~8 commits:)
+1. `61385d7` — `Initial commit from Create Next App` (create-next-app inicializó el repo)
+2. `3c73262` — `chore: scaffold Next.js 15 + TypeScript + Tailwind con pnpm` (downgrade a 15.x + .gitattributes + .gitignore)
+3. `8eb2ad8` — `docs: agregar master plan (con workflow Opus/Sonnet) y plan 0a al repo`
+4. `6189fa2` — `chore: fijar versión de Node, editorconfig y scripts`
+5. `42f0130` — `chore: instalar Prisma con schema vacío`
+6. `19b4fcf` — `chore: agregar Docker Compose para Postgres dev y Caddyfile de prod`
+7. `d7069b9` — `feat: layout base en español + mensajes centralizados`
+8. `8072b97` — `ci: agregar workflow básico (lint, typecheck, build)`
+9. `9836934` — `docs: README raíz con instrucciones de dev`
 
-1. `chore: inicio del proyecto puntajes-scout` (commit vacío inicial)
-2. `chore: scaffold Next.js 15 + TypeScript + Tailwind con pnpm` (output de create-next-app)
-3. `docs: agregar master plan y plan 0a al repo`
-4. `chore: fijar versión de Node, editorconfig y scripts`
-5. `chore: instalar Prisma con schema vacío`
-6. `chore: agregar Docker Compose para Postgres dev y Caddyfile de prod`
-7. `feat: layout base en español + mensajes centralizados`
-8. `ci: agregar workflow básico (lint, typecheck, build)`
-9. `docs: README raíz con instrucciones de dev`
+### Notas de ejecución
+
+- `create-next-app@latest` instaló Next.js 16.2.4; se hizo downgrade a 15.5.15 según el plan.
+- Prisma 7.x (instalado) usa `prisma.config.ts` en lugar de `url = env(...)` en `schema.prisma`. Se adaptó el setup incluyendo `dotenv` como dependencia de dev.
+- El eslint config generado por el template de Next.js 16 requirió adaptación con `@eslint/eslintrc` + `FlatCompat` para funcionar con `eslint-config-next@15`.
