@@ -1,0 +1,10 @@
+# Configuración de producción. APP_DOMAIN se inyecta vía env en Plan 9.
+{$APP_DOMAIN} {
+    encode gzip zstd
+    reverse_proxy app:3000
+
+    log {
+        output stdout
+        format console
+    }
+}
