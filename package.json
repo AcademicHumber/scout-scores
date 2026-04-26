@@ -13,7 +13,14 @@
     "node": ">=22.0.0 <25"
   },
   "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "prisma"
+    ]
+  },
   "dependencies": {
+    "@prisma/client": "^7.8.0",
     "next": "15.5.15",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -23,8 +30,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.15",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
