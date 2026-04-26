@@ -49,4 +49,7 @@ postgres-data/
 .vscode/*
 !.vscode/settings.json
 
+# Claude Code local config
+.claude/
+
 /src/generated/prisma
