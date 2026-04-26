@@ -1,6 +1,6 @@
 # puntajes-scout
 
-Sistema web multi-tenant para registrar y publicar puntajes de eventos competitivos en distritos scouts. Material educativo de desarrollo asistido por IA: toda la planificación vive versionada en `docs/plans/`.
+Sistema web multi-tenant en dos capas: **Capa 1** (MVP) scoring de eventos scouts; **Capa 2** (post-MVP) padrón de miembros, inscripción digitalizada y cartilla de progresión. Material educativo de desarrollo asistido por IA: toda la planificación vive versionada en `docs/plans/`.
 
 ## Comandos de desarrollo
 
@@ -40,9 +40,13 @@ Estas reglas se establecen temprano y se respetan en todos los planes:
 
 7. **Copy en español**: `src/messages/es.json` es la fuente única. No hardcodear strings en componentes.
 
+8. **`MiembroScout` ≠ `User`**: son entidades separadas. `User` = cuenta Google autenticada. `MiembroScout` = persona del dominio scout (joven o dirigente adulto), existe sin auth. Linkeo opcional vía `MiembroScout.userId?`. Ver `docs/adr/0001-arquitectura-en-capas.md`.
+
 ## Dominio (resumen)
 
-El tenant es una `Organization` (= Distrito Scout). Dentro hay `GrupoScout` (persistentes) y `Patrulla` (por evento, siempre asociada a un grupo). Los roles son `ADMIN | JUEZ | ESPECTADOR | JEFE_PATRULLA`.
+El tenant es una `Organization` (= Distrito Scout). Dentro hay `GrupoScout` (persistentes) y `Patrulla` (por evento, siempre asociada a un grupo). Los roles de `User` son `ADMIN | JUEZ | ESPECTADOR | JEFE_PATRULLA`.
+
+`MiembroScout` modela las personas del grupo: `categoria` puede ser `LOBATO | EXPLORADOR | PIONERO | ROVER | DIRIGENTE`. Es un stub en Capa 1 (sin relaciones a eventos); se profundiza en Capa 2 (planes 10–14).
 
 El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: espíritu scout) solo se usan para romper empates. Ver `docs/plans/00-master-plan.md` para el modelo completo.
 
@@ -56,10 +60,12 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 ## Documentación
 
-Toda la planificación vive en `docs/plans/` versionada con git:
+Toda la planificación vive en `docs/` versionada con git:
 
-- `docs/plans/00-master-plan.md` — visión completa, modelo de dominio, roadmap
-- `docs/plans/01-bootstrap-infra.md` — Plan 0a (este scaffold), ya ejecutado
+- `docs/plans/00-master-plan.md` — visión completa, modelo de dominio, roadmap (Capa 1 + Capa 2)
+- `docs/plans/01-bootstrap-infra.md` — Plan 0a, ya ejecutado
+- `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
+- `docs/README.md` — índice de todos los planes y ADRs
 
 Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans/`.
 
