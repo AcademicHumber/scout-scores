@@ -10,6 +10,8 @@ El sistema permite que los administradores creen plantillas de puntuación, conf
 
 **Resultado esperado:** un sistema productivo mantenido por el distrito scout, autohospedado en un VPS económico, con bajo costo operativo (~$5/mes), que pueda crecer a múltiples distritos si otros se suman.
 
+El sistema arranca cubriendo la necesidad inmediata de scoring de eventos (**Capa 1**, planes 0a–9). La arquitectura está pensada para crecer en una segunda capa post-MVP que digitalice el padrón de scouts del grupo, su inscripción anual, y la cartilla de progresión individual (**Capa 2**, planes 10–14). Esta expansión no requiere refactor del núcleo: `MiembroScout` se introduce como stub en Plan 0b y se profundiza cuando la necesidad lo justifique.
+
 ---
 
 ## Filosofía de documentación (importante)
@@ -32,22 +34,29 @@ Este proyecto se construye también como **material educativo de desarrollo asis
 ```
 docs/
 ├── plans/
-│   ├── 00-master-plan.md           ← este documento, una vez movido al proyecto
-│   ├── 01-bootstrap-infra.md
-│   ├── 02-schema-nucleo-seed.md
-│   ├── 03-auth-google-tenant.md
-│   ├── 04-miembros-grupos.md
-│   ├── 05-plantillas.md
-│   ├── 06a-eventos.md
-│   ├── 06b-postas-patrullas-jueces.md
-│   ├── 07a-juez-online.md
-│   ├── 07b-pwa-offline-sync.md
-│   ├── 08-leaderboard-reportes.md
-│   ├── 09-cierre-publicacion.md
-│   ├── 10-correcciones-post-cierre.md
-│   └── 11-deploy-produccion.md
-├── adr/                             ← Architecture Decision Records (decisiones puntuales)
-│   └── 0001-eleccion-stack.md       ← se irán agregando según surjan decisiones
+│   ├── 00-master-plan.md           ← este documento
+│   ├── 01-bootstrap-infra.md       ← Plan 0a  ✓ ejecutado
+│   ├── 02-schema-nucleo-seed.md    ← Plan 0b
+│   ├── 03-auth-google-tenant.md    ← Plan 1
+│   ├── 04-miembros-grupos.md       ← Plan 2
+│   ├── 05-plantillas.md            ← Plan 3
+│   ├── 06a-eventos.md              ← Plan 4a
+│   ├── 06b-postas-patrullas-jueces.md ← Plan 4b
+│   ├── 07a-juez-online.md          ← Plan 5a
+│   ├── 07b-pwa-offline-sync.md     ← Plan 5b
+│   ├── 08-leaderboard-reportes.md  ← Plan 6
+│   ├── 09-cierre-publicacion.md    ← Plan 7
+│   ├── 10-correcciones-post-cierre.md ← Plan 8
+│   ├── 11-deploy-produccion.md     ← Plan 9
+│   │
+│   │   — Capa 2: Personas y progresión —
+│   ├── 12-padron-miembros-grupo.md    ← Plan 10
+│   ├── 13-asociar-miembros-patrullas.md ← Plan 11
+│   ├── 14-inscripcion-anual.md        ← Plan 12
+│   ├── 15-cartilla-progresion.md      ← Plan 13
+│   └── 16-perfil-scout.md             ← Plan 14
+├── adr/                             ← Architecture Decision Records
+│   └── 0001-arquitectura-en-capas.md  ← decisión de arquitectura en dos capas
 └── README.md                         ← índice general del proyecto
 ```
 
@@ -94,6 +103,7 @@ Esta regla se respeta para todo sub-plan posterior (0b, 1, 2, ...).
 | Jerarquía | Distrito → Grupos Scouts (persistentes) → Patrullas (por evento) |
 | Patrullas | Por evento (no persistentes entre eventos), siempre asociadas a un Grupo Scout del distrito |
 | Multi-juez por posta | No (un único juez asignado por posta) |
+| Estrategia de evolución | Capa 1 — MVP de scoring (planes 0a–9) → Capa 2a — padrón de miembros (planes 10–11) → Capa 2b — inscripción y progresión (planes 12–14) |
 
 ---
 
@@ -134,6 +144,7 @@ Esta regla se respeta para todo sub-plan posterior (0b, 1, 2, ...).
 - **Organization (Distrito)** — el tenant. Representa un distrito scout (ej: "Distrito Scout Santa Cruz"). Datos completamente aislados de otros distritos. En código se llama `Organization` (genérico) pero en UI se muestra como "Distrito".
 - **GrupoScout** — un grupo scout dentro del distrito (ej: "Grupo Scout Juan Pablo II", "Grupo Scout Don Bosco"). Persistente entre eventos. Gestionado por el admin del distrito.
 - **User** — persona con cuenta Google. Puede pertenecer a múltiples distritos (vía `Membership`).
+- **MiembroScout** — persona del dominio scout: puede ser un scout joven (sin cuenta) o un dirigente adulto (que probablemente sí tiene `User`). Pertenece a un `GrupoScout`. Existe independientemente de la autenticación. Campos mínimos en el stub (Plan 0b): `nombre`, `fechaNacimiento?`, `categoria?: LOBATO | EXPLORADOR | PIONERO | ROVER | DIRIGENTE`. FK opcional `userId → User`: cuando un dirigente se autentica con Google, se vincula su `MiembroScout` ya existente. **No confundir con `User`**: `User` es la cuenta autenticada; `MiembroScout` es la persona del dominio, anterior e independiente de la auth. Ver ADR-0001.
 - **Membership** — relación `User ↔ Organization` con `role`: `ADMIN | JUEZ | ESPECTADOR | JEFE_PATRULLA`. Opcionalmente `grupoScoutId` (para futura visualización filtrada por grupo y para que Jefe de Patrulla quede ligado a su grupo).
 - **Invitation** — email pre-registrado por admin con rol asignado y opcionalmente `grupoScoutId`, esperando que el invitado entre con Google.
 - **Event** — un evento del distrito. Estados: `BORRADOR → ACTIVO → CERRADO → PUBLICADO`.
@@ -163,6 +174,7 @@ Esta regla se respeta para todo sub-plan posterior (0b, 1, 2, ...).
 - IDs: `cuid2` (no autoincrement) — necesarios para URLs públicas y sync offline.
 - Puntajes: `Decimal`, no `Float`.
 - Timestamps: `createdAt` y `updatedAt` en todas las tablas.
+- `MiembroScout` se introduce como stub en Plan 0b sin relaciones a `Patrulla` ni `Event`. Las relaciones llegan en Plan 4b (FK opcional `Patrulla → MiembroScout[]`) y se expanden en Plan 11. El enum `categoria` puede refinarse en Plan 13 con validación real del distrito.
 
 ---
 
@@ -186,11 +198,22 @@ Cada item es un plan independiente que se ejecutará en una sesión separada par
 | **8** | Correcciones post-cierre | 7 | Reabrir una `ScoreSheet` específica sin reabrir el evento entero, regenerar snapshot, registro completo en `AuditLog` |
 | **9** | Despliegue a producción + hardening | 8 | Servidor VPS aprovisionado, dominio + DNS configurados, Docker Compose de producción con Caddy, Google OAuth en dominio real, backups automáticos a B2, monitoreo básico (Sentry o equivalente self-hostable), checklist de seguridad |
 
+**— Capa 2: Personas y progresión (post-MVP, después de Plan 9) —**
+
+| # | Plan | Depende de | Entregable |
+|---|---|---|---|
+| **10** | Padrón de miembros del grupo | 2 | CRUD de `MiembroScout`, importación CSV opcional, vista de miembros por grupo dentro del distrito |
+| **11** | Asociar miembros a patrullas | 4b, 10 | Vincular `MiembroScout` a patrullas de eventos. Eventos anteriores a Plan 11 quedan sin miembros vinculados, lo cual es aceptable por diseño |
+| **12** | Inscripción anual digitalizada | 10 | Datos extendidos (médicos, autorizaciones parentales, archivos), ciclo anual de re-inscripción |
+| **13** | Cartilla de progresión | 10 | Etapas, especialidades, promesas. Modelo a validar con el distrito antes de codear |
+| **14** | Perfil del scout | 11, 13 | Vista del recorrido completo (eventos, scores, progresión). Reusa `cuid2` y `PublicShareLink` |
+
 ### Dependencias críticas cross-plan
 
 - El campo `organizationId` y los guards de rol se establecen en **Plan 1** y son consumidos por todo lo posterior. Si se hace mal, hay que rehacerlo todo.
 - El `clientId` y `clientSubmittedAt` en `ScoreSheetRevision` deben existir desde **Plan 5a** (no esperar al 5b) porque el sync de 5b los necesita.
 - La copia en español se centraliza en **Plan 0a** en `src/messages/es.json` (o similar). No hardcodear strings en componentes.
+- `MiembroScout` se introduce en **Plan 0b** como stub sin relaciones. Los eventos creados antes de Plan 11 no tendrán miembros vinculados a las patrullas, y eso es aceptable por diseño (ver ADR-0001).
 
 ---
 
@@ -205,6 +228,7 @@ Estas convenciones se establecen en planes tempranos y deben respetarse en todos
 5. **IDs en URLs**: usar `cuid2`. Nunca autoincrement expuesto.
 6. **Server Actions over API routes**: para mutaciones internas usamos Server Actions. API routes solo para webhooks (sync de PWA, OAuth callbacks).
 7. **Validación**: Zod en el borde de cada Server Action / API route. Tipos de Prisma adentro.
+8. **Personas vs cuentas autenticadas**: `MiembroScout` (persona del dominio) y `User` (cuenta Google) son entidades separadas. No unificarlas. El linkeo es opcional vía `MiembroScout.userId?` — un dirigente probablemente tiene `User`; un lobato casi nunca. Ver ADR-0001.
 
 ---
 
@@ -220,6 +244,7 @@ Estas convenciones se establecen en planes tempranos y deben respetarse en todos
 | `src/auth.ts` | 1 | Configuración Auth.js v5, callbacks de sesión |
 | `src/middleware.ts` | 1 | Guards de tenant y rol en rutas |
 | `src/lib/auth-helpers.ts` | 1 | `requireRole`, `getCurrentOrg`, `getCurrentUser` |
+| `src/lib/miembros.ts` | 10 | Helpers para queries de `MiembroScout` con tenant isolation |
 | `src/messages/es.json` | 0a | Copy en español, single source of truth |
 | `docker-compose.yml` | 0a | Orquestación de Next + Postgres + Caddy (dev) |
 | `docker-compose.prod.yml` | 9 | Orquestación de producción |
@@ -236,7 +261,8 @@ Estas convenciones se establecen en planes tempranos y deben respetarse en todos
 4. **Empate persistente**: si después de aplicar criterios `DESEMPATE` siguen empatados, el sistema muestra empate compartido (no inventa un orden). Confirmar UX en Plan 6.
 5. **Public links son perpetuos** salvo revocación explícita. Implementar revocación desde el inicio en Plan 7.
 6. **Backup remoto**: nunca dejar el VPS como única copia. Plan 9 incluye backup diario a Backblaze B2 (~$0.005/GB/mes).
-7. **Decisiones diferidas explícitas** (no se incluyen en este roadmap, abrirán nuevos planes si se piden):
+7. **Expansión a Capa 2 sin perder velocidad en Capa 1**: la tentación de modelar inscripción/progresión antes de tener scoring en producción es un anti-patrón. `MiembroScout` se introduce como stub mínimo en 0b para mantener opciones abiertas. Los planes 12–13 (inscripción, progresión) requieren validación con un distrito real antes de codear — diseñarlos sin usuarios reales produce modelos erróneos.
+8. **Decisiones diferidas explícitas** (no se incluyen en este roadmap, abrirán nuevos planes si se piden):
    - Evidencia fotográfica en planillas (requiere storage de blobs)
    - Penalizaciones y bonus globales
    - Premios especiales (scout/patrulla del evento)
@@ -244,7 +270,6 @@ Estas convenciones se establecen en planes tempranos y deben respetarse en todos
    - Notificaciones push/email a jefes de patrulla
    - Federación entre distritos (compartir plantillas, eventos inter-distritales)
    - Rol "Admin de Grupo Scout" (admin con scope limitado a un grupo dentro del distrito)
-   - Estandarización de categorías por edad (lobatos, scouts, caminantes, rovers) con reglas asociadas
 
 ---
 
