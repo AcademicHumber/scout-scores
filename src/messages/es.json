@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "Puntajes Scout",
+    "tagline": "Sistema de puntajes para eventos del distrito"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "retry": "Reintentar"
+  }
+}
