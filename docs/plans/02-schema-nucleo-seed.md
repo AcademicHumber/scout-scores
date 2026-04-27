@@ -754,11 +754,9 @@ Resumen del intercambio que produjo este plan, para futuros lectores:
 
 ## Commits asociados
 
-(Pendientes — se completan en la sesión de ejecución con Sonnet.)
-
-1. `chore: agregar deps para schema y seed (cuid2, zod, tsx)`
-2. `feat(prisma): definir schema núcleo (org, grupos, users, memberships, invitations, miembros, audit)`
-3. `feat(prisma): migración inicial + índice parcial en Invitation`
-4. `feat(db): cliente Prisma singleton + helper forOrg() para tenant isolation`
-5. `feat(seed): script de seed con datos demo (distrito, grupos, users, miembros, invitaciones, audit)`
-6. `docs: marcar Plan 0b completado y actualizar índice`
+1. `b861e0d` — `chore: agregar deps para schema y seed (cuid2, zod, tsx)`
+2. `c01c87e` — `feat(prisma): definir schema nucleo (org, grupos, users, memberships, invitations, miembros, audit)`
+3. `5eb7393` — `feat(prisma): migracion inicial + indice parcial en Invitation`
+4. `f325f5e` — `feat(db): cliente Prisma singleton + helper forOrg() para tenant isolation` _(incluye @prisma/adapter-pg, pg, @types/pg — ver nota 1b)_
+5. `c51f0e5` — `feat(seed): script de seed con datos demo (distrito, grupos, users, miembros, invitaciones, audit)`
+6. `9d86e24` — `docs: marcar Plan 0b completado, documentar incompatibilidad adapter Prisma 7`
