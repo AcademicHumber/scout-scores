@@ -17,7 +17,7 @@ pnpm build                  # requiere DATABASE_URL definida
 ## Stack
 
 - **Next.js 15.x** (App Router, Server Actions) + TypeScript strict + Tailwind v4
-- **Prisma 7.x** — config en `prisma.config.ts` (Prisma 7 no usa `url = env(...)` en `schema.prisma`; requiere `dotenv` en dev)
+- **Prisma 7.x** — config en `prisma.config.ts` (Prisma 7 no usa `url = env(...)` en `schema.prisma`; requiere `dotenv` en dev). El generator `prisma-client` **requiere** un driver adapter para conexiones directas: se usa `@prisma/adapter-pg` en `src/lib/db.ts` y en `prisma/seed.ts`. Importar desde `@/generated/prisma/client`, no desde `@prisma/client`.
 - **PostgreSQL 16** — solo en Docker para dev; Next.js corre en el host
 - **pnpm 10** — package manager; build scripts de Prisma habilitados vía `pnpm.onlyBuiltDependencies` en `package.json`
 - Node 22 LTS como target (`.nvmrc`); Node 24 funciona en dev
@@ -73,4 +73,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 0a completado** (scaffold, Prisma sin modelos, Docker, CI, layout en español).
 
-**Próximo: Plan 0b** — Schema núcleo + seed: migraciones de `Organization`, `GrupoScout`, `User`, `Membership`, `Invitation`, `AuditLog` + tablas Auth.js + script de seed con datos demo.
+**Plan 0b completado** (schema núcleo, migración con índice parcial en `Invitation`, wrapper `forOrg()`, seed idempotente con datos demo).
+
+**Próximo: Plan 1** — Auth con Google OAuth + onboarding multi-tenant.

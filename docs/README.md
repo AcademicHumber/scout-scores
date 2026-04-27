@@ -7,7 +7,7 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 
 - [00 — Master plan](plans/00-master-plan.md) — visión completa del sistema y roadmap.
 - [01 — Bootstrap & infraestructura local](plans/01-bootstrap-infra.md) — scaffold inicial. ✓
-- 02 — Schema núcleo + seed _(pendiente)_
+- [02 — Schema núcleo + seed](plans/02-schema-nucleo-seed.md) ✓
 - 03 — Auth con Google + onboarding multi-tenant _(pendiente)_
 - 04 — Gestión de miembros, invitaciones y grupos scouts _(pendiente)_
 - 05 — Plantillas de puntaje _(pendiente)_
