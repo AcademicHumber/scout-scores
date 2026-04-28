@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db"
 import { aceptarInvitacionEnSignIn } from "@/lib/auth-onboarding"
-import { authConfig } from "@/auth.config"
+import { authConfig, buildSession } from "@/auth.config"
 
 export const { auth, handlers, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
@@ -66,18 +66,7 @@ export const { auth, handlers, signIn, signOut, unstable_update } = NextAuth({
     },
 
     async session({ session, token }) {
-      session.user.id = token.id
-      session.user.memberships = token.memberships ?? []
-      session.user.activeOrganizationId = token.activeOrganizationId ?? null
-
-      const active = session.user.memberships.find(
-        (m) => m.organizationId === session.user.activeOrganizationId,
-      )
-      session.user.activeRole = active?.role ?? null
-      session.user.activeGrupoScoutId = active?.grupoScoutId ?? null
-      session.user.activeOrganizationNombre = active?.organizationNombre ?? null
-
-      return session
+      return buildSession(session, token)
     },
   },
 })

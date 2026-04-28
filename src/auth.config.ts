@@ -1,8 +1,22 @@
-import type { NextAuthConfig } from "next-auth"
+import type { NextAuthConfig, Session } from "next-auth"
+import type { JWT } from "next-auth/jwt"
 import Google from "next-auth/providers/google"
 
 const PUBLIC_PATHS = ["/login", "/api/auth"]
 const ONBOARDING_PATH = "/onboarding"
+
+export function buildSession(session: Session, token: JWT): Session {
+  session.user.id = token.id ?? token.sub ?? ""
+  session.user.memberships = token.memberships ?? []
+  session.user.activeOrganizationId = token.activeOrganizationId ?? null
+  const active = session.user.memberships.find(
+    (m) => m.organizationId === session.user.activeOrganizationId,
+  )
+  session.user.activeRole = active?.role ?? null
+  session.user.activeGrupoScoutId = active?.grupoScoutId ?? null
+  session.user.activeOrganizationNombre = active?.organizationNombre ?? null
+  return session
+}
 
 export const authConfig = {
   providers: [Google],
@@ -11,6 +25,9 @@ export const authConfig = {
     error: "/login",
   },
   callbacks: {
+    session({ session, token }) {
+      return buildSession(session, token)
+    },
     authorized({ auth, request: { nextUrl } }) {
       const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p))
       if (isPublic) return true
