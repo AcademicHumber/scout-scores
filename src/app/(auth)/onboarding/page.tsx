@@ -1,9 +1,24 @@
+"use client"
+
+import { useActionState } from "react"
 import { createDistrito, aceptarInvitacion } from "./actions"
 import messages from "@/messages/es.json"
 
 const m = messages.auth.onboarding
+const errors = m.errors
+
+function errorMessage(code: string | undefined): string | null {
+  if (!code) return null
+  if (code === "SLUG_TAKEN") return errors.slugTaken
+  if (code === "INVITACION_INVALIDA") return errors.invitacionInvalida
+  if (code === "EMAIL_NO_COINCIDE") return errors.emailNoCoincide
+  return code
+}
 
 export default function OnboardingPage() {
+  const [createState, createAction, createPending] = useActionState(createDistrito, null)
+  const [joinState, joinAction, joinPending] = useActionState(aceptarInvitacion, null)
+
   return (
     <div className="w-full max-w-2xl space-y-6">
       <div className="text-center">
@@ -21,12 +36,9 @@ export default function OnboardingPage() {
             <p className="mt-1 text-sm text-gray-500">{m.createDistrito.description}</p>
           </div>
 
-          <form action={createDistrito} className="space-y-3">
+          <form action={createAction} className="space-y-3">
             <div>
-              <label
-                htmlFor="nombre"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
                 {m.createDistrito.nombreLabel}
               </label>
               <input
@@ -41,10 +53,7 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <label
-                htmlFor="slug"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="slug" className="block text-sm font-medium text-gray-700">
                 {m.createDistrito.slugLabel}
               </label>
               <input
@@ -60,11 +69,16 @@ export default function OnboardingPage() {
               />
             </div>
 
+            {createState?.error && (
+              <p className="text-sm text-red-600">{errorMessage(createState.error)}</p>
+            )}
+
             <button
               type="submit"
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              disabled={createPending}
+              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {m.createDistrito.submit}
+              {createPending ? "Creando..." : m.createDistrito.submit}
             </button>
           </form>
         </div>
@@ -78,12 +92,9 @@ export default function OnboardingPage() {
             <p className="mt-1 text-sm text-gray-500">{m.joinDistrito.description}</p>
           </div>
 
-          <form action={aceptarInvitacion} className="space-y-3">
+          <form action={joinAction} className="space-y-3">
             <div>
-              <label
-                htmlFor="token"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="token" className="block text-sm font-medium text-gray-700">
                 {m.joinDistrito.tokenLabel}
               </label>
               <input
@@ -95,11 +106,16 @@ export default function OnboardingPage() {
               />
             </div>
 
+            {joinState?.error && (
+              <p className="text-sm text-red-600">{errorMessage(joinState.error)}</p>
+            )}
+
             <button
               type="submit"
-              className="w-full rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors"
+              disabled={joinPending}
+              className="w-full rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
-              {m.joinDistrito.submit}
+              {joinPending ? "Uniéndome..." : m.joinDistrito.submit}
             </button>
           </form>
         </div>
