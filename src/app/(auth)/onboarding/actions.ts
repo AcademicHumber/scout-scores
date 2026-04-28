@@ -3,6 +3,7 @@
 import { z } from "zod"
 import { requireUser } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/db"
+import { unstable_update } from "@/auth"
 import { redirect } from "next/navigation"
 
 export type ActionState = { error: string } | null
@@ -62,6 +63,7 @@ export async function createDistrito(
     throw err
   }
 
+  await unstable_update({ refreshMemberships: true })
   redirect("/dashboard")
 }
 
@@ -125,5 +127,6 @@ export async function aceptarInvitacion(
     throw err
   }
 
+  await unstable_update({ refreshMemberships: true })
   redirect("/dashboard")
 }

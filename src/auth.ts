@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 import { aceptarInvitacionEnSignIn } from "@/lib/auth-onboarding"
 import { authConfig } from "@/auth.config"
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
+export const { auth, handlers, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },

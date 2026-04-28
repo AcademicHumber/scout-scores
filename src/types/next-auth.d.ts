@@ -23,6 +23,8 @@ declare module "next-auth" {
       activeGrupoScoutId: string | null
       activeOrganizationNombre: string | null
     }
+    /** Señal interna para forzar re-query de memberships en el callback jwt */
+    refreshMemberships?: boolean
   }
 }
 
