@@ -1,15 +1,11 @@
-import { auth, signOut } from "@/auth"
+import { auth } from "@/auth"
 import { DistrictSwitcher } from "./DistrictSwitcher"
+import { SignOutButton } from "./SignOutButton"
 import messages from "@/messages/es.json"
 
 export async function AppHeader() {
   const session = await auth()
   const user = session?.user
-
-  async function handleSignOut() {
-    "use server"
-    await signOut({ redirectTo: "/login" })
-  }
 
   return (
     <header className="border-b border-gray-200 bg-white">
@@ -30,15 +26,7 @@ export async function AppHeader() {
               />
             )}
             <span className="text-sm text-gray-700">{user?.name}</span>
-
-            <form action={handleSignOut}>
-              <button
-                type="submit"
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                {messages.auth.header.logout}
-              </button>
-            </form>
+            <SignOutButton label={messages.auth.header.logout} />
           </div>
         </div>
       </div>
