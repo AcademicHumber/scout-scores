@@ -7,5 +7,41 @@
     "loading": "Cargando...",
     "error": "Ocurrió un error",
     "retry": "Reintentar"
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesión",
+      "subtitle": "Accedé con tu cuenta de Google",
+      "googleButton": "Continuar con Google",
+      "errors": {
+        "generic": "No pudimos iniciar sesión. Probá de nuevo."
+      }
+    },
+    "onboarding": {
+      "title": "Bienvenido a Puntajes Scout",
+      "subtitle": "Para empezar, elegí una opción:",
+      "createDistrito": {
+        "title": "Crear nuevo Distrito",
+        "description": "Si sos admin de un distrito que aún no está en el sistema",
+        "nombreLabel": "Nombre del distrito",
+        "slugLabel": "Identificador (slug)",
+        "submit": "Crear Distrito"
+      },
+      "joinDistrito": {
+        "title": "Tengo un código de invitación",
+        "description": "Si te invitaron a un distrito existente",
+        "tokenLabel": "Código de invitación",
+        "submit": "Unirme"
+      },
+      "errors": {
+        "slugTaken": "Ese identificador ya está en uso",
+        "invitacionInvalida": "El código no es válido o expiró",
+        "emailNoCoincide": "Esa invitación es para otro email"
+      }
+    },
+    "header": {
+      "logout": "Cerrar sesión",
+      "switchDistrict": "Cambiar de distrito"
+    }
   }
 }
