@@ -1,6 +1,6 @@
 # Plan 1 — Auth con Google OAuth + onboarding multi-tenant
 
-> **Nota de plan mode**: este archivo se redacta en `~/.claude/plans/zazzy-twirling-pond.md` mientras está en plan mode. Apenas se apruebe, el primer paso de ejecución será **moverlo / volcar su contenido a `docs/plans/03-auth-onboarding.md`** dentro del repo, siguiendo la regla de documentación del master plan (todos los planes viven versionados en el repositorio).
+> **Estado**: ✅ Completado. Ver sección "Lecciones aprendidas en ejecución" al final para los bugs encontrados y fixes aplicados durante la prueba manual.
 
 ---
 
@@ -722,9 +722,12 @@ Commit: `chore(i18n): copy en espanol para auth y onboarding`
 | `src/app/(app)/dashboard/page.tsx` | crear | Dashboard MVP |
 | `src/components/auth/AppHeader.tsx` | crear | Header con user + logout |
 | `src/components/auth/DistrictSwitcher.tsx` | crear | Selector multi-org |
-| `src/types/next-auth.d.ts` | crear | Module augmentation |
+| `src/types/next-auth.d.ts` | crear | Module augmentation (incluye `refreshMemberships` en Session) |
 | `src/messages/es.json` | modificar | Namespace `auth` |
 | `src/app/page.tsx` | modificar | Redirect a /dashboard si hay sesión, sino a /login |
+| `src/auth.config.ts` | crear | Split config Edge-compatible con `buildSession()` compartido |
+| `src/components/auth/SignOutButton.tsx` | crear | Client Component para logout vía `next-auth/react` |
+| `src/app/(app)/dashboard/MembershipRefresher.tsx` | crear | Refresh de memberships post-onboarding (fallback cliente) |
 
 ---
 
@@ -850,4 +853,76 @@ Ninguna decisión arquitectónica queda pendiente. Sí hay **tareas operacionale
 
 ## Commits asociados
 
-(Se completa post-ejecución con los hashes reales de cada commit. Estimación: ~10–13 commits temáticos siguiendo el patrón de Plan 0b.)
+| Hash | Mensaje |
+|---|---|
+| `9ae8485` | `chore(test): setup minimo de Vitest + smoke test` |
+| `20e4eca` | `chore(deps): instalar next-auth@beta y @auth/prisma-adapter` |
+| `0dd4acb` | `feat(auth): Auth.js v5 con callbacks multi-tenant, middleware y helpers de sesion` |
+| `6b826e5` | `feat(auth): paginas de login, onboarding, layout protegido y dashboard` |
+| `3c7902a` | `chore(auth): eliminar casts any en tests de auth-helpers` |
+| `4f6cf9d` | `fix(auth): split config para Edge — middleware sin imports de Node.js` |
+| `ea7f1fc` | `fix(onboarding): escapar guion en pattern del input slug para flag v de Unicode` |
+| `b43f184` | `fix(onboarding): useActionState para mostrar errores en UI sin crash` |
+| `33b65f2` | `fix(onboarding): refrescar JWT con unstable_update antes de redirigir al dashboard` |
+| `e274b94` | `fix(auth): session callback en authConfig para que middleware vea memberships del JWT` |
+| `41eb715` | `fix(auth): reemplazar inline server action de signOut por SignOutButton client component` |
+
+---
+
+## Lecciones aprendidas en ejecución
+
+Bugs encontrados durante la prueba manual, con su causa raíz y fix aplicado. Documentados aquí para futuros planes que toquen auth o middleware.
+
+### 1. Prisma no carga en el middleware (Edge runtime)
+
+**Síntoma**: error en runtime `Failed to load external module node:path` al cargar el proyecto.
+
+**Causa**: el middleware de Next.js corre en el Edge runtime (V8 isolate, sin Node.js builtins). El `src/middleware.ts` original importaba `auth` desde `@/auth`, que a su vez importa Prisma, que usa `node:path` / `node:process` en el archivo generado `src/generated/prisma/client.ts`.
+
+**Fix**: patrón **split config** de Auth.js v5. Se crea `src/auth.config.ts` con config ligera (providers + callbacks sin DB), que el middleware importa. `src/auth.ts` extiende esa config añadiendo adapter y callbacks con Prisma.
+
+**Regla para el futuro**: el middleware nunca puede importar nada que transite hasta Prisma. Verificar con `pnpm build` (detecta imports inválidos para Edge).
+
+---
+
+### 2. Middleware siempre redirige a `/onboarding` aunque el JWT tenga memberships
+
+**Síntoma**: después de crear un distrito, el usuario queda en loop `/onboarding` → `/dashboard` → `/onboarding`.
+
+**Causa A — JWT stale**: el JWT se firma al momento del login con `memberships: []`. Al crear el distrito en la server action, la DB tiene la membership pero el JWT no. El fix era llamar `unstable_update({ refreshMemberships: true })` antes del `redirect("/dashboard")` para que Auth.js re-corra el callback `jwt` y sobreescriba la cookie.
+
+**Causa B (root cause real) — `session` callback ausente en `authConfig`**: incluso con el JWT actualizado, el callback `authorized` del middleware recibe `auth.user` construido por el `session` callback del `authConfig`. Ese callback no existía en `authConfig`, así que usaba el default de Auth.js que solo mapea `{ name, email, image }` — sin `memberships`. El `authorized` siempre veía `memberships: undefined`.
+
+**Fix**: mover la lógica del `session` callback a una función `buildSession()` exportada desde `auth.config.ts`, usada tanto en el middleware como en `auth.ts`. Así ambas instancias de NextAuth mapean el JWT correctamente.
+
+**Regla para el futuro**: con split config, **cualquier campo custom del JWT debe mapearse en un `session` callback presente en `authConfig`**, no solo en `auth.ts`. Si el middleware necesita leer un campo de `auth.user`, ese campo debe existir en el `session` callback de `authConfig`.
+
+---
+
+### 3. `signOut` como inline server action falla
+
+**Síntoma**: error "An unexpected response was received from the server" al hacer click en "Cerrar sesión".
+
+**Causa**: en Auth.js v5 beta, llamar `signOut({ redirectTo })` dentro de un inline server action (`"use server"` en función anidada) tiene comportamiento inestable con Turbopack en Next.js 15.
+
+**Fix**: `SignOutButton` como Client Component que usa `signOut` de `next-auth/react` con `callbackUrl`. La variante cliente hace un fetch al endpoint `/api/auth/signout` que Auth.js maneja directamente.
+
+**Regla para el futuro**: usar `signOut` de `next-auth/react` en Client Components, no como server action inline.
+
+---
+
+### 4. Server actions que fallan deben usar `useActionState`, no `throw`
+
+**Síntoma**: al intentar crear un distrito con un slug ya existente, Next.js mostraba la pantalla de error roja con el stack trace de `SLUG_TAKEN`.
+
+**Causa**: la server action lanzaba `throw new Error("SLUG_TAKEN")`, que Next.js interpreta como error no manejado.
+
+**Fix**: server actions con errores de negocio esperados retornan `{ error: string } | null`. La página (Client Component) usa `useActionState` de React 19 para recibir ese estado y mostrarlo en la UI.
+
+**Regla para el futuro**: distinguir errores de negocio (slug ocupado, invitación inválida) de errores inesperados (fallo de DB). Los primeros → `return { error }`. Los segundos → `throw` (el error boundary los captura).
+
+---
+
+### 5. Paso 2b (custom adapter) — NO fue necesario
+
+`@auth/prisma-adapter` v2.11 es compatible con Prisma 7 + generator `prisma-client`. El adapter es puro duck-typing: acepta cualquier objeto con la interfaz de Prisma Client, sin imports hardcodeados a `@prisma/client`. El smoke test del Paso 2 pasó sin problemas.

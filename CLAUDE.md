@@ -42,6 +42,21 @@ Estas reglas se establecen temprano y se respetan en todos los planes:
 
 8. **`MiembroScout` ≠ `User`**: son entidades separadas. `User` = cuenta Google autenticada. `MiembroScout` = persona del dominio scout (joven o dirigente adulto), existe sin auth. Linkeo opcional vía `MiembroScout.userId?`. Ver `docs/adr/0001-arquitectura-en-capas.md`.
 
+## Convenciones de Auth (establecidas en Plan 1)
+
+9. **Split config de Auth.js v5**: el middleware no puede importar Prisma (Edge runtime, sin Node.js builtins). La config de auth vive en dos archivos:
+   - `src/auth.config.ts` — config Edge-compatible (providers, `authorized`, `session`). Exporta `buildSession()`.
+   - `src/auth.ts` — config completa (adapter Prisma, callbacks `signIn`, `jwt`, `session` vía `buildSession`).
+   - El middleware importa solo `auth.config.ts`. Nunca importar `@/lib/db` o `@/auth` en `middleware.ts`.
+
+10. **`session` callback en `authConfig`**: cualquier campo custom del JWT que el middleware necesite leer en `auth.user` debe estar mapeado en el `session` callback de `auth.config.ts`. Si solo está en `auth.ts`, el middleware no lo verá.
+
+11. **`signOut` siempre desde el cliente**: usar `signOut` de `next-auth/react` en un Client Component (`SignOutButton`). El `signOut` de `@/auth` como inline server action falla en Next.js 15 + Turbopack.
+
+12. **Errores de negocio en server actions**: errores esperados (slug duplicado, invitación inválida) → `return { error: string }` + `useActionState` en el componente. Errores inesperados (fallo de DB, bug) → `throw`. No mezclar ambos mecanismos.
+
+13. **JWT refresh post-mutación**: si una server action crea o modifica memberships, llamar `unstable_update({ refreshMemberships: true })` antes del `redirect()`. El callback `jwt` re-queryea memberships cuando `trigger === 'update' && session.refreshMemberships`. Sin esto el middleware ve el JWT viejo y puede redirigir incorrectamente.
+
 ## Dominio (resumen)
 
 El tenant es una `Organization` (= Distrito Scout). Dentro hay `GrupoScout` (persistentes) y `Patrulla` (por evento, siempre asociada a un grupo). Los roles de `User` son `ADMIN | JUEZ | ESPECTADOR | JEFE_PATRULLA`.
@@ -64,6 +79,8 @@ Toda la planificación vive en `docs/` versionada con git:
 
 - `docs/plans/00-master-plan.md` — visión completa, modelo de dominio, roadmap (Capa 1 + Capa 2)
 - `docs/plans/01-bootstrap-infra.md` — Plan 0a, ya ejecutado
+- `docs/plans/02-schema-nucleo-seed.md` — Plan 0b, ya ejecutado
+- `docs/plans/03-auth-onboarding.md` — Plan 1, ya ejecutado (incluye lecciones aprendidas)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
 - `docs/README.md` — índice de todos los planes y ADRs
 
@@ -75,4 +92,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 0b completado** (schema núcleo, migración con índice parcial en `Invitation`, wrapper `forOrg()`, seed idempotente con datos demo).
 
-**Próximo: Plan 1** — Auth con Google OAuth + onboarding multi-tenant.
+**Plan 1 completado** (Auth.js v5 con Google OAuth, onboarding multi-tenant, helpers de sesión, middleware, dashboard básico).
+
+**Próximo: Plan 2** — CRUD de invitaciones y gestión de memberships.
