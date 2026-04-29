@@ -98,4 +98,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 3c completado** (Design system: tokens brand #622599, fuente Barlow, fondo auth purple, header purple, touch targets 48px mobile-first). Directrices en `docs/plans/03c-design-system.md`.
 
-**Próximo: Plan 4** — Gestión de invitaciones, memberships, grupos scouts y perfil del distrito.
+**Plan 4 completado** (Gestión de invitaciones, memberships, grupos scouts y perfil del distrito — layout `/admin`, CRUD completo, deep link `/invite/[token]`, regla del último ADMIN, audit log).
+
+**Próximo: Plan 5** — Plantillas de puntaje (ScoreTemplate, criterios PUNTUABLE/DESEMPATE).

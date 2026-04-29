@@ -1,6 +1,6 @@
 # Plan 2 — Gestión de invitaciones, memberships, grupos scouts y perfil del distrito
 
-> **Estado**: 📝 Borrador. Pendiente de ejecución con Sonnet (ver workflow Opus/Sonnet en master plan).
+> **Estado**: ✅ Completado (2026-04-28). Ejecutado con Sonnet.
 
 ---
 
@@ -962,17 +962,18 @@ Ninguna decisión arquitectónica queda pendiente. Tareas operacionales antes (o
 
 ## Commits asociados
 
-*Pendiente de ejecución. Se completa al cerrar el plan.*
-
 | Hash | Mensaje |
 |---|---|
-| _pendiente_ | `feat(admin): layout protegido /admin con guard de rol y landing` |
-| _pendiente_ | `feat(admin): editar nombre del distrito` |
-| _pendiente_ | `refactor(db): completar wrapper forOrg con updateMany y checks de pertenencia` |
-| _pendiente_ | `feat(admin): helpers de reglas (ultimo admin, expiracion lazy) + tests` |
-| _pendiente_ | `feat(admin): CRUD de grupos scouts con validacion de borrado seguro` |
-| _pendiente_ | `feat(admin): crear, listar y revocar invitaciones con copiar-link` |
-| _pendiente_ | `fix(auth): ruta /invite publica para deep link de invitaciones` |
-| _pendiente_ | `feat(invite): deep link /invite/[token] para aceptar desde email/whatsapp` |
-| _pendiente_ | `feat(admin): editar y expulsar miembros con regla de ultimo admin` |
-| _pendiente_ | `chore(i18n): copy admin (distrito, grupos, invitaciones, miembros)` |
+| `111f3c8` | `refactor(db): invitation.updateMany en forOrg; requireRole devuelve userId` |
+| `ee76f7a` | `feat(admin): helpers de reglas (ultimo admin, expiracion lazy) + tests` |
+| `5ab14a0` | `feat(admin): layout protegido /admin con guard de rol, landing y nav` |
+| `0168c2b` | `feat(admin): editar nombre del distrito` |
+| `091401c` | `feat(admin): CRUD de grupos scouts con validacion de borrado seguro` |
+| `b5dcae7` | `feat(admin): crear, listar y revocar invitaciones con copiar-link` |
+| `2869c5e` | `feat(invite): deep link /invite/[token] para aceptar desde WhatsApp/email` |
+| `60dbdc4` | `feat(admin): editar y expulsar miembros con regla de ultimo admin` |
+
+Notas de ejecución:
+- i18n y PUBLIC_PATHS incluidos en commit 5ab14a0 (agrupados con el layout admin)
+- Zod v4 usa `.issues` en vez de `.errors` en ZodError — ajustado en acciones
+- El wrapper `forOrg.findMany` pierde inferencia de tipos con `include`; las páginas que necesitan relaciones usan `prisma.*` directo con `where: { organizationId }` explícito
