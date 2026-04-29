@@ -32,9 +32,9 @@ export async function requireOrg() {
 }
 
 export async function requireRole(roles: Role[]) {
-  const org = await requireOrg()
+  const [user, org] = await Promise.all([requireUser(), requireOrg()])
   if (!roles.includes(org.role)) {
     throw new Error("FORBIDDEN")
   }
-  return org
+  return { ...org, userId: user.id }
 }

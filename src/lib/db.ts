@@ -110,6 +110,11 @@ export function forOrg(organizationId: string) {
           ...args,
           where: { ...args.where, organizationId },
         }),
+      updateMany: (args: Parameters<typeof prisma.invitation.updateMany>[0]) =>
+        prisma.invitation.updateMany({
+          ...args,
+          where: { ...args?.where, organizationId },
+        }),
       delete: (args: Parameters<typeof prisma.invitation.delete>[0]) =>
         prisma.invitation.delete({
           ...args,
