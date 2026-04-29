@@ -94,4 +94,8 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 1 completado** (Auth.js v5 con Google OAuth, onboarding multi-tenant, helpers de sesión, middleware, dashboard básico).
 
-**Próximo: Plan 2** — CRUD de invitaciones y gestión de memberships.
+**Plan 3b completado** (`React.cache()` en `getCurrentUser`, `useTransition` en `DistrictSwitcher`, ref-guard en `MembershipRefresher`).
+
+**Plan 3c completado** (Design system: tokens brand #622599, fuente Barlow, fondo auth purple, header purple, touch targets 48px mobile-first). Directrices en `docs/plans/03c-design-system.md`.
+
+**Próximo: Plan 4** — Gestión de invitaciones, memberships, grupos scouts y perfil del distrito.
