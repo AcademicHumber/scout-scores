@@ -1,8 +1,8 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
-import { unstable_update } from "@/auth"
 import { redirect } from "next/navigation"
 import { InviteResult } from "@/components/invite/InviteResult"
+import { InviteAccepted } from "@/components/invite/InviteAccepted"
 
 interface Props {
   params: Promise<{ token: string }>
@@ -46,8 +46,8 @@ export default async function InvitePage({ params }: Props) {
       where: { id: inv.id },
       data: { status: "ACCEPTED", acceptedAt: existing.createdAt },
     }).catch(() => {})
-    await unstable_update({ refreshMemberships: true })
-    redirect("/dashboard")
+    // JWT refresh ocurre en el cliente vía InviteAccepted
+    return <InviteAccepted />
   }
 
   await prisma.$transaction(async (tx) => {
@@ -75,6 +75,7 @@ export default async function InvitePage({ params }: Props) {
     })
   })
 
-  await unstable_update({ refreshMemberships: true })
-  redirect("/dashboard")
+  // unstable_update no funciona en Server Components — el refresh del JWT
+  // ocurre en el cliente vía InviteAccepted (useSession().update)
+  return <InviteAccepted />
 }
