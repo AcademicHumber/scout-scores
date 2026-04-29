@@ -1,10 +1,12 @@
 import { getCurrentUser } from "@/lib/auth-helpers"
 import { DistrictSwitcher } from "./DistrictSwitcher"
 import { SignOutButton } from "./SignOutButton"
+import Link from "next/link"
 import messages from "@/messages/es.json"
 
 export async function AppHeader() {
   const user = await getCurrentUser()
+  const isAdmin = user?.activeRole === "ADMIN"
 
   return (
     <header className="bg-brand">
@@ -13,6 +15,14 @@ export async function AppHeader() {
           <div className="flex items-center gap-4">
             <span className="font-semibold text-white">Puntajes Scout</span>
             {user && <DistrictSwitcher />}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+              >
+                {messages.auth.header.admin}
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

@@ -41,7 +41,97 @@
     },
     "header": {
       "logout": "Cerrar sesión",
-      "switchDistrict": "Cambiar de distrito"
+      "switchDistrict": "Cambiar de distrito",
+      "admin": "Administración"
+    }
+  },
+  "admin": {
+    "nav": {
+      "distrito": "Distrito",
+      "grupos": "Grupos Scouts",
+      "invitaciones": "Invitaciones",
+      "miembros": "Miembros"
+    },
+    "landing": {
+      "title": "Administración del distrito",
+      "subtitle": "Gestioná los miembros, grupos e invitaciones de {{nombreDistrito}}"
+    },
+    "distrito": {
+      "title": "Perfil del distrito",
+      "nombreLabel": "Nombre",
+      "slugLabel": "Identificador (no editable)",
+      "submit": "Guardar cambios"
+    },
+    "grupos": {
+      "title": "Grupos Scouts",
+      "empty": "Aún no hay grupos. Creá el primero abajo.",
+      "createTitle": "Crear grupo scout",
+      "nombreLabel": "Nombre",
+      "slugLabel": "Identificador interno",
+      "submit": "Crear grupo",
+      "deleteConfirm": "¿Borrar el grupo \"{{nombre}}\"? Esta acción es irreversible.",
+      "errors": {
+        "slugTaken": "Ya existe un grupo con ese identificador",
+        "tieneMiembros": "No se puede borrar: el grupo tiene miembros vinculados",
+        "tieneMemberships": "No se puede borrar: hay usuarios asignados a este grupo",
+        "tieneInvitaciones": "Hay invitaciones pendientes a este grupo. Revocalas primero."
+      }
+    },
+    "invitaciones": {
+      "title": "Invitaciones",
+      "newTitle": "Nueva invitación",
+      "emailLabel": "Email",
+      "roleLabel": "Rol",
+      "grupoLabel": "Grupo (opcional)",
+      "submit": "Crear invitación",
+      "linkReady": "Link listo. Compartilo por WhatsApp / email.",
+      "copyLink": "Copiar link",
+      "copied": "¡Copiado!",
+      "sections": {
+        "pending": "Pendientes",
+        "accepted": "Aceptadas",
+        "expired": "Expiradas / Revocadas"
+      },
+      "revoke": "Revocar",
+      "revokeConfirm": "¿Revocar la invitación a {{email}}?",
+      "errors": {
+        "emailInvalido": "Email inválido",
+        "yaMiembro": "Ese email ya es miembro del distrito",
+        "yaInvitada": "Ya hay una invitación pendiente para ese email",
+        "grupoInvalido": "El grupo seleccionado no existe"
+      }
+    },
+    "miembros": {
+      "title": "Miembros del distrito",
+      "columns": {
+        "nombre": "Nombre",
+        "email": "Email",
+        "role": "Rol",
+        "grupo": "Grupo",
+        "acciones": "Acciones"
+      },
+      "edit": "Editar",
+      "save": "Guardar",
+      "remove": "Expulsar",
+      "removeConfirm": "¿Expulsar a {{nombre}} del distrito?",
+      "errors": {
+        "lastAdmin": "No podés quitar el último ADMIN del distrito",
+        "notFound": "Miembro no encontrado"
+      }
+    },
+    "invitePage": {
+      "validating": "Validando tu invitación...",
+      "invalid": {
+        "title": "Invitación inválida o vencida",
+        "subtitle": "Pedile al admin que te genere una nueva."
+      },
+      "emailMismatch": {
+        "title": "Esa invitación es para otra cuenta",
+        "subtitle": "La invitación es para {{expected}}, pero estás logueado como {{got}}."
+      }
+    },
+    "errors": {
+      "forbidden": "No tenés permiso para acceder a esta sección"
     }
   }
 }
