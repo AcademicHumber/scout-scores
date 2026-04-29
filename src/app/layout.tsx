@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Barlow } from "next/font/google";
 import "./globals.css";
 import messages from "@/messages/es.json";
+
+const barlow = Barlow({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-barlow",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: messages.app.name,
@@ -10,7 +18,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1f3a8a",
+  themeColor: "#622599",
 };
 
 export default function RootLayout({
@@ -18,7 +26,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-white text-gray-900 antialiased">
+      <body className={`${barlow.variable} min-h-screen bg-white text-gray-900 antialiased`}>
         {children}
       </body>
     </html>

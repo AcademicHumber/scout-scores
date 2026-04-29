@@ -1,18 +1,17 @@
-import { auth } from "@/auth"
+import { getCurrentUser } from "@/lib/auth-helpers"
 import { DistrictSwitcher } from "./DistrictSwitcher"
 import { SignOutButton } from "./SignOutButton"
 import messages from "@/messages/es.json"
 
 export async function AppHeader() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getCurrentUser()
 
   return (
-    <header className="border-b border-gray-200 bg-white">
+    <header className="bg-brand">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="font-semibold text-gray-900">Puntajes Scout</span>
+            <span className="font-semibold text-white">Puntajes Scout</span>
             {user && <DistrictSwitcher />}
           </div>
 
@@ -22,11 +21,14 @@ export async function AppHeader() {
               <img
                 src={user.image}
                 alt={user.name ?? ""}
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full ring-2 ring-white/30"
               />
             )}
-            <span className="text-sm text-gray-700">{user?.name}</span>
-            <SignOutButton label={messages.auth.header.logout} />
+            <span className="text-sm text-white/80">{user?.name}</span>
+            <SignOutButton
+              label={messages.auth.header.logout}
+              className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+            />
           </div>
         </div>
       </div>

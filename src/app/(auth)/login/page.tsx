@@ -13,7 +13,7 @@ export default async function LoginPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-6">
+      <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-bold text-gray-900">
             {messages.auth.login.title}
@@ -24,7 +24,7 @@ export default async function LoginPage() {
         <form action={loginConGoogle}>
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
               <path
