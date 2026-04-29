@@ -1,11 +1,12 @@
+import { cache } from "react"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import type { Role } from "@/generated/prisma/enums"
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const session = await auth()
   return session?.user ?? null
-}
+})
 
 export async function requireUser() {
   const user = await getCurrentUser()

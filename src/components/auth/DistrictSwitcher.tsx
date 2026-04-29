@@ -2,10 +2,12 @@
 
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useTransition } from "react"
 
 export function DistrictSwitcher() {
   const { data, update } = useSession()
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const memberships = data?.user.memberships ?? []
   const active = data?.user.activeOrganizationId
 
@@ -14,11 +16,14 @@ export function DistrictSwitcher() {
   return (
     <select
       value={active ?? ""}
-      onChange={async (e) => {
-        await update({ activeOrganizationId: e.target.value })
-        router.refresh()
+      disabled={isPending}
+      onChange={(e) => {
+        startTransition(async () => {
+          await update({ activeOrganizationId: e.target.value })
+          router.refresh()
+        })
       }}
-      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700"
+      className="rounded-md border border-white/40 bg-white/10 px-2 py-1 text-sm text-white disabled:opacity-50"
       aria-label="Cambiar de distrito"
     >
       {memberships.map((m) => (
