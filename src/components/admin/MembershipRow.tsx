@@ -1,5 +1,5 @@
 "use client"
-import { useActionState } from "react"
+import { useActionState, useState, useEffect } from "react"
 import { updateMembership, removeMembership } from "@/app/(app)/admin/miembros/actions"
 import messages from "@/messages/es.json"
 
@@ -31,6 +31,17 @@ interface Props {
 export function MembershipRow({ membership, grupos, currentUserId }: Props) {
   const [updateState, updateAction, updatePending] = useActionState(updateMembership, null)
   const [removeState, removeAction, removePending] = useActionState(removeMembership, null)
+
+  // Controlled state para los selects: React 19 resetea los inputs no controlados
+  // automáticamente al completar el form action, lo que haría volver al valor original.
+  const [role, setRole] = useState(membership.role)
+  const [grupoScoutId, setGrupoScoutId] = useState(membership.grupoScoutId ?? "")
+
+  // Sincronizar cuando el Server Component re-renderiza con datos frescos de DB
+  useEffect(() => {
+    setRole(membership.role)
+    setGrupoScoutId(membership.grupoScoutId ?? "")
+  }, [membership.role, membership.grupoScoutId])
 
   const isCurrentUser = membership.userId === currentUserId
 
@@ -75,7 +86,8 @@ export function MembershipRow({ membership, grupos, currentUserId }: Props) {
           <input type="hidden" name="membershipId" value={membership.id} />
           <select
             name="role"
-            defaultValue={membership.role}
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
             className="rounded border border-gray-300 px-2 py-1 text-sm focus:border-brand focus:outline-none"
           >
             {ROLES.map((r) => (
@@ -84,7 +96,8 @@ export function MembershipRow({ membership, grupos, currentUserId }: Props) {
           </select>
           <select
             name="grupoScoutId"
-            defaultValue={membership.grupoScoutId ?? ""}
+            value={grupoScoutId}
+            onChange={(e) => setGrupoScoutId(e.target.value)}
             className="rounded border border-gray-300 px-2 py-1 text-sm focus:border-brand focus:outline-none"
           >
             <option value="">Sin grupo</option>
