@@ -73,6 +73,20 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 - Una vez aprobado el plan, cambiar a `/model Sonnet` para ejecutarlo.
 - Si durante la ejecución surge una decisión arquitectónica, pausar, volver a Opus, decidir, y retomar con Sonnet.
 
+## Convenciones de repositorios y cache (establecidas en Plan 4)
+
+14. **Capa de repositorios**: toda interacción con DB vive en `src/repositories/`. Ningún archivo fuera de esa carpeta importa `@/lib/db` en código de feature (excepción: `src/auth.ts` y `src/lib/auth-onboarding.ts` por ser config del framework). Ver `docs/adr/0002-repository-layer.md`.
+
+15. **Lecturas cacheadas con `unstable_cache` + tags por organización**: formato `entidad:orgId` (ej: `memberships:org-abc`). Tags definidos en `src/repositories/cache-tags.ts`. Garantiza aislamiento entre tenants: revalidar `memberships:org-A` nunca afecta `org-B`.
+
+16. **`revalidateTag` solo para mutaciones estructurales**: llamar `revalidateTag` solo cuando la mutación añade o elimina filas (el componente aparece o desaparece). Para mutaciones que solo actualizan valores de una fila existente (ej: cambiar rol de un miembro), **no llamar `revalidateTag`**: devolver los valores confirmados en el return de la action y actualizar el estado local del cliente desde el resultado. `revalidateTag` dispara un soft refresh que puede resetear `useState` con datos stale del Router Cache.
+
+17. **Nunca sincronizar inputs controlados desde props vía `useEffect`**: el Router Cache puede entregar props stale antes que los datos frescos, pisando el valor recién guardado. Sincronizar exclusivamente desde el resultado de la action (`useEffect([actionState])`). Ver patrón completo en `docs/plans/04-invitaciones-memberships.md` lección #3.
+
+18. **`forOrg()` para queries simples, `prisma.*` para queries con `include`/`select`**: `forOrg()` garantiza tenant isolation pero pierde los generic types de Prisma cuando se usa `include` o `select`. Para queries que necesiten el tipo inferido del resultado incluido, usar `prisma.*` con `where: { organizationId }` explícito.
+
+19. **`BusinessError(code, meta?)` para errores de negocio en repositorios**: los repos lanzan `BusinessError` con un código semántico. Las actions lo capturan y convierten a `{ error: string }` para el cliente. Nunca propagar `BusinessError` sin capturar; `throw` sin catch solo para errores inesperados (fallo de DB, bug).
+
 ## Documentación
 
 Toda la planificación vive en `docs/` versionada con git:
@@ -81,7 +95,9 @@ Toda la planificación vive en `docs/` versionada con git:
 - `docs/plans/01-bootstrap-infra.md` — Plan 0a, ya ejecutado
 - `docs/plans/02-schema-nucleo-seed.md` — Plan 0b, ya ejecutado
 - `docs/plans/03-auth-onboarding.md` — Plan 1, ya ejecutado (incluye lecciones aprendidas)
+- `docs/plans/04-invitaciones-memberships.md` — Plan 4, ya ejecutado (incluye lecciones aprendidas sobre cache y repositorios)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
+- `docs/adr/0002-repository-layer.md` — decisión de capa de repositorios con `unstable_cache` y `revalidateTag`
 - `docs/README.md` — índice de todos los planes y ADRs
 
 Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans/`.

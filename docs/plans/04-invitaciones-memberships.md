@@ -1,6 +1,6 @@
 # Plan 2 — Gestión de invitaciones, memberships, grupos scouts y perfil del distrito
 
-> **Estado**: ✅ Completado (2026-04-28). Ejecutado con Sonnet.
+> **Estado**: ✅ Completado (2026-04-28). Ejecutado con Sonnet. Ver sección "Lecciones aprendidas en ejecución" al final.
 
 ---
 
@@ -977,3 +977,108 @@ Notas de ejecución:
 - i18n y PUBLIC_PATHS incluidos en commit 5ab14a0 (agrupados con el layout admin)
 - Zod v4 usa `.issues` en vez de `.errors` en ZodError — ajustado en acciones
 - El wrapper `forOrg.findMany` pierde inferencia de tipos con `include`; las páginas que necesitan relaciones usan `prisma.*` directo con `where: { organizationId }` explícito
+
+---
+
+## Lecciones aprendidas en ejecución
+
+Bugs encontrados post-ejecución durante una sesión de refactor, con su causa raíz y fix aplicado. Documentados aquí para futuros planes que toquen cache, server actions o filas editables inline.
+
+### 1. `revalidateTag` / `revalidatePath` en Server Actions dispara un soft refresh que puede resetear el estado de Client Components
+
+**Síntoma**: al guardar el rol de un miembro en `MembershipRow`, los selects volvían al valor original (anterior al cambio) en lugar de mantener el recién guardado. El dato estaba correctamente persistido en DB, pero la UI lo revertía.
+
+**Causa**: `revalidateTag` (y `revalidatePath`) llamado desde una Server Action invalida el Router Cache y dispara un soft refresh automático del RSC en el cliente. Durante ese refresh, Next.js puede entregar temporalmente datos del Router Cache stale antes de los frescos. Si el componente se remontaba en ese intervalo (o `useActionState` se reseteaba), `useState` se re-inicializaba con la prop stale (`membership.role` = valor viejo) en lugar del valor recién confirmado.
+
+**Fix**: no llamar `revalidateTag` en `updateMembership`. La action devuelve los valores confirmados en el return (`{ success: true, membership: { role, grupoScoutId } }`), y el componente los usa para actualizar su estado local vía `useEffect([updateState])`. El `revalidateTag` se mantiene solo en `removeMembership` y en acciones que cambian la estructura de la lista (se añade/elimina una fila), no en las que solo actualizan valores de una fila existente.
+
+**Regla para el futuro**: distinguir dos tipos de mutaciones en listas:
+- **Mutaciones estructurales** (el componente aparece o desaparece): usar `revalidateTag` para que la lista refleje el cambio.
+- **Mutaciones de valores** (el componente sigue visible con nuevos datos): no usar `revalidateTag`. Devolver los valores confirmados desde la action y actualizar el estado local del componente cliente desde el resultado.
+
+---
+
+### 2. Nunca sincronizar estado de inputs desde props con `useEffect` cuando hay Router Cache
+
+**Síntoma**: un intento previo de arreglar el bug #1 usaba `useEffect([membership.role], () => setRole(membership.role))` para sincronizar cuando llegaban props nuevas del servidor. Esto en realidad empeoraba el problema: el Router Cache entrega los datos stale antes que los frescos, por lo que el `useEffect` pisaba el valor recién guardado con el valor viejo.
+
+**Fix**: sincronizar exclusivamente desde el resultado de la action (`useEffect([updateState])`), nunca desde las props. Las props del servidor son una fuente de datos potencialmente desactualizada cuando el Router Cache está activo.
+
+**Regla para el futuro**: en componentes con inputs controlados dentro de Server Actions, la fuente de verdad para el estado post-guardado es el retorno de la action, no las props del Server Component.
+
+---
+
+### 3. Patrón correcto para filas editables inline (sin reload de página)
+
+El patrón que quedó funcionando en `MembershipRow` para referencia futura:
+
+```tsx
+// Estado de edición actual (lo que el usuario ve en el select)
+const [role, setRole] = useState(membership.role)
+const [grupoScoutId, setGrupoScoutId] = useState(membership.grupoScoutId ?? "")
+
+// Estado "guardado": refleja lo que está en DB.
+// Inicializado desde props (valor al montar). Actualizado solo desde el resultado de la action.
+// Necesario para isDirty: sin esto, compararíamos contra los props originales que
+// nunca se actualizan (porque updateMembership no llama revalidateTag).
+const [savedRole, setSavedRole] = useState(membership.role)
+const [savedGrupoScoutId, setSavedGrupoScoutId] = useState(membership.grupoScoutId ?? "")
+
+const isDirty = role !== savedRole || grupoScoutId !== savedGrupoScoutId
+
+useEffect(() => {
+  if (updateState && "membership" in updateState && updateState.membership) {
+    const { role: newRole, grupoScoutId: newGrupo } = updateState.membership
+    setRole(newRole)
+    setGrupoScoutId(newGrupo ?? "")
+    setSavedRole(newRole)        // marca como "persistido"
+    setSavedGrupoScoutId(newGrupo ?? "")
+  }
+}, [updateState])
+```
+
+Botón guardar visible solo cuando `isDirty`. Mensaje "Guardado" visible cuando `!isDirty && updateState?.success`. Resultado: la UI confirma el guardado sin nunca depender del ciclo page-revalidation.
+
+---
+
+### 4. `revalidateTag` con tags por organización es estrictamente mejor que `revalidatePath`
+
+**Contexto**: el proyecto arrancó usando `revalidatePath("/admin/miembros")` en cada mutación. El refactor introdujo `unstable_cache` con tags del formato `entidad:orgId`.
+
+**Por qué importa**: `revalidatePath` invalida toda la ruta y no tiene conciencia de qué datos cambiaron. Con tags:
+- Renombrar un grupo invalida tanto `grupos:{orgId}` (página de grupos) como `memberships:{orgId}` (dropdown de grupos en la página de miembros). Con `revalidatePath` habría requerido hardcodear rutas adicionales en la action.
+- El tenant isolation es automático: `revalidateTag('memberships:org-A')` nunca afecta el cache de `org-B`.
+- Operaciones que no cambian la estructura de lista (como `updateMembership`) pueden optar por no revalidar en absoluto, manteniendo el cache intacto para otros usuarios del mismo org.
+
+**Regla para el futuro**: siempre usar `revalidateTag` con tags `entidad:orgId`. `revalidatePath` está prohibido en el área admin. Ver `src/repositories/cache-tags.ts`.
+
+---
+
+### 5. Separación estricta de capas: repositorios para todo lo de DB, actions para orquestación
+
+**Contexto**: al ejecutar el plan, las actions contenían transacciones, validaciones de negocio, y lógica inline (generación de token, TTL de invitación). No había repositorios de escritura.
+
+**Decisión post-ejecución**: mover toda interacción con DB a `src/repositories/`. Las actions quedaron con solo: auth (`requireRole`), validación Zod, catch de `BusinessError` → mensaje de usuario, y `revalidateTag`.
+
+**Estructura resultante**:
+```
+src/lib/db.ts          → cliente Prisma + forOrg() (tenant isolation)
+src/lib/errors.ts      → BusinessError(code, meta?)
+src/repositories/      → lecturas (unstable_cache) + escrituras (transacciones + audit log)
+actions.ts             → auth + Zod + catch BusinessError + revalidateTag
+pages/                 → solo llamadas a repos de lectura, sin imports de @/lib/db
+```
+
+**Regla para el futuro**: ningún archivo fuera de `src/repositories/` debe importar `@/lib/db` en el área de features (excepción: `src/auth.ts` y `src/lib/auth-onboarding.ts` por ser configuración del framework). Ver `docs/adr/0002-repository-layer.md`.
+
+---
+
+### 6. `forOrg()` pierde los generics de Prisma con `include` / `select`
+
+**Síntoma**: al mover queries con `include` a los repositorios usando `forOrg()`, TypeScript no infería correctamente el tipo del resultado. La propiedad `grupoScout` incluida no aparecía en el tipo devuelto.
+
+**Causa**: `forOrg()` retorna un wrapper genérico que esparce `args` en el query de Prisma, pero pierde los generic types condicionales de Prisma (que determinan el tipo de retorno según `include`/`select`).
+
+**Fix**: en repositorios que necesitan `include` o `select` tipados, usar `prisma.*` directamente con `organizationId` explícito en el `where`. `forOrg()` sigue siendo válido para queries simples sin `include`.
+
+**Regla para el futuro**: `forOrg()` = tenant isolation garantizado para queries sin relaciones. Para queries con `include`/`select`, usar `prisma.*` con `where: { organizationId }` explícito.
