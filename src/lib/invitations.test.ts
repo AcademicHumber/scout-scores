@@ -3,12 +3,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 const mockUpdateMany = vi.fn()
 
 vi.mock("@/lib/db", () => ({
-  forOrg: vi.fn(() => ({
+  prisma: {
     invitation: { updateMany: mockUpdateMany },
-  })),
+  },
 }))
 
-import { markInvitationsExpired } from "@/lib/invitations"
+import { markInvitationsExpired } from "@/repositories/invitation.repo"
 
 beforeEach(() => vi.clearAllMocks())
 

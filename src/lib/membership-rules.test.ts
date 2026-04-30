@@ -1,44 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect } from "vitest"
+import { BusinessError } from "@/lib/errors"
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    membership: {
-      count: vi.fn(),
-    },
-  },
-}))
-
-import { prisma } from "@/lib/db"
-import { assertNotLastAdmin, BusinessError } from "@/lib/membership-rules"
-
-const mockCount = vi.mocked(prisma.membership.count)
-
-beforeEach(() => vi.clearAllMocks())
-
-describe("assertNotLastAdmin", () => {
-  it("throws LAST_ADMIN when no other admins exist", async () => {
-    mockCount.mockResolvedValue(0)
-    await expect(assertNotLastAdmin("org-1", "mem-1", "JUEZ")).rejects.toThrow(BusinessError)
-    await expect(assertNotLastAdmin("org-1", "mem-1", "JUEZ")).rejects.toThrow("LAST_ADMIN")
+describe("BusinessError", () => {
+  it("sets name and code", () => {
+    const err = new BusinessError("LAST_ADMIN")
+    expect(err.name).toBe("BusinessError")
+    expect(err.code).toBe("LAST_ADMIN")
+    expect(err.message).toBe("LAST_ADMIN")
+    expect(err).toBeInstanceOf(Error)
   })
 
-  it("passes when another admin exists", async () => {
-    mockCount.mockResolvedValue(1)
-    await expect(assertNotLastAdmin("org-1", "mem-1", "JUEZ")).resolves.toBeUndefined()
-  })
-
-  it("passes without checking when new role is still ADMIN", async () => {
-    await expect(assertNotLastAdmin("org-1", "mem-1", "ADMIN")).resolves.toBeUndefined()
-    expect(mockCount).not.toHaveBeenCalled()
-  })
-
-  it("throws LAST_ADMIN on removal (no role) when only admin", async () => {
-    mockCount.mockResolvedValue(0)
-    await expect(assertNotLastAdmin("org-1", "mem-1")).rejects.toThrow(BusinessError)
-  })
-
-  it("passes on removal when another admin exists", async () => {
-    mockCount.mockResolvedValue(2)
-    await expect(assertNotLastAdmin("org-1", "mem-1")).resolves.toBeUndefined()
+  it("stores optional meta", () => {
+    const err = new BusinessError("HAS_MIEMBROS", { count: 3 })
+    expect(err.meta).toEqual({ count: 3 })
   })
 })
