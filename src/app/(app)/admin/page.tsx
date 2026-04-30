@@ -1,18 +1,18 @@
 import { requireRole } from "@/lib/auth-helpers"
-import { forOrg } from "@/lib/db"
-import { markInvitationsExpired } from "@/lib/invitations"
+import { countGrupos } from "@/repositories/grupo.repo"
+import { countMemberships } from "@/repositories/membership.repo"
+import { markInvitationsExpired, countPendingInvitations } from "@/repositories/invitation.repo"
 import Link from "next/link"
 import messages from "@/messages/es.json"
 
 export default async function AdminPage() {
   const org = await requireRole(["ADMIN"])
   await markInvitationsExpired(org.organizationId)
-  const repo = forOrg(org.organizationId)
 
   const [grupos, miembros, invsPendientes] = await Promise.all([
-    repo.grupoScout.count(),
-    repo.membership.count(),
-    repo.invitation.count({ where: { status: "PENDING" } }),
+    countGrupos(org.organizationId),
+    countMemberships(org.organizationId),
+    countPendingInvitations(org.organizationId),
   ])
 
   const cards = [

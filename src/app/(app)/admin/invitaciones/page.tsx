@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth-helpers"
-import { forOrg, prisma } from "@/lib/db"
-import { markInvitationsExpired } from "@/lib/invitations"
+import { listGrupos } from "@/repositories/grupo.repo"
+import { listInvitations } from "@/repositories/invitation.repo"
+import { markInvitationsExpired } from "@/repositories/invitation.repo"
 import { NewInvitationForm } from "@/components/admin/NewInvitationForm"
 import { RevokeButton } from "./RevokeButton"
 import { headers } from "next/headers"
@@ -30,12 +31,8 @@ export default async function InvitacionesPage() {
   await markInvitationsExpired(org.organizationId)
 
   const [invitations, grupos, headersList] = await Promise.all([
-    prisma.invitation.findMany({
-      where: { organizationId: org.organizationId },
-      include: { grupoScout: { select: { nombre: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
-    forOrg(org.organizationId).grupoScout.findMany({ orderBy: { nombre: "asc" } }),
+    listInvitations(org.organizationId),
+    listGrupos(org.organizationId),
     headers(),
   ])
 

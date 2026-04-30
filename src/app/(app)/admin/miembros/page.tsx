@@ -1,22 +1,15 @@
 import { requireRole } from "@/lib/auth-helpers"
-import { forOrg, prisma } from "@/lib/db"
+import { listMembershipsWithUsers } from "@/repositories/membership.repo"
+import { listGrupos } from "@/repositories/grupo.repo"
 import { MembershipRow } from "@/components/admin/MembershipRow"
 import messages from "@/messages/es.json"
 
 export default async function MiembrosPage() {
   const org = await requireRole(["ADMIN"])
-  const repo = forOrg(org.organizationId)
 
   const [memberships, grupos] = await Promise.all([
-    prisma.membership.findMany({
-      where: { organizationId: org.organizationId },
-      include: {
-        user: { select: { name: true, email: true, image: true } },
-        grupoScout: { select: { nombre: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    repo.grupoScout.findMany({ orderBy: { nombre: "asc" } }),
+    listMembershipsWithUsers(org.organizationId),
+    listGrupos(org.organizationId),
   ])
 
   return (

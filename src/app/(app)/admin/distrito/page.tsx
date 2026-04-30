@@ -1,14 +1,11 @@
 import { requireRole } from "@/lib/auth-helpers"
-import { prisma } from "@/lib/db"
+import { findDistrito } from "@/repositories/distrito.repo"
 import { DistritoForm } from "./DistritoForm"
 import messages from "@/messages/es.json"
 
 export default async function DistritoPage() {
   const org = await requireRole(["ADMIN"])
-  const organization = await prisma.organization.findUniqueOrThrow({
-    where: { id: org.organizationId },
-    select: { nombre: true, slug: true },
-  })
+  const organization = await findDistrito(org.organizationId)
 
   return (
     <div className="max-w-lg">

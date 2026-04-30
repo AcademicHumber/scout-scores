@@ -1,14 +1,12 @@
 import { requireRole } from "@/lib/auth-helpers"
-import { forOrg } from "@/lib/db"
+import { listGrupos } from "@/repositories/grupo.repo"
 import { GrupoCreateForm } from "./GrupoCreateForm"
 import Link from "next/link"
 import messages from "@/messages/es.json"
 
 export default async function GruposPage() {
   const org = await requireRole(["ADMIN"])
-  const grupos = await forOrg(org.organizationId).grupoScout.findMany({
-    orderBy: { nombre: "asc" },
-  })
+  const grupos = await listGrupos(org.organizationId)
 
   return (
     <div className="space-y-6">

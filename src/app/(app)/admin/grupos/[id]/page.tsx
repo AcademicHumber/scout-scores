@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth-helpers"
-import { forOrg } from "@/lib/db"
+import { findGrupoById } from "@/repositories/grupo.repo"
 import { GrupoEditForm } from "./GrupoEditForm"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -11,7 +11,7 @@ interface Props {
 export default async function GrupoEditPage({ params }: Props) {
   const { id } = await params
   const org = await requireRole(["ADMIN"])
-  const grupo = await forOrg(org.organizationId).grupoScout.findFirst({ where: { id } })
+  const grupo = await findGrupoById(org.organizationId, id)
 
   if (!grupo) notFound()
 
