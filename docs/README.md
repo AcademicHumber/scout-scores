@@ -33,3 +33,4 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 ## ADRs
 
 - [ADR-0001 — Arquitectura en dos capas: scoring primero, personas después](adr/0001-arquitectura-en-capas.md)
+- [ADR-0002 — Capa de repositorios con unstable_cache y revalidateTag](adr/0002-repository-layer.md)
