@@ -1,5 +1,5 @@
 "use client"
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { updateMembership, removeMembership } from "@/app/(app)/admin/miembros/actions"
 import messages from "@/messages/es.json"
 
@@ -32,16 +32,25 @@ export function MembershipRow({ membership, grupos, currentUserId }: Props) {
   const [updateState, updateAction, updatePending] = useActionState(updateMembership, null)
   const [removeState, removeAction, removePending] = useActionState(removeMembership, null)
 
-  // Controlled state para los selects: React 19 resetea los inputs no controlados
-  // automáticamente al completar el form action, lo que haría volver al valor original.
   const [role, setRole] = useState(membership.role)
   const [grupoScoutId, setGrupoScoutId] = useState(membership.grupoScoutId ?? "")
+  // Tracks the last successfully saved values so isDirty compares against what's in DB,
+  // not against the original props (which don't update since we removed revalidateTag on updates).
+  const [savedRole, setSavedRole] = useState(membership.role)
+  const [savedGrupoScoutId, setSavedGrupoScoutId] = useState(membership.grupoScoutId ?? "")
 
-  // Sincronizar cuando el Server Component re-renderiza con datos frescos de DB
+  const isDirty = role !== savedRole || grupoScoutId !== savedGrupoScoutId
+
+  // Sync from action result, not from props: props can be stale due to Next.js Router Cache.
   useEffect(() => {
-    setRole(membership.role)
-    setGrupoScoutId(membership.grupoScoutId ?? "")
-  }, [membership.role, membership.grupoScoutId])
+    if (updateState && "membership" in updateState && updateState.membership) {
+      const { role: newRole, grupoScoutId: newGrupo } = updateState.membership
+      setRole(newRole)
+      setGrupoScoutId(newGrupo ?? "")
+      setSavedRole(newRole)
+      setSavedGrupoScoutId(newGrupo ?? "")
+    }
+  }, [updateState])
 
   const isCurrentUser = membership.userId === currentUserId
 
@@ -105,15 +114,20 @@ export function MembershipRow({ membership, grupos, currentUserId }: Props) {
               <option key={g.id} value={g.id}>{g.nombre}</option>
             ))}
           </select>
-          <button
-            type="submit"
-            disabled={updatePending}
-            className="rounded bg-brand px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
-          >
-            {updatePending ? "..." : messages.admin.miembros.save}
-          </button>
-          {updateState?.error && (
+          {isDirty && (
+            <button
+              type="submit"
+              disabled={updatePending}
+              className="rounded bg-brand px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {updatePending ? "..." : messages.admin.miembros.save}
+            </button>
+          )}
+          {updateState && "error" in updateState && updateState.error && (
             <span className="text-xs text-red-600">{updateState.error}</span>
+          )}
+          {!isDirty && updateState && "success" in updateState && updateState.success && (
+            <span className="text-xs text-green-600">{messages.admin.miembros.saved}</span>
           )}
         </form>
       </td>

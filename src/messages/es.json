@@ -112,6 +112,7 @@
       },
       "edit": "Editar",
       "save": "Guardar",
+      "saved": "Guardado",
       "remove": "Expulsar",
       "removeConfirm": "¿Expulsar a {{nombre}} del distrito?",
       "errors": {
