@@ -81,6 +81,7 @@ export async function countScoreTemplates(
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function isTemplateLocked(_templateId: string): Promise<boolean> {
   // Plan 4b activará esto cuando exista el modelo Posta.
   return false

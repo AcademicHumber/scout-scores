@@ -8,6 +8,7 @@ const nav = [
   { href: "/admin/grupos", label: messages.admin.nav.grupos },
   { href: "/admin/invitaciones", label: messages.admin.nav.invitaciones },
   { href: "/admin/miembros", label: messages.admin.nav.miembros },
+  { href: "/admin/plantillas", label: messages.admin.nav.plantillas },
 ]
 
 export function AdminNav() {

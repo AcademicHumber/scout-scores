@@ -50,7 +50,8 @@
       "distrito": "Distrito",
       "grupos": "Grupos Scouts",
       "invitaciones": "Invitaciones",
-      "miembros": "Miembros"
+      "miembros": "Miembros",
+      "plantillas": "Plantillas"
     },
     "landing": {
       "title": "Administración del distrito",
@@ -129,6 +130,101 @@
       "emailMismatch": {
         "title": "Esa invitación es para otra cuenta",
         "subtitle": "La invitación es para {{expected}}, pero estás logueado como {{got}}."
+      }
+    },
+    "plantillas": {
+      "title": "Plantillas de puntaje",
+      "subtitle": "Biblioteca de plantillas del distrito. Reutilizables por evento.",
+      "empty": "Aún no hay plantillas. Creá la primera para empezar.",
+      "newButton": "Nueva plantilla",
+      "count": "{{count}} plantilla",
+      "countPlural": "{{count}} plantillas",
+      "filters": {
+        "all": "Todas",
+        "criterios": "Por criterios",
+        "puntajeUnico": "Puntaje único",
+        "categoria": "Categoría",
+        "allCategorias": "Todas las categorías",
+        "showArchived": "Mostrar archivadas"
+      },
+      "categoria": {
+        "COMPETICION": "Competición",
+        "CONSTRUCCION": "Construcción",
+        "COCINA": "Cocina",
+        "OTRO": "Otra"
+      },
+      "modo": {
+        "CRITERIOS": "Por criterios",
+        "PUNTAJE_UNICO": "Puntaje único"
+      },
+      "badges": {
+        "archivada": "Archivada",
+        "dobleEscala": "Doble escala"
+      },
+      "criteriosTipo": {
+        "PUNTUABLE": "Puntuable",
+        "DESEMPATE": "Desempate"
+      },
+      "form": {
+        "nombre": "Nombre",
+        "descripcion": "Descripción (opcional)",
+        "categoria": "Categoría",
+        "modo": "Modo de puntaje",
+        "modoCriterios": "Por criterios (suma)",
+        "modoPuntajeUnico": "Puntaje único (un valor por posta)",
+        "valoresValidos": "Valores válidos",
+        "valoresValidosHelp": "El juez elegirá entre estos valores. Aplica al puntaje único o a los criterios puntuables. Mínimo 2.",
+        "addValor": "Agregar valor",
+        "valoresValidosDesempateToggle": "Usar otra escala para criterios de desempate",
+        "valoresValidosDesempate": "Valores válidos de desempate",
+        "valoresValidosDesempateHelp": "Los criterios de desempate usarán esta escala. Si no la activás, comparten la escala principal.",
+        "criterios": "Criterios",
+        "criteriosDesempate": "Criterios de desempate (opcionales)",
+        "criterioNombre": "Criterio",
+        "criterioTipo": "Tipo",
+        "criterioPUNTUABLE": "Puntuable (suma al total)",
+        "criterioDESEMPATE": "Desempate (no suma)",
+        "criterioEscalaPrincipal": "escala principal",
+        "criterioEscalaDesempate": "escala de desempate",
+        "criterioDescripcion": "Descripción del criterio (opcional)",
+        "addCriterio": "Agregar criterio",
+        "addCriterioDesempate": "Agregar criterio de desempate",
+        "removeValor": "Quitar",
+        "removeCriterio": "Eliminar",
+        "submit": "Crear plantilla",
+        "selectCategoria": "Seleccioná una categoría"
+      },
+      "detail": {
+        "metadataTitle": "Información general",
+        "coreTitle": "Configuración de puntaje",
+        "criteriosTitle": "Criterios",
+        "criteriosDesempateTitle": "Criterios de desempate (opcionales)",
+        "escalaLabel": "Escala",
+        "escalaDesempateLabel": "Escala de desempate",
+        "hereda": "hereda escala principal",
+        "lockedNotice": "Esta plantilla está en uso en al menos un evento. Para cambiar criterios o escala, duplicala primero.",
+        "modoIncompatibleNotice": "Para cambiar a puntaje único, primero eliminá los criterios puntuables:",
+        "duplicateButton": "Duplicar",
+        "archiveButton": "Archivar",
+        "unarchiveButton": "Desarchivar",
+        "deleteButton": "Eliminar",
+        "deleteConfirm": "¿Eliminar la plantilla \"{{nombre}}\"? Esta acción es irreversible.",
+        "saveMetadata": "Guardar",
+        "saveCore": "Guardar configuración",
+        "saved": "Guardado",
+        "moveUp": "Subir",
+        "moveDown": "Bajar"
+      },
+      "errors": {
+        "nombreDuplicado": "Ya existe una plantilla con ese nombre",
+        "escalaInvalida": "La escala debe tener al menos 2 valores ordenados ascendentemente sin repetir",
+        "escalaDesempateInvalida": "La escala de desempate debe tener al menos 2 valores ordenados ascendentemente sin repetir",
+        "modoIncompatible": "El cambio de modo no es válido para esta plantilla",
+        "puntajeUnicoSoloDesempate": "Las plantillas con puntaje único solo aceptan criterios de desempate",
+        "criterioNotFound": "Criterio no encontrado",
+        "inUse": "No se puede modificar: la plantilla está en uso en un evento",
+        "lastValor": "Una plantilla debe tener al menos 2 valores en la escala",
+        "notFound": "Plantilla no encontrada"
       }
     },
     "errors": {
