@@ -35,6 +35,23 @@ enum CategoriaScout {
   DIRIGENTE
 }
 
+enum ScoreTemplateModo {
+  CRITERIOS
+  PUNTAJE_UNICO
+}
+
+enum ScoreTemplateCategoria {
+  COMPETICION
+  CONSTRUCCION
+  COCINA
+  OTRO
+}
+
+enum TemplateCriterionTipo {
+  PUNTUABLE
+  DESEMPATE
+}
+
 // ──────────────────────────────────────────────────────────────
 // Tenant raíz
 // ──────────────────────────────────────────────────────────────
@@ -46,11 +63,12 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  gruposScouts GrupoScout[]
-  memberships  Membership[]
-  invitations  Invitation[]
-  miembros     MiembroScout[]
-  auditLogs    AuditLog[]
+  gruposScouts   GrupoScout[]
+  memberships    Membership[]
+  invitations    Invitation[]
+  miembros       MiembroScout[]
+  auditLogs      AuditLog[]
+  scoreTemplates ScoreTemplate[]
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -200,6 +218,51 @@ model MiembroScout {
   @@index([organizationId])
   @@index([organizationId, grupoScoutId])
   @@index([userId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// ScoreTemplate — biblioteca de plantillas reusables del distrito
+// ──────────────────────────────────────────────────────────────
+
+model ScoreTemplate {
+  id                      String                 @id @default(cuid(2))
+  organizationId          String
+  nombre                  String
+  descripcion             String?
+  modo                    ScoreTemplateModo
+  categoria               ScoreTemplateCategoria
+  valoresValidos          Decimal[]
+  valoresValidosDesempate Decimal[]
+  archivedAt              DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  criterios    TemplateCriterion[]
+
+  @@unique([organizationId, nombre])
+  @@index([organizationId])
+  @@index([organizationId, archivedAt])
+}
+
+// ──────────────────────────────────────────────────────────────
+// TemplateCriterion — criterio dentro de una plantilla
+// ──────────────────────────────────────────────────────────────
+
+model TemplateCriterion {
+  id          String                @id @default(cuid(2))
+  templateId  String
+  nombre      String
+  descripcion String?
+  tipo        TemplateCriterionTipo
+  orden       Int
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  template ScoreTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, orden])
+  @@index([templateId])
 }
 
 // ──────────────────────────────────────────────────────────────
