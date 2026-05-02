@@ -587,8 +587,8 @@ Pre-requisito: distrito con ADMIN logueado.
 1. `/admin` → click tarjeta "Plantillas" → vacía.
 2. Click "Nueva plantilla". Categoría = COMPETICION.
 3. Defaults aparecen: modo=`PUNTAJE_UNICO`, `valoresValidos = [5,7,10]`, **toggle de escala secundaria activado con `valoresValidosDesempate = [0,1,2,3]`**.
-4. Cambiar nombre a "Carrera de obstáculos". Agregar tres criterios DESEMPATE: "Espíritu scout", "Uniforme", "Respeto a las reglas". El select de tipo está deshabilitado y fijo en DESEMPATE.
-5. Submit. Redirige a detalle. Ver: badge "PUNTAJE_UNICO", badge "Doble escala", escala principal `5 / 7 / 10`, escala de desempate `0 / 1 / 2 / 3`, sección "Criterios de desempate" con las 3 filas, cada una etiquetada "escala de desempate".
+4. Cambiar nombre a "Carrera de obstáculos". Agregar tres criterios DESEMPATE: "Espíritu scout", "Uniforme", "Respeto a las reglas". El campo de tipo aparece como texto fijo "Desempate (no suma)" (no es un select editable — en modo PUNTAJE_UNICO el tipo siempre es DESEMPATE).
+5. Submit. Redirige a detalle. Ver: badge "PUNTAJE_UNICO", badge "Doble escala", escala principal `5 / 7 / 10`, escala de desempate `0 / 1 / 2 / 3`, sección "Criterios de desempate" con las 3 filas. En pantallas medianas y grandes, cada fila muestra junto al tipo los valores de escala que aplica (`0 / 1 / 2 / 3` para las filas DESEMPATE).
 
 **Escenario 2 — Crear plantilla CONSTRUCCION con criterios**:
 1. Nueva plantilla. Categoría = CONSTRUCCION.
@@ -607,14 +607,15 @@ Pre-requisito: distrito con ADMIN logueado.
 5. Confirmar en DB que `revalidateTag` NO se llamó (verificar comportamiento de la lista en otra pestaña).
 
 **Escenario 4 — Reordenar criterios**:
-1. En "Construcción pionerismo", click ↓ en el primer criterio.
-2. Ver swap inmediato; recargar → orden persistido.
-3. Click ↑ en último → vuelve al orden original.
+1. En "Construcción pionerismo", click ▼ en el primer criterio.
+2. La página se actualiza y muestra el nuevo orden (revalidateTag invalida la cache tras el reorden).
+3. Recargar → orden persistido.
+4. Click ▲ en el criterio que quedó último → vuelve al orden original.
 
 **Escenario 5 — Validación de escala**:
-1. Crear plantilla con escala `[5]` (un solo valor) → error "La escala debe tener al menos 2 valores...".
-2. Crear con `[10, 5]` → mismo error (desordenada).
-3. Crear con `[5, 5, 10]` → mismo error (duplicado).
+1. Crear plantilla con escala `[5]` (un solo valor) → error "La escala debe tener entre 2 y 20 valores" (validación Zod).
+2. Crear con `[10, 5]` (desordenada) → error "La escala debe tener al menos 2 valores ordenados ascendentemente sin repetir" (validación del repositorio).
+3. Crear con `[5, 5, 10]` (duplicado) → mismo error que el paso 2.
 
 **Escenario 6 — Nombre duplicado**:
 1. Crear segunda plantilla con nombre "Construcción pionerismo" → error "Ya existe una plantilla con ese nombre".
@@ -626,10 +627,10 @@ Pre-requisito: distrito con ADMIN logueado.
 4. Editar la copia no afecta la original.
 
 **Escenario 8 — Archivar / desarchivar**:
-1. Archivar "Construcción pionerismo (copia)".
-2. Lista por default no la muestra.
-3. Toggle "Mostrar archivadas" → aparece con badge "Archivada".
-4. Desarchivar → vuelve a la lista activa.
+1. Desde el detalle de "Construcción pionerismo (copia)", click "Archivar". La página permanece en el detalle; el badge "Archivada" aparece en el header.
+2. Navegar a `/admin/plantillas` → la lista activa no la muestra (la cache se invalidó con `revalidateTag` tras archivar).
+3. Click "Mostrar archivadas" → aparece en la lista con badge "Archivada".
+4. Entrar al detalle → click "Desarchivar" → badge "Archivada" desaparece. Navegar a la lista activa → vuelve a aparecer.
 
 **Escenario 9 — Eliminar**:
 1. Eliminar la copia → confirmación → desaparece de la lista.
@@ -650,22 +651,22 @@ Pre-requisito: distrito con ADMIN logueado.
 
 **Escenario 13 — Cambio de modo bloqueado por criterios PUNTUABLE**:
 1. Crear plantilla CRITERIOS "Demo bloqueo" con 2 criterios PUNTUABLE y 1 DESEMPATE.
-2. En el detalle, cambiar modo a `PUNTAJE_UNICO`.
-3. La action retorna error con `criteriosBloqueantes: ["Solidez estructural", "Estética y creatividad"]`.
-4. UI muestra panel con notice "Para cambiar a puntaje único, primero eliminá los criterios puntuables: Solidez estructural, Estética y creatividad". El modo no cambió.
+2. En el detalle, cambiar modo a `PUNTAJE_UNICO` y hacer click en "Guardar configuración".
+3. La action retorna `{ error: "MODO_INCOMPATIBLE", criteriosBloqueantes: "NombreCrit1, NombreCrit2" }` (string con los nombres separados por coma).
+4. UI muestra panel ámbar con el texto "Para cambiar a puntaje único, primero eliminá los criterios puntuables: **NombreCrit1, NombreCrit2**". El modo no cambió.
 5. Eliminar manualmente los 2 criterios PUNTUABLE.
 6. Reintentar cambio a `PUNTAJE_UNICO` → éxito; el criterio DESEMPATE persiste.
 
 **Escenario 14 — Bloqueo `addCriterio` con tipo PUNTUABLE en PUNTAJE_UNICO**:
-1. En "Carrera de obstáculos" (PUNTAJE_UNICO), inspeccionar el form `AddCriterioForm` → select de tipo deshabilitado y fijo en DESEMPATE.
-2. Forzar request con `tipo = PUNTUABLE` (vía DevTools network replay) → action retorna `BusinessError("MODO_INCOMPATIBLE")` con mensaje "Las plantillas con puntaje único solo aceptan criterios de desempate".
+1. En "Carrera de obstáculos" (PUNTAJE_UNICO), inspeccionar el form `AddCriterioForm` → el select de tipo muestra solo "Desempate (no suma)" y está deshabilitado (no se puede cambiar a PUNTUABLE).
+2. Forzar request con `tipo = PUNTUABLE` (vía DevTools network replay) → action retorna `{ error: "Las plantillas con puntaje único solo aceptan criterios de desempate" }`.
 
 **Escenario 15 — Escala secundaria opcional vs heredada**:
 1. Crear plantilla CRITERIOS "Cocina mixta" con `valoresValidos = [5,7,10]` y toggle de escala secundaria **apagado**. Agregar 1 PUNTUABLE y 1 DESEMPATE.
-2. En el detalle, cada fila de criterio muestra "escala 5/7/10" (la principal aplica a ambas, porque la secundaria está vacía).
-3. Activar toggle de escala secundaria en `TemplateCoreForm`, setear `[0, 1, 2]`, guardar.
-4. Ver badge "Doble escala". La fila DESEMPATE ahora muestra "escala de desempate 0/1/2"; la PUNTUABLE sigue mostrando "escala 5/7/10".
-5. Apagar toggle (envía `[]`). Badge "Doble escala" desaparece. La fila DESEMPATE vuelve a mostrar "escala 5/7/10".
+2. En el detalle, cada fila de criterio muestra junto al tipo los valores `5 / 7 / 10` (la escala principal aplica a ambas porque la secundaria está vacía). Este indicador solo es visible en pantallas medianas y grandes (`sm+`).
+3. Activar toggle de escala secundaria en la sección "Configuración de puntaje", agregar valores `[0, 1, 2]`, click "Guardar configuración".
+4. Badge "Doble escala" aparece en el header. La fila DESEMPATE ahora muestra `0 / 1 / 2` junto al tipo; la PUNTUABLE sigue mostrando `5 / 7 / 10`.
+5. Volver a "Configuración de puntaje", apagar toggle (envía `[]`), guardar. Badge "Doble escala" desaparece. Ambas filas muestran `5 / 7 / 10`.
 
 **Escenario 16 — Validación de escala secundaria**:
 1. Activar toggle de escala secundaria con `[5]` (un solo valor) → error "La escala de desempate debe tener al menos 2 valores...".
