@@ -1,5 +1,5 @@
 "use client"
-import { useActionState, useState } from "react"
+import { useState, useTransition } from "react"
 import { createTemplate } from "@/app/(app)/admin/plantillas/actions"
 import messages from "@/messages/es.json"
 
@@ -37,7 +37,8 @@ const CATEGORIA_DEFAULTS: Record<
 }
 
 export function TemplateForm() {
-  const [state, action, pending] = useActionState(createTemplate, null)
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   const [nombre, setNombre] = useState("")
   const [descripcion, setDescripcion] = useState("")
@@ -97,17 +98,40 @@ export function TemplateForm() {
 
   const escalaDesempateFinal = usarEscalaDesempate ? valoresDesempate : []
 
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+
+    const fd = new FormData()
+    fd.set("nombre", nombre)
+    if (descripcion) fd.set("descripcion", descripcion)
+    fd.set("modo", modo)
+    fd.set("categoria", categoria)
+    valoresValidos.forEach((v) => fd.append("valoresValidos", v))
+    escalaDesempateFinal.forEach((v) => fd.append("valoresValidosDesempate", v))
+    if (escalaDesempateFinal.length === 0) fd.append("valoresValidosDesempate", "")
+    criterios.forEach((c, idx) => {
+      fd.append(`criterios[${idx}][nombre]`, c.nombre)
+      fd.append(`criterios[${idx}][tipo]`, c.tipo)
+      if (c.descripcion) fd.append(`criterios[${idx}][descripcion]`, c.descripcion)
+    })
+
+    startTransition(async () => {
+      const result = await createTemplate(null, fd)
+      if (result?.error) setError(result.error)
+    })
+  }
+
   return (
-    <form action={action} className="space-y-6">
-      {state?.error && (
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       {/* Nombre */}
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">{m.form.nombre}</label>
         <input
-          name="nombre"
           required
           minLength={2}
           maxLength={100}
@@ -121,7 +145,6 @@ export function TemplateForm() {
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">{m.form.descripcion}</label>
         <textarea
-          name="descripcion"
           maxLength={500}
           rows={2}
           value={descripcion}
@@ -134,7 +157,6 @@ export function TemplateForm() {
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">{m.form.categoria}</label>
         <select
-          name="categoria"
           required
           value={categoria}
           onChange={(e) => handleCategoriaChange(e.target.value)}
@@ -157,7 +179,6 @@ export function TemplateForm() {
             <label key={m_} className="flex cursor-pointer items-center gap-3">
               <input
                 type="radio"
-                name="modo"
                 value={m_}
                 checked={modo === m_}
                 onChange={() => setModo(m_)}
@@ -199,10 +220,6 @@ export function TemplateForm() {
             {m.form.addValor}
           </button>
         </div>
-        {/* Hidden inputs para el form */}
-        {valoresValidos.map((v, i) => (
-          <input key={i} type="hidden" name="valoresValidos" value={v} />
-        ))}
       </div>
 
       {/* Toggle escala secundaria */}
@@ -247,14 +264,6 @@ export function TemplateForm() {
             </div>
           </div>
         )}
-
-        {/* Hidden inputs para escala desempate (vacíos si no se usa = [] heredar) */}
-        {escalaDesempateFinal.map((v, i) => (
-          <input key={i} type="hidden" name="valoresValidosDesempate" value={v} />
-        ))}
-        {escalaDesempateFinal.length === 0 && (
-          <input type="hidden" name="valoresValidosDesempate" value="" />
-        )}
       </div>
 
       {/* Criterios */}
@@ -274,23 +283,18 @@ export function TemplateForm() {
                       value={c.nombre}
                       onChange={(e) => updateCriterio(idx, "nombre", e.target.value)}
                       className="w-full rounded border px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                      name={`criterios[${idx}][nombre]`}
                     />
                   </div>
                   <div>
                     {modo === "PUNTAJE_UNICO" ? (
-                      <>
-                        <input type="hidden" name={`criterios[${idx}][tipo]`} value="DESEMPATE" />
-                        <span className="inline-flex items-center rounded border bg-gray-100 px-2 py-1.5 text-sm text-gray-400">
-                          {m.form.criterioDESEMPATE}
-                        </span>
-                      </>
+                      <span className="inline-flex items-center rounded border bg-gray-100 px-2 py-1.5 text-sm text-gray-400">
+                        {m.form.criterioDESEMPATE}
+                      </span>
                     ) : (
                       <select
                         value={c.tipo}
                         onChange={(e) => updateCriterio(idx, "tipo", e.target.value)}
                         className="rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                        name={`criterios[${idx}][tipo]`}
                       >
                         <option value="PUNTUABLE">{m.form.criterioPUNTUABLE}</option>
                         <option value="DESEMPATE">{m.form.criterioDESEMPATE}</option>
@@ -306,7 +310,6 @@ export function TemplateForm() {
                   value={c.descripcion}
                   onChange={(e) => updateCriterio(idx, "descripcion", e.target.value)}
                   className="w-full rounded border px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                  name={`criterios[${idx}][descripcion]`}
                 />
               </div>
             ))}
@@ -321,10 +324,10 @@ export function TemplateForm() {
       <div className="pt-2">
         <button
           type="submit"
-          disabled={pending}
+          disabled={isPending}
           className="rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
         >
-          {pending ? "Creando..." : m.form.submit}
+          {isPending ? "Creando..." : m.form.submit}
         </button>
       </div>
     </form>
