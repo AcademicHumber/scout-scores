@@ -556,5 +556,5 @@ export async function reorderCriterio(
       },
     })
   })
-  // No revalidateTag: reordenar no cambia la estructura de la lista de criterios.
+  revalidateTag(cacheTags.scoreTemplates(organizationId))
 }
