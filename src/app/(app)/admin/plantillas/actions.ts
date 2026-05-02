@@ -60,7 +60,7 @@ export async function createTemplate(_prev: unknown, formData: FormData) {
 
   // Parsear valores desde FormData (arrays vienen como múltiples entries)
   const valoresValidos = formData.getAll("valoresValidos") as string[]
-  const valoresValidosDesempate = formData.getAll("valoresValidosDesempate") as string[]
+  const valoresValidosDesempate = (formData.getAll("valoresValidosDesempate") as string[]).filter(Boolean)
   const criteriosRaw: { nombre: string; descripcion?: string; tipo: string }[] = []
 
   // Criterios vienen como criterios[0][nombre], criterios[0][tipo], etc.
@@ -107,6 +107,7 @@ export async function createTemplate(_prev: unknown, formData: FormData) {
     )
     newId = result.id
   } catch (e) {
+    console.log(e)
     if (e instanceof BusinessError) {
       if (e.code === "NOMBRE_DUPLICADO") return { error: "Ya existe una plantilla con ese nombre" }
       if (e.code === "ESCALA_INVALIDA") return { error: "La escala debe tener al menos 2 valores ordenados ascendentemente sin repetir" }

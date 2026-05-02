@@ -272,18 +272,24 @@ export function TemplateForm() {
                     />
                   </div>
                   <div>
-                    <select
-                      value={c.tipo}
-                      onChange={(e) => updateCriterio(idx, "tipo", e.target.value)}
-                      disabled={modo === "PUNTAJE_UNICO"}
-                      className="rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand disabled:bg-gray-100 disabled:text-gray-400"
-                      name={`criterios[${idx}][tipo]`}
-                    >
-                      {modo !== "PUNTAJE_UNICO" && (
+                    {modo === "PUNTAJE_UNICO" ? (
+                      <>
+                        <input type="hidden" name={`criterios[${idx}][tipo]`} value="DESEMPATE" />
+                        <span className="inline-flex items-center rounded border bg-gray-100 px-2 py-1.5 text-sm text-gray-400">
+                          {m.form.criterioDESEMPATE}
+                        </span>
+                      </>
+                    ) : (
+                      <select
+                        value={c.tipo}
+                        onChange={(e) => updateCriterio(idx, "tipo", e.target.value)}
+                        className="rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+                        name={`criterios[${idx}][tipo]`}
+                      >
                         <option value="PUNTUABLE">{m.form.criterioPUNTUABLE}</option>
-                      )}
-                      <option value="DESEMPATE">{m.form.criterioDESEMPATE}</option>
-                    </select>
+                        <option value="DESEMPATE">{m.form.criterioDESEMPATE}</option>
+                      </select>
+                    )}
                   </div>
                   <button type="button" onClick={() => removeCriterio(idx)} className="text-gray-400 hover:text-red-500">
                     {m.form.removeCriterio}
