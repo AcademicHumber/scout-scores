@@ -197,7 +197,7 @@ export async function updateScoreTemplateMetadata(
       },
     })
   })
-  // No revalidateTag: mutación de valores, no estructural.
+  revalidateTag(cacheTags.scoreTemplates(organizationId))
 }
 
 type UpdateCoreData = {
@@ -251,7 +251,7 @@ export async function updateScoreTemplateCore(
       },
     })
   })
-  // No revalidateTag: mutación de valores, no estructural.
+  revalidateTag(cacheTags.scoreTemplates(organizationId))
 }
 
 export async function archiveScoreTemplate(
@@ -475,7 +475,7 @@ export async function updateCriterio(
     })
   })
 
-  // No revalidateTag: mutación de valores, no estructural.
+  revalidateTag(cacheTags.scoreTemplates(organizationId))
   return updated!
 }
 
