@@ -11,9 +11,9 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [03 — Auth con Google + onboarding multi-tenant](plans/03-auth-onboarding.md) ✓
 - [03b — React Best Practices (análisis Vercel skill)](plans/03b-react-best-practices.md) ✓
 - [03c — Design System: identidad de marca Scout](plans/03c-design-system.md) ✓
-- [04 — Gestión de invitaciones, memberships, grupos scouts y perfil del distrito](plans/04-invitaciones-memberships.md) _(borrador, pendiente de ejecución)_
-- 05 — Plantillas de puntaje _(pendiente)_
-- 06a — Eventos y ciclo de vida _(pendiente)_
+- [04 — Gestión de invitaciones, memberships, grupos scouts y perfil del distrito](plans/04-invitaciones-memberships.md) ✓
+- [05 — Plantillas de puntaje](plans/05-plantillas.md) ✓
+- 06a — Eventos y ciclo de vida _(pendiente — incluye ADR-0003 jerarquía Evento→Actividad→Posta)_
 - 06b — Postas, patrullas, asignación de jueces _(pendiente)_
 - 07a — Vista del juez (online) _(pendiente)_
 - 07b — PWA + cola offline + sync _(pendiente)_

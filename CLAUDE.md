@@ -96,6 +96,7 @@ Toda la planificación vive en `docs/` versionada con git:
 - `docs/plans/02-schema-nucleo-seed.md` — Plan 0b, ya ejecutado
 - `docs/plans/03-auth-onboarding.md` — Plan 1, ya ejecutado (incluye lecciones aprendidas)
 - `docs/plans/04-invitaciones-memberships.md` — Plan 4, ya ejecutado (incluye lecciones aprendidas sobre cache y repositorios)
+- `docs/plans/05-plantillas.md` — Plan 5, ya ejecutado (plantillas de puntaje, criterios PUNTUABLE/DESEMPATE, doble escala)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
 - `docs/adr/0002-repository-layer.md` — decisión de capa de repositorios con `unstable_cache` y `revalidateTag`
 - `docs/README.md` — índice de todos los planes y ADRs
@@ -116,4 +117,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 4 completado** (Gestión de invitaciones, memberships, grupos scouts y perfil del distrito — layout `/admin`, CRUD completo, deep link `/invite/[token]`, regla del último ADMIN, audit log).
 
-**Próximo: Plan 5** — Plantillas de puntaje (ScoreTemplate, criterios PUNTUABLE/DESEMPATE).
+**Plan 5 completado** (Plantillas de puntaje — `/admin/plantillas`, ScoreTemplate + TemplateCriterion, modos CRITERIOS/PUNTAJE_UNICO, escalas discretas con escala secundaria opcional para criterios DESEMPATE, archivado, duplicación, audit log).
+
+**Próximo: Plan 6a** — Eventos y ciclo de vida (incluye abrir ADR-0003 para jerarquía Evento → Actividad → Posta, que difiere del master plan original).

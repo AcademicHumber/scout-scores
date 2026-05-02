@@ -1,6 +1,6 @@
 # Plan 5 — Plantillas de puntaje (ScoreTemplate + TemplateCriterion)
 
-> **Estado**: 📋 Borrador (planeado 2026-05-01 con Opus). Pendiente de aprobación y ejecución.
+> **Estado**: ✅ Completado (planeado 2026-05-01 con Opus, ejecutado 2026-05-02 con Sonnet).
 
 ---
 
@@ -797,11 +797,7 @@ Ninguna decisión arquitectónica queda pendiente. Tareas operacionales antes (o
 
 | Hash | Mensaje |
 |---|---|
-| (pendiente) | `feat(schema): score templates con criterios y escala discreta` |
-| (pendiente) | `feat(repo): score-template con creación, edición y reordenamiento` |
-| (pendiente) | `feat(admin): listar plantillas con filtros por modo y categoría` |
-| (pendiente) | `feat(admin): crear plantillas con metadata y criterios iniciales` |
-| (pendiente) | `feat(admin): editor de plantillas con criterios reordenables` |
-| (pendiente) | `feat(admin): archivar, duplicar y eliminar plantillas` |
-| (pendiente) | `feat(admin): tarjeta y nav para plantillas` |
-| (pendiente) | `test(repo): score-template con cobertura de casos de borde` |
+| `0b3fc07` | `feat(schema): score templates con criterios y escala discreta` |
+| `3eff6f9` | `feat(admin): CRUD de plantillas de puntaje con escalas y criterios` |
+
+> Nota: los pasos 1–8 del plan se colapsaron en 2 commits (schema+repo y UI+copy) en lugar de uno por paso, para mantener los PRs atómicos y coherentes.
