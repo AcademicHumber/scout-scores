@@ -27,7 +27,7 @@ export function DistrictSwitcher() {
       aria-label="Cambiar de distrito"
     >
       {memberships.map((m) => (
-        <option key={m.organizationId} value={m.organizationId}>
+        <option key={m.organizationId} value={m.organizationId} className="text-black">
           {m.organizationNombre} ({m.role})
         </option>
       ))}
