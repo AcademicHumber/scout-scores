@@ -39,6 +39,8 @@ const CATEGORIA_DEFAULTS: Record<
 export function TemplateForm() {
   const [state, action, pending] = useActionState(createTemplate, null)
 
+  const [nombre, setNombre] = useState("")
+  const [descripcion, setDescripcion] = useState("")
   const [categoria, setCategoria] = useState("")
   const [modo, setModo] = useState<"CRITERIOS" | "PUNTAJE_UNICO">("CRITERIOS")
   const [valoresValidos, setValoresValidos] = useState<string[]>(["5", "7", "10"])
@@ -109,6 +111,8 @@ export function TemplateForm() {
           required
           minLength={2}
           maxLength={100}
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
           className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
       </div>
@@ -120,6 +124,8 @@ export function TemplateForm() {
           name="descripcion"
           maxLength={500}
           rows={2}
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
           className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
       </div>
