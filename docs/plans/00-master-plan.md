@@ -148,11 +148,12 @@ Esta regla se respeta para todo sub-plan posterior (0b, 1, 2, ...).
 - **Membership** — relación `User ↔ Organization` con `role`: `ADMIN | JUEZ | ESPECTADOR | JEFE_PATRULLA`. Opcionalmente `grupoScoutId` (para futura visualización filtrada por grupo y para que Jefe de Patrulla quede ligado a su grupo).
 - **Invitation** — email pre-registrado por admin con rol asignado y opcionalmente `grupoScoutId`, esperando que el invitado entre con Google.
 - **Event** — un evento del distrito. Estados: `BORRADOR → ACTIVO → CERRADO → PUBLICADO`.
+- **Actividad** — *[introducida en Plan 6a, ver ADR-0003]* bloque temático dentro de un evento con tipo (`COMPETICION | CONSTRUCCION | COCINA | OTRO`) y peso porcentual (`pesoRelativo: Decimal`). Las actividades de un evento suman 100% (validado al activar). Una actividad agrupa varias postas del mismo tipo temático.
 - **Patrulla** — equipo competidor, **definido por evento** (no persistente entre eventos). Tiene `grupoScoutId` obligatorio (siempre representa a un grupo del distrito), `nombre` libre, y `categoria` opcional (ej: lobatos / scouts / caminantes / rovers — el nombre del equipo varía con la edad).
 - **PatrullaLead** — relación opcional `Patrulla ↔ User` para que el rol Jefe de Patrulla vea sus resultados.
 - **ScoreTemplate** — plantilla reutilizable de puntuación, scope distrital. Modos: `CRITERIOS` o `PUNTAJE_UNICO`.
 - **TemplateCriterion** — un criterio dentro de una plantilla. Campo clave: `tipo: PUNTUABLE | DESEMPATE`. Los `DESEMPATE` (ej: comportamiento, espíritu scout) NO suman al total pero se usan para romper empates.
-- **Posta** — una actividad/estación dentro de un evento. Tiene una plantilla asignada y un peso (`weight`, default 1.0).
+- **Posta** — una estación dentro de una actividad *(no directamente de un evento — ver ADR-0003)*. Tiene una plantilla asignada y un peso (`weight`, default 1.0). Cuelga de `Actividad`, no de `Evento`.
 - **JudgeAssignment** — relación `Posta ↔ User` (1 juez por posta).
 - **ScoreSheet** — planilla cargada para un par `(Posta, Patrulla)`. Una sola por par.
 - **ScoreEntry** — valor cargado para un criterio dentro de una `ScoreSheet`.
@@ -164,9 +165,16 @@ Esta regla se respeta para todo sub-plan posterior (0b, 1, 2, ...).
 ### Reglas clave de scoring
 
 - **Total de patrulla en una posta**: suma de `ScoreEntry` de criterios `PUNTUABLE`, multiplicada por `Posta.weight`.
-- **Total de patrulla en el evento**: suma de los totales por posta.
-- **Empate**: se desempata por la suma de criterios `DESEMPATE` agregada por todas las postas. Si persiste, empate compartido en el ranking.
-- **Vistas filtradas por grupo**: el leaderboard puede mostrarse global (todas las patrullas del evento) o filtrado por `GrupoScout` para ver solo cómo le fue a un grupo específico.
+- **Total de patrulla en una actividad**: suma ponderada de los totales de las postas de esa actividad.
+- **Total de patrulla en el evento** *(jerarquía actualizada en ADR-0003)*:
+  ```
+  score_evento = Σ actividades (
+    actividad.pesoRelativo / 100
+    × Σ postas_de_actividad (posta.score_total × posta.weight)
+  )
+  ```
+- **Empate**: se desempata por la suma de criterios `DESEMPATE` agregada por todas las postas de todas las actividades. Si persiste, empate compartido en el ranking.
+- **Vistas filtradas por grupo**: el leaderboard puede mostrarse global (todas las patrullas del evento) o filtrado por `GrupoScout` para ver solo cómo le fue a un grupo específico. También puede segmentarse por actividad.
 
 ### Convenciones del schema
 
@@ -189,8 +197,8 @@ Cada item es un plan independiente que se ejecutará en una sesión separada par
 | **1** | Auth con Google + onboarding multi-tenant | 0b | Login con Google, crear-o-unirse a un Distrito en primer login, middleware con `organizationId` y `role` en sesión, guards de ruta por rol |
 | **2** | Gestión de miembros, invitaciones y grupos scouts | 1 | CRUD de Grupos Scouts del distrito. Invitar por email (con grupo opcional), aceptar invitación, cambiar roles, listar/quitar miembros, editar configuración del distrito |
 | **3** | Plantillas de puntaje (CRUD) | 1 (no requiere 2) | Editor de plantillas con modos `CRITERIOS` y `PUNTAJE_UNICO`. Soporte para criterios `PUNTUABLE` y `DESEMPATE`. Biblioteca scoping por distrito |
-| **4a** | Eventos y ciclo de vida | 1 | CRUD de eventos, máquina de estados (`BORRADOR → ACTIVO → CERRADO → PUBLICADO`), validaciones de transición, listado/detalle |
-| **4b** | Postas, patrullas, asignación de jueces | 2, 3, 4a | Agregar postas a evento (con plantilla y peso), definir patrullas del evento (cada una asociada a un Grupo Scout existente del distrito + categoría opcional), asignar jefe de patrulla opcional, asignar juez único a cada posta |
+| **4a** | Eventos y ciclo de vida | 1 | CRUD de eventos, máquina de estados (`BORRADOR → ACTIVO → CERRADO → PUBLICADO`), CRUD de **actividades** con peso porcentual (suma 100% al activar), validaciones de transición, listado/detalle. *[Jerarquía actualizada: Evento → Actividad → Posta — ver ADR-0003]* |
+| **4b** | Postas, patrullas, asignación de jueces | 2, 3, 4a | Agregar **postas** a actividad (con plantilla y peso, colgando de `Actividad` no de `Evento`), definir patrullas del evento (cada una asociada a un Grupo Scout existente del distrito + categoría opcional), asignar jefe de patrulla opcional, asignar juez único a cada posta |
 | **5a** | Vista del juez — carga online (mobile-first) | 4b | UI mobile-first del juez, lista de sus postas asignadas en eventos activos, formulario de carga según modo de plantilla, guardado server-side |
 | **5b** | PWA + cola offline + sync | 5a | Service worker, manifest, IndexedDB para puntajes pendientes, motor de sincronización con `clientId`/`clientSubmittedAt`, manejo de auth offline |
 | **6** | Reportes, leaderboard y vistas públicas | 5a (5b no requerido) | Cálculo de leaderboard con desempates, snapshot al cierre, vista pública global (Espectador) vía link/QR, vista filtrada por Grupo Scout, vista del Jefe de Patrulla, exportar PDF/Excel |

@@ -13,7 +13,7 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [03c — Design System: identidad de marca Scout](plans/03c-design-system.md) ✓
 - [04 — Gestión de invitaciones, memberships, grupos scouts y perfil del distrito](plans/04-invitaciones-memberships.md) ✓
 - [05 — Plantillas de puntaje](plans/05-plantillas.md) ✓
-- 06a — Eventos y ciclo de vida _(pendiente — incluye ADR-0003 jerarquía Evento→Actividad→Posta)_
+- [06a — Eventos y ciclo de vida](plans/06a-eventos.md) ✓
 - 06b — Postas, patrullas, asignación de jueces _(pendiente)_
 - 07a — Vista del juez (online) _(pendiente)_
 - 07b — PWA + cola offline + sync _(pendiente)_
@@ -34,3 +34,4 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 
 - [ADR-0001 — Arquitectura en dos capas: scoring primero, personas después](adr/0001-arquitectura-en-capas.md)
 - [ADR-0002 — Capa de repositorios con unstable_cache y revalidateTag](adr/0002-repository-layer.md)
+- [ADR-0003 — Jerarquía Evento → Actividad → Posta](adr/0003-jerarquia-evento-actividad-posta.md)
