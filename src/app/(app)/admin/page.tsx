@@ -3,6 +3,7 @@ import { countGrupos } from "@/repositories/grupo.repo"
 import { countMemberships } from "@/repositories/membership.repo"
 import { markInvitationsExpired, countPendingInvitations } from "@/repositories/invitation.repo"
 import { countScoreTemplates } from "@/repositories/score-template.repo"
+import { countEventosActivos } from "@/repositories/evento.repo"
 import Link from "next/link"
 import messages from "@/messages/es.json"
 
@@ -10,11 +11,12 @@ export default async function AdminPage() {
   const org = await requireRole(["ADMIN"])
   await markInvitationsExpired(org.organizationId)
 
-  const [grupos, miembros, invsPendientes, plantillas] = await Promise.all([
+  const [grupos, miembros, invsPendientes, plantillas, eventosActivos] = await Promise.all([
     countGrupos(org.organizationId),
     countMemberships(org.organizationId),
     countPendingInvitations(org.organizationId),
     countScoreTemplates(org.organizationId, { activeOnly: true }),
+    countEventosActivos(org.organizationId),
   ])
 
   const cards = [
@@ -46,6 +48,12 @@ export default async function AdminPage() {
       href: "/admin/plantillas",
       title: messages.admin.nav.plantillas,
       value: String(plantillas),
+      isText: false,
+    },
+    {
+      href: "/admin/eventos",
+      title: messages.admin.nav.eventos,
+      value: String(eventosActivos),
       isText: false,
     },
   ]

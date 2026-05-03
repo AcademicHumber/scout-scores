@@ -9,6 +9,7 @@ const nav = [
   { href: "/admin/invitaciones", label: messages.admin.nav.invitaciones },
   { href: "/admin/miembros", label: messages.admin.nav.miembros },
   { href: "/admin/plantillas", label: messages.admin.nav.plantillas },
+  { href: "/admin/eventos", label: messages.admin.nav.eventos },
 ]
 
 export function AdminNav() {

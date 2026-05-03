@@ -51,7 +51,8 @@
       "grupos": "Grupos Scouts",
       "invitaciones": "Invitaciones",
       "miembros": "Miembros",
-      "plantillas": "Plantillas"
+      "plantillas": "Plantillas",
+      "eventos": "Eventos"
     },
     "landing": {
       "title": "Administración del distrito",
@@ -225,6 +226,86 @@
         "inUse": "No se puede modificar: la plantilla está en uso en un evento",
         "lastValor": "Una plantilla debe tener al menos 2 valores en la escala",
         "notFound": "Plantilla no encontrada"
+      }
+    },
+    "eventos": {
+      "title": "Eventos",
+      "subtitle": "Gestioná los eventos del distrito y sus actividades",
+      "empty": "Aún no hay eventos. Creá el primero para empezar.",
+      "newButton": "Nuevo evento",
+      "filters": {
+        "all": "Todos",
+        "BORRADOR": "Borradores",
+        "ACTIVO": "Activos",
+        "CERRADO": "Cerrados",
+        "PUBLICADO": "Publicados"
+      },
+      "estadoBadge": {
+        "BORRADOR": "Borrador",
+        "ACTIVO": "Activo",
+        "CERRADO": "Cerrado",
+        "PUBLICADO": "Publicado"
+      },
+      "form": {
+        "nombre": "Nombre",
+        "descripcion": "Descripción (opcional)",
+        "lugar": "Lugar (opcional)",
+        "fechaInicio": "Fecha de inicio",
+        "multiDiaToggle": "Evento de varios días",
+        "fechaFin": "Fecha de fin",
+        "submit": "Crear evento",
+        "saveMetadata": "Guardar cambios"
+      },
+      "detail": {
+        "metadataTitle": "Información general",
+        "estadoTitle": "Estado del evento",
+        "actividadesTitle": "Actividades",
+        "deleteTitle": "Acciones peligrosas",
+        "pesosLabel": "Pesos asignados: {{suma}}% de 100%",
+        "pesosFaltantes": "Faltan {{faltante}}% por asignar",
+        "pesosExcedidos": "Te pasaste {{exceso}}% del 100%",
+        "pesosOk": "Pesos completos",
+        "transicion": {
+          "activar": "Activar evento",
+          "cerrar": "Cerrar evento",
+          "publicar": "Publicar evento (Plan 7)"
+        },
+        "transicionDisabledTooltip": "Configurá actividades que sumen 100% antes de activar",
+        "deleteButton": "Eliminar evento",
+        "deleteConfirm": "¿Eliminar el evento \"{{nombre}}\"? Esta acción es irreversible y borra también las actividades."
+      },
+      "actividades": {
+        "empty": "Aún no hay actividades. Agregá la primera abajo.",
+        "addTitle": "Agregar actividad",
+        "addSubmit": "Agregar",
+        "row": {
+          "nombre": "Nombre",
+          "tipo": "Tipo",
+          "peso": "Peso (%)",
+          "descripcion": "Descripción (opcional)",
+          "save": "Guardar",
+          "delete": "Eliminar",
+          "moveUp": "Subir",
+          "moveDown": "Bajar",
+          "deleteConfirm": "¿Eliminar la actividad \"{{nombre}}\"?"
+        },
+        "tipo": {
+          "COMPETICION": "Competición",
+          "CONSTRUCCION": "Construcción",
+          "COCINA": "Cocina",
+          "OTRO": "Otra"
+        }
+      },
+      "errors": {
+        "nombreDuplicado": "Ya existe un evento con ese nombre",
+        "noDeletable": "Solo se pueden eliminar eventos en estado Borrador",
+        "invalidTransition": "La transición de estado solicitada no es válida",
+        "pesosInvalidos": "Los pesos de las actividades deben sumar 100%. Suma actual: {{sumaActual}}%, falta: {{faltante}}%",
+        "pesosSinActividades": "Agregá al menos una actividad antes de activar el evento",
+        "actividadNoEncontrada": "Actividad no encontrada",
+        "eventoLocked": "El evento ya tiene puntajes cargados; no se pueden modificar las actividades",
+        "fechaInvalida": "La fecha de fin debe ser igual o posterior a la fecha de inicio",
+        "notFound": "Evento no encontrado"
       }
     },
     "errors": {
