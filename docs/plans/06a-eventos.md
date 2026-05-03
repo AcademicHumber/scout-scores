@@ -728,90 +728,101 @@ pnpm build         # build exitoso
 
 Pre-requisito: distrito con ADMIN logueado, plantillas de Plan 5 ya existen (no se usan en Plan 6a, pero confirma que no hay regresiones).
 
+> **Nota de comportamiento del indicador de pesos**: el indicador en `EventoEstadoControls` recibe `actividades` como props del Server Component. **Solo se actualiza después de guardar una actividad** (click "Guardar" en la fila) y esperar el soft refresh que dispara `revalidateTag`. No actualiza reactivamente mientras se edita el input del peso. El indicador secundario en el header de la sección "Actividades" (`X% / 100%`) tiene el mismo comportamiento. Ambos muestran los valores con 2 decimales (`toFixed(2)`).
+
 **Escenario 1 — Crear evento simple**:
 1. `/admin` → click tarjeta "Eventos activos" (valor: 0) → vacío.
 2. Click "+ Nuevo evento".
 3. Nombre: "Jornada Distrital 2026". Lugar: "Parque Central". Fecha de inicio: 2026-08-15.
 4. Submit → redirige a `/admin/eventos/[id]`.
 5. Header muestra: "Jornada Distrital 2026", badge "Borrador", "15 ago 2026", lugar.
-6. Sección "Estado del evento" muestra línea del tiempo con BORRADOR activo. Botón "Activar evento" deshabilitado con tooltip.
-7. Sección "Actividades" vacía, indicador "Pesos asignados: 0% de 100%".
+6. Sección "Estado del evento" muestra línea del tiempo con BORRADOR activo. Botón "Activar evento" deshabilitado con tooltip "Configurá actividades que sumen 100% antes de activar".
+7. Header de sección "Actividades" muestra "0.00% / 100%" (ámbar). Sección de pesos en `EventoEstadoControls` muestra "Pesos asignados: 0.00% de 100%" con barra vacía y texto "Faltan 100.00% por asignar".
 
 **Escenario 2 — Agregar actividades válidas**:
-1. En `AddActividadForm`, agregar:
-   - "Carrera de relevos", tipo COMPETICION, peso 30.
-   - "Construcción de balsa", tipo CONSTRUCCION, peso 45.
-   - "Almuerzo de patrulla", tipo COCINA, peso 25.
-2. La lista muestra las 3 con orden 1/2/3. Indicador "Pesos asignados: 100% de 100%" en verde.
-3. Botón "Activar evento" se habilita.
+1. En `AddActividadForm`, agregar (cada submit recarga la página vía soft refresh):
+   - "Carrera de relevos", tipo Competición, peso 30.
+   - "Construcción de balsa", tipo Construcción, peso 45.
+   - "Almuerzo de patrulla", tipo Cocina, peso 25.
+2. La lista muestra las 3 filas en orden 1/2/3. Header de sección muestra "100.00% / 100%" en verde. Indicador de pesos en `EventoEstadoControls` muestra "Pesos asignados: 100.00% de 100%", barra verde, texto "Pesos completos".
+3. Botón "Activar evento" se habilita (ya no está deshabilitado).
 
 **Escenario 3 — Reordenar y editar actividad**:
-1. Click ▼ en "Carrera de relevos" → baja a posición 2.
-2. Recargar → orden persistido.
-3. Editar peso de "Almuerzo de patrulla" a 20 → indicador cambia a "Pesos asignados: 95% de 100%" (ámbar). Botón "Activar evento" se deshabilita con tooltip "Faltan 5% por asignar".
-4. Volver el peso a 25 → vuelve a 100% verde.
+1. Click ▼ en "Carrera de relevos" → soft refresh → baja a posición 2 (queda "Construcción de balsa" primero).
+2. Recargar página manualmente → orden persistido en DB.
+3. En la fila "Almuerzo de patrulla", editar el campo de peso a 20. El botón "Guardar" aparece (fila dirty). Click "Guardar" → soft refresh → header muestra "95.00% / 100%" (ámbar). Botón "Activar evento" se deshabilita; tooltip muestra "Configurá actividades que sumen 100% antes de activar". Indicador de pesos muestra "Faltan 5.00% por asignar".
+4. Editar el peso de vuelta a 25 → "Guardar" → soft refresh → header vuelve a "100.00% / 100%" verde. Botón "Activar evento" se habilita.
 
 **Escenario 4 — Activar evento (transición BORRADOR → ACTIVO)**:
-1. Click "Activar evento". Confirmación opcional o transición directa.
-2. Estado cambia a ACTIVO. Línea del tiempo: BORRADOR ✓ → ACTIVO activo. Botón principal ahora dice "Cerrar evento".
-3. La sección "Acciones peligrosas" desaparece (no se puede eliminar fuera de BORRADOR).
+1. Click "Activar evento" → submit directo (sin diálogo de confirmación).
+2. Soft refresh: estado cambia a ACTIVO. Badge del header cambia a verde "Activo". Línea del tiempo muestra BORRADOR ✓ → ACTIVO activo. Botón principal cambia a "Cerrar evento". El indicador de pesos (solo visible en BORRADOR) desaparece.
+3. La sección "Acciones peligrosas" desaparece (solo visible en BORRADOR).
 4. En `/admin` → tarjeta "Eventos activos" muestra 1.
 
 **Escenario 5 — Activar con pesos inválidos (defensa en profundidad)**:
 1. Crear evento "Test pesos". Agregar 1 actividad con peso 80.
-2. El botón "Activar" está deshabilitado client-side. Forzar request via DevTools.
+2. El botón "Activar" está deshabilitado client-side. Para forzar la validación server-side, usar DevTools → Network → copiar el request del form y replay con los hidden inputs correctos, o ejecutar la action directamente desde la consola del servidor.
 3. Server retorna `BusinessError("PESOS_INVALIDOS", { sumaActual: 80, faltante: 20 })`.
-4. UI muestra panel rojo: "Los pesos de las actividades deben sumar 100%. Suma actual: 80%, falta: 20%".
+4. UI muestra panel rojo: "Los pesos de las actividades deben sumar 100%. Suma actual: 80.00%, falta: 20.00%".
 5. Estado sigue en BORRADOR.
 
 **Escenario 6 — Cerrar evento (transición ACTIVO → CERRADO)**:
-1. En "Jornada Distrital 2026" (ACTIVO), click "Cerrar evento".
-2. Estado cambia a CERRADO. `closedAt` se setea (verificable en DB).
-3. Botón principal cambia a "Publicar evento (Plan 7)" deshabilitado con nota.
+1. En "Jornada Distrital 2026" (ACTIVO), click "Cerrar evento" → submit directo.
+2. Soft refresh: estado cambia a CERRADO. Badge "Cerrado" (ámbar). `closedAt` seteado (verificable en DB con `SELECT "closedAt", "activatedAt" FROM "Evento" WHERE id = '...';`).
+3. Botón principal cambia a "Publicar evento (Plan 7)" (deshabilitado). Debajo del botón aparece el texto "Disponible en Plan 7".
 
 **Escenario 7 — Eliminar evento BORRADOR**:
 1. Crear evento "Borrador a borrar" con 0 actividades.
 2. Sección "Acciones peligrosas" muestra botón "Eliminar evento".
-3. Click → confirmación → submit.
-4. Redirige al listado, evento desaparece. Audit log registra `evento.deleted`.
+3. Click → muestra confirmación inline con texto "¿Eliminar el evento 'Borrador a borrar'? Esta acción es irreversible y borra también las actividades." + botones "Sí, eliminar" / "Cancelar". Click "Sí, eliminar".
+4. Redirige a `/admin/eventos`. Evento no aparece en el listado.
 
 **Escenario 8 — Eliminar evento NO BORRADOR (defensa)**:
-1. En "Jornada Distrital 2026" (CERRADO), forzar request `deleteEvento` via DevTools.
-2. Server retorna `BusinessError("NO_DELETABLE", { estadoActual: "CERRADO" })`.
-3. UI no muestra el botón en condiciones normales, pero la action se defiende.
+1. En "Jornada Distrital 2026" (CERRADO), la sección "Acciones peligrosas" no se renderiza (solo aparece cuando `estado === "BORRADOR"`).
+2. Para verificar la defensa server-side: enviar manualmente un POST a `deleteEventoAction` con el id del evento CERRADO (ej. via un formulario construido en DevTools).
+3. Server retorna `BusinessError("NO_DELETABLE", { estadoActual: "CERRADO" })` → UI mostraría panel rojo "Solo se pueden eliminar eventos en estado Borrador".
 
 **Escenario 9 — Validación de fechas**:
 1. Crear evento "Multi-día test". Activar toggle "Evento de varios días". fechaInicio: 2026-08-15, fechaFin: 2026-08-13.
-2. Submit → error "La fecha de fin debe ser igual o posterior a la fecha de inicio".
-3. Cambiar fechaFin a 2026-08-17 → ok. Detalle muestra "15–17 ago 2026".
+2. Submit → error "La fecha de fin debe ser igual o posterior a la fecha de inicio" (validación Zod en la action; el form muestra el error bajo el campo fechaFin).
+3. Cambiar fechaFin a 2026-08-17 → ok. Detalle muestra "15–17 ago 2026" (mismo mes: compacto; meses distintos: rango completo).
 
 **Escenario 10 — Slug autogenerado y colisión**:
-1. Crear evento "Jornada Distrital 2026" → slug `jornada-distrital-2026`.
-2. Crear segundo evento mismo nombre → slug `jornada-distrital-2026-2`.
-3. Verificar en DB con `SELECT nombre, slug FROM "Evento" ORDER BY "createdAt" DESC LIMIT 5;`.
+1. Crear evento "Jornada Distrital 2026" → slug `jornada-distrital-2026` (generado server-side, no visible en UI).
+2. Crear segundo evento con el mismo nombre → slug `jornada-distrital-2026-2`.
+3. Verificar en DB: `SELECT nombre, slug FROM "Evento" ORDER BY "createdAt" DESC LIMIT 5;`
 
 **Escenario 11 — Filtros del listado**:
 1. Crear eventos en distintos estados (3 BORRADOR, 1 ACTIVO, 1 CERRADO).
 2. Tab "Todos" muestra los 5.
-3. Tab "Borradores" muestra 3. Tab "Activos" muestra 1. Tab "Cerrados" muestra 1.
-4. URL refleja `?estado=BORRADOR` (etc).
+3. Tab "Borradores" → URL cambia a `?estado=BORRADOR`, muestra 3. Tab "Activos" → `?estado=ACTIVO`, muestra 1. Tab "Cerrados" → `?estado=CERRADO`, muestra 1.
+4. Cada tarjeta muestra nombre, badge de estado, fecha, lugar (si existe), count de actividades y porcentaje de pesos.
 
 **Escenario 12 — Reordenar con conflicto de unique**:
-1. Crear evento con 3 actividades.
-2. Click ▼ en la primera repetidamente → swap correcto sin violación de constraint.
-3. Click ▲ en la última → vuelve al orden anterior.
+1. Crear evento con 3 actividades (pesos 40/35/25).
+2. Click ▼ en la primera → soft refresh → la primera y segunda intercambian posición sin violación de `@@unique([eventoId, orden])` (gracias al paso temporal `orden = -1`).
+3. Click ▼ repetidamente en la misma actividad hasta que llega a la última posición → funciona sin errores.
+4. Click ▲ en la última → vuelve al orden anterior.
 
 **Escenario 13 — Tenant isolation**:
-1. Como segundo distrito, crear evento con mismo nombre "Jornada Distrital 2026" → permitido (constraint es `(organizationId, slug)`).
-2. Listado de cada distrito no ve eventos del otro.
+1. Loguear como admin de un segundo distrito.
+2. Crear evento con nombre "Jornada Distrital 2026" → slug `jornada-distrital-2026` (sin sufijo, porque el constraint es `(organizationId, slug)` y este org no tiene ese slug).
+3. Listado de cada distrito muestra solo sus propios eventos.
 
 **Escenario 14 — Auditoría**:
-1. `SELECT action, metadata FROM "AuditLog" WHERE "organizationId" = '...' AND action LIKE 'evento%' ORDER BY "createdAt" DESC LIMIT 30;`
-2. Confirmar todos los eventos generados durante los escenarios anteriores: `evento.created`, `evento.updated`, `evento.deleted`, `evento.transitioned` (con metadata `{from, to}`), `evento.actividadAdded`, `.actividadUpdated`, `.actividadDeleted`, `.actividadReordered`.
+```sql
+SELECT action, metadata, "createdAt"
+FROM "AuditLog"
+WHERE "organizationId" = '<tu-org-id>'
+  AND action LIKE 'evento%'
+ORDER BY "createdAt" DESC
+LIMIT 30;
+```
+Confirmar presencia de: `evento.created`, `evento.updated`, `evento.deleted`, `evento.transitioned` (metadata: `{from, to}`), `evento.actividadAdded`, `evento.actividadUpdated`, `evento.actividadDeleted`, `evento.actividadReordered` (metadata: `{direction, fromOrden, toOrden}`).
 
 **Escenario 15 — Edición de metadata en estado ACTIVO/CERRADO**:
-1. En "Jornada Distrital 2026" (ACTIVO o CERRADO), editar lugar a "Centro Comunitario".
-2. Submit → guardado, recargar → persistido.
+1. En "Jornada Distrital 2026" (ACTIVO o CERRADO), editar lugar a "Centro Comunitario" en `EventoMetadataForm`. Click "Guardar cambios".
+2. Soft refresh → persistido. El slug original no cambia (inmutable post-creación).
 3. Confirmar que la metadata sigue editable en cualquier estado en Plan 6a (lock real es Plan 6b).
 
 ### Criterios de aceptación
