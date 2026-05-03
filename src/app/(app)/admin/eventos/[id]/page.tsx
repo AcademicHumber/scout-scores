@@ -20,13 +20,13 @@ const ESTADO_COLORS: Record<EventoEstado, string> = {
 }
 
 function formatFechas(fechaInicio: Date, fechaFin: Date | null): string {
-  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }
-  const locale = "es-AR"
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }
+  const locale = "es-BO"
   if (!fechaFin) return new Date(fechaInicio).toLocaleDateString(locale, opts)
   const inicio = new Date(fechaInicio)
   const fin = new Date(fechaFin)
-  if (inicio.getMonth() === fin.getMonth() && inicio.getFullYear() === fin.getFullYear()) {
-    return `${inicio.getDate()}–${fin.toLocaleDateString(locale, opts)}`
+  if (inicio.getUTCMonth() === fin.getUTCMonth() && inicio.getUTCFullYear() === fin.getUTCFullYear()) {
+    return `${inicio.getUTCDate()}–${fin.toLocaleDateString(locale, opts)}`
   }
   return `${inicio.toLocaleDateString(locale, opts)} – ${fin.toLocaleDateString(locale, opts)}`
 }
