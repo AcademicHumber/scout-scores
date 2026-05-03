@@ -4,4 +4,5 @@ export const cacheTags = {
   invitations: (orgId: string) => `invitations:${orgId}`,
   distrito:       (orgId: string) => `distrito:${orgId}`,
   scoreTemplates: (orgId: string) => `scoreTemplates:${orgId}`,
+  eventos:        (orgId: string) => `eventos:${orgId}`,
 } as const
