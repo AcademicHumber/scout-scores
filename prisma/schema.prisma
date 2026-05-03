@@ -52,6 +52,20 @@ enum TemplateCriterionTipo {
   DESEMPATE
 }
 
+enum EventoEstado {
+  BORRADOR
+  ACTIVO
+  CERRADO
+  PUBLICADO
+}
+
+enum ActividadTipo {
+  COMPETICION
+  CONSTRUCCION
+  COCINA
+  OTRO
+}
+
 // ──────────────────────────────────────────────────────────────
 // Tenant raíz
 // ──────────────────────────────────────────────────────────────
@@ -69,6 +83,7 @@ model Organization {
   miembros       MiembroScout[]
   auditLogs      AuditLog[]
   scoreTemplates ScoreTemplate[]
+  eventos        Evento[]
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -263,6 +278,56 @@ model TemplateCriterion {
 
   @@unique([templateId, orden])
   @@index([templateId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Evento — evento del distrito con ciclo de vida
+// ──────────────────────────────────────────────────────────────
+
+model Evento {
+  id             String       @id @default(cuid(2))
+  organizationId String
+  nombre         String
+  slug           String
+  descripcion    String?
+  lugar          String?
+  fechaInicio    DateTime
+  fechaFin       DateTime?
+  estado         EventoEstado @default(BORRADOR)
+  activatedAt    DateTime?
+  closedAt       DateTime?
+  publishedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actividades  Actividad[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([organizationId, estado])
+  @@index([organizationId, fechaInicio])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Actividad — bloque dentro del evento con peso porcentual
+// ──────────────────────────────────────────────────────────────
+
+model Actividad {
+  id           String        @id @default(cuid(2))
+  eventoId     String
+  nombre       String
+  descripcion  String?
+  tipo         ActividadTipo
+  pesoRelativo Decimal       @db.Decimal(5, 2)
+  orden        Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+  @@unique([eventoId, orden])
+  @@index([eventoId])
 }
 
 // ──────────────────────────────────────────────────────────────
