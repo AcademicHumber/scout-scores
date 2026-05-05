@@ -5,6 +5,27 @@ import { BusinessError } from "@/lib/errors"
 import type { Role } from "@/generated/prisma/client"
 
 // forOrg() loses Prisma's include generics; use prisma.* directly with explicit organizationId.
+
+export function listJuecesAsignables(organizationId: string) {
+  return unstable_cache(
+    async () => {
+      const memberships = await prisma.membership.findMany({
+        where: { organizationId, role: { in: ["JUEZ", "ADMIN"] } },
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { user: { name: "asc" } },
+      })
+      return memberships.map((m) => ({
+        userId: m.userId,
+        name: m.user.name,
+        email: m.user.email,
+        role: m.role,
+      }))
+    },
+    ["juecesAsignables", organizationId],
+    { tags: [cacheTags.memberships(organizationId)] },
+  )()
+}
+
 export function listMembershipsWithUsers(organizationId: string) {
   return unstable_cache(
     async () =>
