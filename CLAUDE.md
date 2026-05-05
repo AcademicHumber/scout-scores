@@ -73,6 +73,12 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 - Una vez aprobado el plan, cambiar a `/model Sonnet` para ejecutarlo.
 - Si durante la ejecución surge una decisión arquitectónica, pausar, volver a Opus, decidir, y retomar con Sonnet.
 
+**Los escenarios de verificación son el criterio de done.**
+
+- Cada plan incluye una sección "Verificación" con escenarios manuales end-to-end. Esos escenarios son el punto de confirmación final: un plan no está completo hasta que se hayan revisado todos sus escenarios y se haya confirmado que el código los cubre.
+- Al ejecutar un plan, antes de hacer el commit de documentación final, revisar cada escenario contra la implementación real: verificar que el flujo descrito es posible, que los errores esperados se capturan, que los mensajes son correctos y que no hay casos borde no manejados.
+- Si un escenario revela una discrepancia (bug, mensaje incorrecto, caso no cubierto), corregirlo en ese momento e incluirlo en el mismo commit o en uno de fix inmediato. No diferirlo a otro plan salvo que sea trabajo nuevo fuera del alcance.
+
 ## Convenciones de repositorios y cache (establecidas en Plan 4)
 
 14. **Capa de repositorios**: toda interacción con DB vive en `src/repositories/`. Ningún archivo fuera de esa carpeta importa `@/lib/db` en código de feature (excepción: `src/auth.ts` y `src/lib/auth-onboarding.ts` por ser config del framework). Ver `docs/adr/0002-repository-layer.md`.
