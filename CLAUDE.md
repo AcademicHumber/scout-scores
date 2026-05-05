@@ -123,4 +123,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 6a completado** (Eventos y ciclo de vida — `/admin/eventos`, Evento + Actividad con peso porcentual, máquina de estados BORRADOR→ACTIVO→CERRADO→PUBLICADO, CRUD inline de actividades con reordenamiento, ADR-0003 abierto para jerarquía Evento→Actividad→Posta).
 
-**Próximo: Plan 6b** — Postas, patrullas y asignación de jueces.
+**Plan 6b completado** (Postas y Patrullas — `Posta` dentro de actividades con plantilla y juez asignables, `Patrulla` por evento con grupo scout, gates ampliados de pre-activación con acumulación de errores, `isTemplateLocked` activado, CRUD inline en `/admin/eventos/[id]`, audit log).
+
+**Próximo: Plan 7a** — Carga de scoring (ScoreSheet, ScoreEntry, vista del juez).
