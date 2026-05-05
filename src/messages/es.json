@@ -296,6 +296,47 @@
           "OTRO": "Otra"
         }
       },
+      "postas": {
+        "title": "Postas",
+        "empty": "Aún no hay postas. Agregá la primera abajo.",
+        "addTitle": "Agregar posta",
+        "addSubmit": "Agregar",
+        "row": {
+          "nombre": "Nombre",
+          "descripcion": "Descripción (opcional)",
+          "weight": "Peso",
+          "plantilla": "Plantilla",
+          "plantillaSinAsignar": "(sin asignar)",
+          "juez": "Juez",
+          "juezSinAsignar": "(sin asignar)",
+          "save": "Guardar",
+          "delete": "Eliminar",
+          "moveUp": "Subir",
+          "moveDown": "Bajar",
+          "deleteConfirm": "¿Eliminar la posta \"{{nombre}}\"?"
+        }
+      },
+      "patrullas": {
+        "title": "Patrullas",
+        "empty": "Aún no hay patrullas inscritas. Agregá la primera abajo.",
+        "addTitle": "Agregar patrulla",
+        "addSubmit": "Agregar",
+        "categoria": {
+          "LOBATO": "Lobatos",
+          "EXPLORADOR": "Exploradores",
+          "PIONERO": "Pioneros",
+          "ROVER": "Rovers"
+        },
+        "row": {
+          "nombre": "Nombre",
+          "grupoScout": "Grupo scout",
+          "categoria": "Categoría",
+          "categoriaPlaceholder": "Mixta o sin definir",
+          "save": "Guardar",
+          "delete": "Eliminar",
+          "deleteConfirm": "¿Eliminar la patrulla \"{{nombre}}\"?"
+        }
+      },
       "errors": {
         "nombreDuplicado": "Ya existe un evento con ese nombre",
         "noDeletable": "Solo se pueden eliminar eventos en estado Borrador",
@@ -305,7 +346,21 @@
         "actividadNoEncontrada": "Actividad no encontrada",
         "eventoLocked": "El evento ya tiene puntajes cargados; no se pueden modificar las actividades",
         "fechaInvalida": "La fecha de fin debe ser igual o posterior a la fecha de inicio",
-        "notFound": "Evento no encontrado"
+        "notFound": "Evento no encontrado",
+        "postaNoEncontrada": "Posta no encontrada",
+        "patrullaNoEncontrada": "Patrulla no encontrada",
+        "patrullaNombreDuplicado": "Ya existe una patrulla con ese nombre en este evento",
+        "juezInvalido": "El usuario seleccionado no tiene rol de juez en este distrito",
+        "grupoScoutInvalido": "El grupo scout seleccionado no pertenece al distrito",
+        "plantillaInvalida": "La plantilla seleccionada no es válida o está archivada",
+        "preActivacion": {
+          "intro": "No se puede activar el evento. Resolvé estos puntos:",
+          "actividadSinPostas": "{{count}} actividad sin postas: {{nombres}}",
+          "actividadesSinPostas": "{{count}} actividades sin postas: {{nombres}}",
+          "postaSinPlantilla": "{{count}} posta sin plantilla: {{nombres}}",
+          "postasSinPlantilla": "{{count}} postas sin plantilla: {{nombres}}",
+          "eventoSinPatrullas": "El evento no tiene patrullas inscritas"
+        }
       }
     },
     "errors": {

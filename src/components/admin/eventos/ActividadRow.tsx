@@ -2,10 +2,25 @@
 
 import { useActionState, useEffect, useState } from "react"
 import { updateActividadAction, deleteActividadAction, reorderActividadAction } from "@/app/(app)/admin/eventos/[id]/actions"
+import { PostasInActividad } from "./PostasInActividad"
 import messages from "@/messages/es.json"
 import type { ActividadTipo } from "@/generated/prisma/enums"
 
 const m = messages.admin.eventos
+
+type Template = { id: string; nombre: string; archivedAt: Date | null } | null
+
+type Posta = {
+  id: string
+  nombre: string
+  descripcion: string | null
+  weight: string
+  templateId: string | null
+  template: Template
+  juezUserId: string | null
+  juezUser: { id: string; name: string | null; email: string } | null
+  orden: number
+}
 
 type Actividad = {
   id: string
@@ -14,6 +29,7 @@ type Actividad = {
   tipo: ActividadTipo
   pesoRelativo: string
   orden: number
+  postas: Posta[]
 }
 
 type Props = {
@@ -22,9 +38,11 @@ type Props = {
   isFirst: boolean
   isLast: boolean
   isLocked: boolean
+  templates: Array<{ id: string; nombre: string }>
+  jueces: Array<{ userId: string; name: string | null; email: string }>
 }
 
-export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked }: Props) {
+export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, templates, jueces }: Props) {
   const [editState, editAction, editPending] = useActionState(updateActividadAction, {})
   const [deleteState, deleteAction, deletePending] = useActionState(deleteActividadAction, {})
   const [, upAction, upPending] = useActionState(reorderActividadAction, {})
@@ -194,6 +212,15 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked }:
           placeholder={m.actividades.row.descripcion}
         />
       </div>
+
+      {/* Postas de esta actividad */}
+      <PostasInActividad
+        actividadId={actividad.id}
+        postas={actividad.postas}
+        isLocked={isLocked}
+        templates={templates}
+        jueces={jueces}
+      />
     </div>
   )
 }

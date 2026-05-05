@@ -13,15 +13,17 @@ type Props = {
   eventoId: string
   estado: Estado
   actividades: Actividad[]
+  patrullasCount: number
 }
 
 const ESTADOS: Estado[] = ["BORRADOR", "ACTIVO", "CERRADO", "PUBLICADO"]
 
-export function EventoEstadoControls({ eventoId, estado, actividades }: Props) {
+export function EventoEstadoControls({ eventoId, estado, actividades, patrullasCount }: Props) {
   const [state, action, pending] = useActionState(transicionarEstadoAction, {})
 
   const suma = actividades.reduce((acc, a) => acc + parseFloat(a.pesoRelativo), 0)
-  const puedeActivar = actividades.length > 0 && Math.abs(suma - 100) <= 0.01
+  const pesosOk = actividades.length > 0 && Math.abs(suma - 100) <= 0.01
+  const puedeActivar = pesosOk && patrullasCount > 0
 
   const nextTarget: Estado | null =
     estado === "BORRADOR" ? "ACTIVO" :
@@ -113,7 +115,9 @@ export function EventoEstadoControls({ eventoId, estado, actividades }: Props) {
             disabled={pending || (nextTarget === "ACTIVO" && !puedeActivar) || nextTarget === "PUBLICADO"}
             title={
               nextTarget === "ACTIVO" && !puedeActivar
-                ? m.detail.transicionDisabledTooltip
+                ? !pesosOk
+                  ? m.detail.transicionDisabledTooltip
+                  : "Inscribí al menos una patrulla antes de activar"
                 : undefined
             }
             className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-50"

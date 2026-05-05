@@ -1,5 +1,8 @@
 import { requireRole } from "@/lib/auth-helpers"
 import { findEventoById, isEventoLocked } from "@/repositories/evento.repo"
+import { listJuecesAsignables } from "@/repositories/membership.repo"
+import { listScoreTemplates } from "@/repositories/score-template.repo"
+import { listGrupos } from "@/repositories/grupo.repo"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import messages from "@/messages/es.json"
@@ -8,6 +11,7 @@ import { EventoEstadoControls } from "@/components/admin/eventos/EventoEstadoCon
 import { ActividadRow } from "@/components/admin/eventos/ActividadRow"
 import { AddActividadForm } from "@/components/admin/eventos/AddActividadForm"
 import { DeleteEventoForm } from "@/components/admin/eventos/DeleteEventoForm"
+import { PatrullasList } from "@/components/admin/eventos/PatrullasList"
 import type { EventoEstado } from "@/generated/prisma/enums"
 
 const m = messages.admin.eventos
@@ -38,12 +42,19 @@ export default async function EventoDetailPage({
 }) {
   const org = await requireRole(["ADMIN"])
   const { id } = await params
-  const [evento, locked] = await Promise.all([
+
+  const [evento, locked, jueces, allTemplates, grupos] = await Promise.all([
     findEventoById(org.organizationId, id),
     isEventoLocked(id),
+    listJuecesAsignables(org.organizationId),
+    listScoreTemplates(org.organizationId),
+    listGrupos(org.organizationId),
   ])
 
   if (!evento) notFound()
+
+  // Solo plantillas activas (no archivadas) para los selects de postas
+  const templates = allTemplates.filter((t) => !t.archivedAt).map((t) => ({ id: t.id, nombre: t.nombre }))
 
   const suma = evento.actividades.reduce(
     (acc, a) => acc + parseFloat(a.pesoRelativo.toString()),
@@ -51,7 +62,6 @@ export default async function EventoDetailPage({
   )
   const pesosOk = Math.abs(suma - 100) <= 0.01
 
-  // Props para EventoMetadataForm (fechas como string YYYY-MM-DD)
   const fechaInicioStr = new Date(evento.fechaInicio).toISOString().split("T")[0]!
   const fechaFinStr = evento.fechaFin
     ? new Date(evento.fechaFin).toISOString().split("T")[0]!
@@ -94,6 +104,7 @@ export default async function EventoDetailPage({
           eventoId={evento.id}
           estado={evento.estado}
           actividades={evento.actividades.map((a) => ({ pesoRelativo: a.pesoRelativo.toString() }))}
+          patrullasCount={evento.patrullas.length}
         />
       </section>
 
@@ -122,17 +133,51 @@ export default async function EventoDetailPage({
                   tipo: a.tipo,
                   pesoRelativo: a.pesoRelativo.toString(),
                   orden: a.orden,
+                  postas: a.postas.map((p) => ({
+                    id: p.id,
+                    nombre: p.nombre,
+                    descripcion: p.descripcion,
+                    weight: p.weight.toString(),
+                    templateId: p.templateId,
+                    template: p.template,
+                    juezUserId: p.juezUserId,
+                    juezUser: p.juezUser,
+                    orden: p.orden,
+                  })),
                 }}
                 eventoId={evento.id}
                 isFirst={idx === 0}
                 isLast={idx === evento.actividades.length - 1}
                 isLocked={locked}
+                templates={templates}
+                jueces={jueces}
               />
             ))}
           </div>
         )}
 
         {!locked && <AddActividadForm eventoId={evento.id} />}
+      </section>
+
+      {/* Patrullas */}
+      <section className="rounded-xl border bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">{m.patrullas.title}</h2>
+          <span className="text-sm text-gray-500">
+            {evento.patrullas.length} inscripta{evento.patrullas.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <PatrullasList
+          eventoId={evento.id}
+          patrullas={evento.patrullas.map((p) => ({
+            id: p.id,
+            nombre: p.nombre,
+            grupoScoutId: p.grupoScoutId,
+            grupoScout: p.grupoScout,
+            categoria: p.categoria,
+          }))}
+          grupos={grupos.map((g) => ({ id: g.id, nombre: g.nombre }))}
+        />
       </section>
 
       {/* Acciones peligrosas (solo en BORRADOR) */}
