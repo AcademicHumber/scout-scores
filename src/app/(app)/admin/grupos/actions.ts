@@ -87,6 +87,8 @@ export async function deleteGrupo(_prev: unknown, formData: FormData) {
         return { error: `No se puede borrar: tiene ${e.meta?.count} usuario(s) asignado(s)` }
       if (e.code === "HAS_INVITATIONS")
         return { error: `Hay ${e.meta?.count} invitación(es) pendiente(s) a este grupo. Revocalas primero.` }
+      if (e.code === "HAS_PATRULLAS")
+        return { error: `No se puede borrar: el grupo tiene ${e.meta?.count} patrulla(s) inscripta(s) en eventos. Eliminá las patrullas primero.` }
     }
     throw e
   }

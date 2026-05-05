@@ -203,7 +203,7 @@
         "escalaLabel": "Escala",
         "escalaDesempateLabel": "Escala de desempate",
         "hereda": "hereda escala principal",
-        "lockedNotice": "Esta plantilla está en uso en al menos un evento. Para cambiar criterios o escala, duplicala primero.",
+        "lockedNotice": "Esta plantilla está asignada a una o más postas. Para cambiar criterios, escala o modo, duplicala primero.",
         "modoIncompatibleNotice": "Para cambiar a puntaje único, primero eliminá los criterios puntuables:",
         "duplicateButton": "Duplicar",
         "archiveButton": "Archivar",

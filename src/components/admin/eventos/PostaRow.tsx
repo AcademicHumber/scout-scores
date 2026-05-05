@@ -53,7 +53,8 @@ export function PostaRow({ posta, isFirst, isLast, isLocked, templates, jueces }
   const [savedWeight, setSavedWeight] = useState(posta.weight)
 
   const [currentTemplate, setCurrentTemplate] = useState(posta.template)
-  const [currentJuez, setCurrentJuez] = useState(posta.juezUser)
+  const [selectedTemplateId, setSelectedTemplateId] = useState(posta.templateId ?? "")
+  const [selectedJuezId, setSelectedJuezId] = useState(posta.juezUserId ?? "")
 
   const isDirty = nombre !== savedNombre || descripcion !== savedDescripcion || weight !== savedWeight
 
@@ -68,12 +69,13 @@ export function PostaRow({ posta, isFirst, isLast, isLocked, templates, jueces }
   useEffect(() => {
     if (templateState.posta) {
       setCurrentTemplate(templateState.posta.template)
+      setSelectedTemplateId(templateState.posta.templateId ?? "")
     }
   }, [templateState])
 
   useEffect(() => {
     if (juezState.posta) {
-      setCurrentJuez(juezState.posta.juezUser)
+      setSelectedJuezId(juezState.posta.juezUserId ?? "")
     }
   }, [juezState])
 
@@ -212,8 +214,9 @@ export function PostaRow({ posta, isFirst, isLast, isLocked, templates, jueces }
           )}
           <select
             name="templateId"
-            defaultValue={currentTemplate?.id ?? ""}
+            value={selectedTemplateId}
             onChange={(e) => {
+              setSelectedTemplateId(e.target.value)
               const form = e.target.closest("form") as HTMLFormElement
               form?.requestSubmit()
             }}
@@ -236,8 +239,9 @@ export function PostaRow({ posta, isFirst, isLast, isLocked, templates, jueces }
           <span className="text-xs text-gray-500">{m.row.juez}:</span>
           <select
             name="juezUserId"
-            defaultValue={currentJuez?.id ?? ""}
+            value={selectedJuezId}
             onChange={(e) => {
+              setSelectedJuezId(e.target.value)
               const form = e.target.closest("form") as HTMLFormElement
               form?.requestSubmit()
             }}

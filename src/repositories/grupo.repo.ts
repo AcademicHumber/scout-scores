@@ -83,15 +83,17 @@ export async function deleteGrupo(
   const grupo = await prisma.grupoScout.findFirst({ where: { id, organizationId } })
   if (!grupo) throw new BusinessError("NOT_FOUND")
 
-  const [miembros, memberships, invitations] = await Promise.all([
+  const [miembros, memberships, invitations, patrullas] = await Promise.all([
     prisma.miembroScout.count({ where: { grupoScoutId: id, organizationId } }),
     prisma.membership.count({ where: { grupoScoutId: id, organizationId } }),
     prisma.invitation.count({ where: { grupoScoutId: id, organizationId, status: "PENDING" } }),
+    prisma.patrulla.count({ where: { grupoScoutId: id } }),
   ])
 
   if (miembros > 0) throw new BusinessError("HAS_MIEMBROS", { count: miembros })
   if (memberships > 0) throw new BusinessError("HAS_MEMBERSHIPS", { count: memberships })
   if (invitations > 0) throw new BusinessError("HAS_INVITATIONS", { count: invitations })
+  if (patrullas > 0) throw new BusinessError("HAS_PATRULLAS", { count: patrullas })
 
   await prisma.$transaction(async (tx) => {
     await tx.grupoScout.delete({ where: { id } })
