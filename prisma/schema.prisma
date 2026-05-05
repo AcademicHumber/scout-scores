@@ -66,6 +66,13 @@ enum ActividadTipo {
   OTRO
 }
 
+enum PatrullaCategoria {
+  LOBATO
+  EXPLORADOR
+  PIONERO
+  ROVER
+}
+
 // ──────────────────────────────────────────────────────────────
 // Tenant raíz
 // ──────────────────────────────────────────────────────────────
@@ -102,6 +109,7 @@ model GrupoScout {
   memberships  Membership[]
   invitations  Invitation[]
   miembros     MiembroScout[]
+  patrullas    Patrulla[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -125,6 +133,7 @@ model User {
   memberships   Membership[]
   miembrosScout MiembroScout[]
   auditLogs     AuditLog[]     @relation("AuditLogActor")
+  postasJuez    Posta[]        @relation("PostaJuez")
 }
 
 model Account {
@@ -254,6 +263,7 @@ model ScoreTemplate {
 
   organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   criterios    TemplateCriterion[]
+  postas       Posta[]
 
   @@unique([organizationId, nombre])
   @@index([organizationId])
@@ -302,6 +312,7 @@ model Evento {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   actividades  Actividad[]
+  patrullas    Patrulla[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -325,9 +336,57 @@ model Actividad {
   updatedAt    DateTime      @updatedAt
 
   evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  postas Posta[]
 
   @@unique([eventoId, orden])
   @@index([eventoId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Posta — estación dentro de una actividad
+// ──────────────────────────────────────────────────────────────
+
+model Posta {
+  id          String   @id @default(cuid(2))
+  actividadId String
+  nombre      String
+  descripcion String?
+  templateId  String?
+  weight      Decimal  @db.Decimal(6, 2) @default(1.0)
+  juezUserId  String?
+  orden       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  actividad Actividad      @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  template  ScoreTemplate? @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  juezUser  User?          @relation("PostaJuez", fields: [juezUserId], references: [id], onDelete: SetNull)
+
+  @@unique([actividadId, orden])
+  @@index([actividadId])
+  @@index([templateId])
+  @@index([juezUserId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Patrulla — equipo competidor, por evento, asociada a un grupo
+// ──────────────────────────────────────────────────────────────
+
+model Patrulla {
+  id           String             @id @default(cuid(2))
+  eventoId     String
+  grupoScoutId String
+  nombre       String
+  categoria    PatrullaCategoria?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  evento     Evento     @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  grupoScout GrupoScout @relation(fields: [grupoScoutId], references: [id], onDelete: Restrict)
+
+  @@unique([eventoId, nombre])
+  @@index([eventoId])
+  @@index([grupoScoutId])
 }
 
 // ──────────────────────────────────────────────────────────────
