@@ -11,7 +11,24 @@ import { Decimal } from "@prisma/client/runtime/client"
 async function _findById(organizationId: string, id: string) {
   return prisma.evento.findFirst({
     where: { id, organizationId },
-    include: { actividades: { orderBy: { orden: "asc" } } },
+    include: {
+      actividades: {
+        orderBy: { orden: "asc" },
+        include: {
+          postas: {
+            orderBy: { orden: "asc" },
+            include: {
+              template: { select: { id: true, nombre: true, archivedAt: true } },
+              juezUser: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      },
+      patrullas: {
+        orderBy: { createdAt: "asc" },
+        include: { grupoScout: { select: { id: true, nombre: true } } },
+      },
+    },
   })
 }
 
@@ -44,17 +61,59 @@ const validTransitions: Record<EventoEstado, EventoEstado[]> = {
 }
 
 async function canTransitionToActivo(eventoId: string): Promise<void> {
-  const actividades = await prisma.actividad.findMany({ where: { eventoId } })
-  if (actividades.length === 0) {
-    throw new BusinessError("PESOS_INVALIDOS", { sumaActual: 0, faltante: 100, sinActividades: true })
+  const evento = await prisma.evento.findUnique({
+    where: { id: eventoId },
+    include: {
+      actividades: {
+        include: { postas: { select: { id: true, nombre: true, templateId: true } } },
+      },
+      patrullas: { select: { id: true } },
+    },
+  })
+  if (!evento) throw new BusinessError("NOT_FOUND")
+
+  const errores: Array<{ code: string; meta?: Record<string, unknown> }> = []
+
+  // 1. Pesos = 100
+  if (evento.actividades.length === 0) {
+    errores.push({ code: "PESOS_INVALIDOS", meta: { sumaActual: 0, faltante: 100, sinActividades: true } })
+  } else {
+    const suma = evento.actividades.reduce((acc, a) => acc.plus(a.pesoRelativo), new Decimal(0))
+    const diff = suma.minus(100).abs()
+    if (diff.greaterThan(0.01)) {
+      errores.push({
+        code: "PESOS_INVALIDOS",
+        meta: { sumaActual: suma.toNumber(), faltante: new Decimal(100).minus(suma).toNumber() },
+      })
+    }
   }
-  const suma = actividades.reduce((acc, a) => acc.plus(a.pesoRelativo), new Decimal(0))
-  const diff = suma.minus(100).abs()
-  if (diff.greaterThan(0.01)) {
-    throw new BusinessError("PESOS_INVALIDOS", {
-      sumaActual: suma.toNumber(),
-      faltante: new Decimal(100).minus(suma).toNumber(),
+
+  // 2. Cada actividad ≥ 1 posta
+  const actividadesSinPostas = evento.actividades.filter((a) => a.postas.length === 0)
+  if (actividadesSinPostas.length > 0) {
+    errores.push({
+      code: "ACTIVIDAD_SIN_POSTAS",
+      meta: { actividades: actividadesSinPostas.map((a) => ({ id: a.id, nombre: a.nombre })) },
     })
+  }
+
+  // 3. Cada posta tiene plantilla
+  const postasSinPlantilla = evento.actividades.flatMap((a) =>
+    a.postas
+      .filter((p) => p.templateId === null)
+      .map((p) => ({ id: p.id, nombre: p.nombre, actividadNombre: a.nombre })),
+  )
+  if (postasSinPlantilla.length > 0) {
+    errores.push({ code: "POSTA_SIN_PLANTILLA", meta: { postas: postasSinPlantilla } })
+  }
+
+  // 4. ≥ 1 patrulla
+  if (evento.patrullas.length === 0) {
+    errores.push({ code: "EVENTO_SIN_PATRULLAS" })
+  }
+
+  if (errores.length > 0) {
+    throw new BusinessError("PRE_ACTIVACION_INCOMPLETA", { errores })
   }
 }
 
