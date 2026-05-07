@@ -5,6 +5,7 @@ import { Decimal } from "@prisma/client/runtime/client"
 
 const {
   mockEventoFindFirst,
+  mockEventoFindUnique,
   mockEventoFindMany,
   mockEventoCreate,
   mockEventoUpdate,
@@ -19,6 +20,7 @@ const {
   mockTransaction,
 } = vi.hoisted(() => ({
   mockEventoFindFirst:  vi.fn(),
+  mockEventoFindUnique: vi.fn(),
   mockEventoFindMany:   vi.fn(),
   mockEventoCreate:     vi.fn(),
   mockEventoUpdate:     vi.fn(),
@@ -36,12 +38,13 @@ const {
 vi.mock("@/lib/db", () => ({
   prisma: {
     evento: {
-      findFirst: mockEventoFindFirst,
-      findMany:  mockEventoFindMany,
-      create:    mockEventoCreate,
-      update:    mockEventoUpdate,
-      delete:    mockEventoDelete,
-      count:     mockEventoCount,
+      findFirst:  mockEventoFindFirst,
+      findUnique: mockEventoFindUnique,
+      findMany:   mockEventoFindMany,
+      create:     mockEventoCreate,
+      update:     mockEventoUpdate,
+      delete:     mockEventoDelete,
+      count:      mockEventoCount,
     },
     actividad: {
       findFirst:  mockActividadFindFirst,
@@ -160,14 +163,24 @@ describe("deleteEvento", () => {
 
 // ─── transicionarEstado ───────────────────────────────────────────────────────
 
+// Helper: construye un evento fake con el shape que espera canTransitionToActivo
+function makeEventoActivo(actividadesConPesos: number[], conPatrulla = true, conAsignaciones = true) {
+  return {
+    id: "ev-1",
+    actividades: actividadesConPesos.map((peso, i) => ({
+      id: `a${i + 1}`,
+      nombre: `Actividad ${i + 1}`,
+      pesoRelativo: new Decimal(String(peso)),
+      asignaciones: conAsignaciones ? [{ posta: { id: "p1", nombre: "Posta 1", templateId: "tpl-1" } }] : [],
+    })),
+    patrullas: conPatrulla ? [{ id: "pat-1" }] : [],
+  }
+}
+
 describe("transicionarEstado", () => {
   it("BORRADOR → ACTIVO con actividades sumando 100", async () => {
     mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
-    mockActividadFindMany.mockResolvedValue([
-      { id: "a1", pesoRelativo: new Decimal("30") },
-      { id: "a2", pesoRelativo: new Decimal("45") },
-      { id: "a3", pesoRelativo: new Decimal("25") },
-    ])
+    mockEventoFindUnique.mockResolvedValue(makeEventoActivo([30, 45, 25]))
     mockEventoUpdate.mockResolvedValue({})
 
     await transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")
@@ -179,31 +192,25 @@ describe("transicionarEstado", () => {
 
   it("BORRADOR → ACTIVO sin actividades lanza PESOS_INVALIDOS sinActividades", async () => {
     mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
-    mockActividadFindMany.mockResolvedValue([])
+    mockEventoFindUnique.mockResolvedValue({ id: "ev-1", actividades: [], patrullas: [{ id: "pat-1" }] })
 
     await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).rejects.toMatchObject({
-      code: "PESOS_INVALIDOS",
-      meta: expect.objectContaining({ sinActividades: true }),
+      code: "PRE_ACTIVACION_INCOMPLETA",
     })
   })
 
-  it("BORRADOR → ACTIVO con suma=80 lanza PESOS_INVALIDOS", async () => {
+  it("BORRADOR → ACTIVO con suma=80 lanza PRE_ACTIVACION_INCOMPLETA", async () => {
     mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
-    mockActividadFindMany.mockResolvedValue([{ id: "a1", pesoRelativo: new Decimal("80") }])
+    mockEventoFindUnique.mockResolvedValue(makeEventoActivo([80]))
 
     await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).rejects.toMatchObject({
-      code: "PESOS_INVALIDOS",
-      meta: expect.objectContaining({ sumaActual: 80, faltante: 20 }),
+      code: "PRE_ACTIVACION_INCOMPLETA",
     })
   })
 
   it("BORRADOR → ACTIVO con suma=99.99 es válido (tolerancia 0.01)", async () => {
     mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
-    mockActividadFindMany.mockResolvedValue([
-      { id: "a1", pesoRelativo: new Decimal("33.33") },
-      { id: "a2", pesoRelativo: new Decimal("33.33") },
-      { id: "a3", pesoRelativo: new Decimal("33.33") },
-    ])
+    mockEventoFindUnique.mockResolvedValue(makeEventoActivo([33.33, 33.33, 33.33]))
     mockEventoUpdate.mockResolvedValue({})
 
     await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).resolves.toBeUndefined()
@@ -211,13 +218,9 @@ describe("transicionarEstado", () => {
 
   it("BORRADOR → ACTIVO con suma=99.98 falla (fuera de tolerancia)", async () => {
     mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
-    mockActividadFindMany.mockResolvedValue([
-      { id: "a1", pesoRelativo: new Decimal("33.33") },
-      { id: "a2", pesoRelativo: new Decimal("33.33") },
-      { id: "a3", pesoRelativo: new Decimal("33.32") },
-    ])
+    mockEventoFindUnique.mockResolvedValue(makeEventoActivo([33.33, 33.33, 33.32]))
 
-    await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).rejects.toMatchObject({ code: "PESOS_INVALIDOS" })
+    await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).rejects.toMatchObject({ code: "PRE_ACTIVACION_INCOMPLETA" })
   })
 
   it("ACTIVO → CERRADO setea closedAt sin activatedAt", async () => {
