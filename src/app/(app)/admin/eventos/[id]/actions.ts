@@ -94,6 +94,13 @@ export async function updateMetadataAction(
 
 type PreActivacionError = { code: string; meta?: Record<string, unknown> }
 
+type CierreIncompletoFaltante = {
+  postaNombre: string
+  actividadNombre: string
+  patrullaNombre: string
+  estado: "SIN_CARGAR" | "BORRADOR"
+}
+
 export type TransicionarEstadoState = {
   error?: string
   pesosError?: { sumaActual: number; faltante: number; sinActividades?: boolean }
@@ -148,6 +155,10 @@ export async function transicionarEstadoAction(
         const meta = err.meta as { errores: PreActivacionError[] }
         return { error: buildPreActivacionMessage(meta.errores) }
       }
+      if (err.code === "CIERRE_INCOMPLETO") {
+        const meta = err.meta as { faltantes: CierreIncompletoFaltante[] }
+        return { error: buildCierreIncompletoMessage(meta.faltantes) }
+      }
       if (err.code === "PESOS_INVALIDOS") {
         const meta = err.meta as { sumaActual: number; faltante: number; sinActividades?: boolean }
         return { pesosError: meta }
@@ -157,6 +168,25 @@ export async function transicionarEstadoAction(
     }
     throw err
   }
+}
+
+function buildCierreIncompletoMessage(faltantes: CierreIncompletoFaltante[]): string {
+  const lines: string[] = ["No se puede cerrar el evento. Faltan planillas:"]
+  const grupos = new Map<string, CierreIncompletoFaltante[]>()
+  for (const f of faltantes) {
+    const key = `${f.postaNombre}|${f.actividadNombre}`
+    if (!grupos.has(key)) grupos.set(key, [])
+    grupos.get(key)!.push(f)
+  }
+  for (const [key, items] of grupos) {
+    const [postaNombre, actividadNombre] = key.split("|")
+    lines.push(`• ${postaNombre} (${actividadNombre})`)
+    for (const i of items) {
+      const estadoLabel = i.estado === "SIN_CARGAR" ? "sin cargar" : "borrador"
+      lines.push(`    - ${i.patrullaNombre} — ${estadoLabel}`)
+    }
+  }
+  return lines.join("\n")
 }
 
 // ─── addActividad ─────────────────────────────────────────────────────────────
