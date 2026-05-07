@@ -17,6 +17,7 @@ const {
   mockActividadUpdate,
   mockActividadDelete,
   mockActividadAggregate,
+  mockScoreSheetCount,
   mockTransaction,
 } = vi.hoisted(() => ({
   mockEventoFindFirst:  vi.fn(),
@@ -32,6 +33,7 @@ const {
   mockActividadUpdate:  vi.fn(),
   mockActividadDelete:  vi.fn(),
   mockActividadAggregate: vi.fn(),
+  mockScoreSheetCount:  vi.fn(),
   mockTransaction:      vi.fn(),
 }))
 
@@ -54,6 +56,7 @@ vi.mock("@/lib/db", () => ({
       delete:     mockActividadDelete,
       aggregate:  mockActividadAggregate,
     },
+    scoreSheet: { count: mockScoreSheetCount },
     auditLog: { create: vi.fn() },
     $transaction: mockTransaction,
   },
@@ -223,8 +226,10 @@ describe("transicionarEstado", () => {
     await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).rejects.toMatchObject({ code: "PRE_ACTIVACION_INCOMPLETA" })
   })
 
-  it("ACTIVO → CERRADO setea closedAt sin activatedAt", async () => {
+  it("ACTIVO → CERRADO setea closedAt cuando todas las planillas están enviadas", async () => {
     mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "ACTIVO" })
+    // canTransitionToCerrado: evento sin actividades → producto cartesiano vacío → no hay faltantes
+    mockEventoFindUnique.mockResolvedValue({ id: "ev-1", actividades: [], patrullas: [] })
     mockEventoUpdate.mockResolvedValue({})
 
     await transicionarEstado("org-1", "ev-1", "CERRADO", "user-1")
@@ -345,8 +350,118 @@ describe("reorderActividad", () => {
 // ─── isEventoLocked ───────────────────────────────────────────────────────────
 
 describe("isEventoLocked", () => {
-  it("retorna false en Plan 6a (sin Posta)", async () => {
+  it("retorna false cuando no hay ScoreSheets ENVIADAS", async () => {
+    mockScoreSheetCount.mockResolvedValue(0)
     expect(await isEventoLocked("ev-1")).toBe(false)
+  })
+
+  it("retorna true con al menos una ScoreSheet ENVIADA", async () => {
+    mockScoreSheetCount.mockResolvedValue(1)
+    expect(await isEventoLocked("ev-1")).toBe(true)
+  })
+
+  it("retorna false con solo BORRADORES (count=0 ENVIADAS)", async () => {
+    mockScoreSheetCount.mockResolvedValue(0)
+    expect(await isEventoLocked("ev-1")).toBe(false)
+  })
+})
+
+// ─── canTransitionToCerrado ───────────────────────────────────────────────────
+
+function makeEventoConPlanillas({
+  patrullas,
+  asignaciones,
+}: {
+  patrullas: Array<{ id: string; nombre: string }>
+  asignaciones: Array<{
+    posta: { id: string; nombre: string }
+    actividadNombre: string
+    scoreSheets: Array<{ patrullaId: string; estado: string }>
+  }>
+}) {
+  return {
+    id: "ev-1",
+    actividades: [
+      {
+        nombre: asignaciones[0]?.actividadNombre ?? "Actividad 1",
+        asignaciones: asignaciones.map((a) => ({
+          posta: a.posta,
+          scoreSheets: a.scoreSheets,
+        })),
+      },
+    ],
+    patrullas,
+  }
+}
+
+describe("canTransitionToCerrado (via transicionarEstado ACTIVO → CERRADO)", () => {
+  it("pasa cuando todas las planillas están ENVIADAS", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "ACTIVO" })
+    mockEventoFindUnique.mockResolvedValue(
+      makeEventoConPlanillas({
+        patrullas: [{ id: "p1", nombre: "Halcones" }],
+        asignaciones: [
+          {
+            posta: { id: "ps1", nombre: "Amarres" },
+            actividadNombre: "Construcción",
+            scoreSheets: [{ patrullaId: "p1", estado: "ENVIADA" }],
+          },
+        ],
+      }),
+    )
+    mockEventoUpdate.mockResolvedValue({})
+
+    await expect(transicionarEstado("org-1", "ev-1", "CERRADO", "user-1")).resolves.toBeUndefined()
+  })
+
+  it("lanza CIERRE_INCOMPLETO con planilla SIN_CARGAR", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "ACTIVO" })
+    mockEventoFindUnique.mockResolvedValue(
+      makeEventoConPlanillas({
+        patrullas: [{ id: "p1", nombre: "Halcones" }],
+        asignaciones: [
+          {
+            posta: { id: "ps1", nombre: "Amarres" },
+            actividadNombre: "Construcción",
+            scoreSheets: [], // ninguna planilla cargada para p1
+          },
+        ],
+      }),
+    )
+
+    await expect(transicionarEstado("org-1", "ev-1", "CERRADO", "user-1")).rejects.toMatchObject({
+      code: "CIERRE_INCOMPLETO",
+      meta: {
+        faltantes: [
+          expect.objectContaining({ patrullaNombre: "Halcones", estado: "SIN_CARGAR" }),
+        ],
+      },
+    })
+  })
+
+  it("lanza CIERRE_INCOMPLETO con planilla en BORRADOR", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "ACTIVO" })
+    mockEventoFindUnique.mockResolvedValue(
+      makeEventoConPlanillas({
+        patrullas: [{ id: "p1", nombre: "Águilas" }],
+        asignaciones: [
+          {
+            posta: { id: "ps1", nombre: "Amarres" },
+            actividadNombre: "Construcción",
+            scoreSheets: [{ patrullaId: "p1", estado: "BORRADOR" }],
+          },
+        ],
+      }),
+    )
+
+    await expect(transicionarEstado("org-1", "ev-1", "CERRADO", "user-1")).rejects.toMatchObject({
+      code: "CIERRE_INCOMPLETO",
+      meta: {
+        faltantes: [
+          expect.objectContaining({ patrullaNombre: "Águilas", estado: "BORRADOR" }),
+        ],
+      },
+    })
   })
 })
 
