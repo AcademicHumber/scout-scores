@@ -325,22 +325,16 @@
       },
       "postas": {
         "title": "Postas",
-        "empty": "Aún no hay postas. Agregá la primera abajo.",
-        "addTitle": "Agregar posta",
-        "addSubmit": "Agregar",
-        "row": {
-          "nombre": "Nombre",
-          "descripcion": "Descripción (opcional)",
-          "weight": "Peso",
-          "plantilla": "Plantilla",
-          "plantillaSinAsignar": "(sin asignar)",
-          "juez": "Juez",
-          "juezSinAsignar": "(sin asignar)",
-          "save": "Guardar",
-          "delete": "Eliminar",
-          "moveUp": "Subir",
-          "moveDown": "Bajar",
-          "deleteConfirm": "¿Eliminar la posta \"{{nombre}}\"?"
+        "empty": "Sin postas asignadas.",
+        "asignar": "+ Asignar posta",
+        "desasignar": "Desasignar posta",
+        "desasignarConfirm": "¿Desasignar esta posta de la actividad?",
+        "dialogTitle": "Asignar posta a actividad",
+        "dialogTitleEditar": "Editar asignación de posta",
+        "sinPlantilla": "Sin plantilla",
+        "sinJuez": "Sin juez",
+        "errors": {
+          "yaAsignadaEnEvento": "Esta posta ya está asignada a otra actividad de este evento"
         }
       },
       "patrullas": {

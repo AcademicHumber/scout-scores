@@ -3,6 +3,9 @@
 import { useState } from "react"
 import { AsignacionRow } from "./AsignacionRow"
 import { AsignacionPostaDialog } from "./AsignacionPostaDialog"
+import messages from "@/messages/es.json"
+
+const m = messages.admin.eventos.postas
 
 type Template = { id: string; nombre: string; archivedAt: Date | null } | null
 
@@ -52,20 +55,20 @@ export function AsignacionesInActividad({ actividadId, asignaciones, isLocked, p
   return (
     <div className="mt-3 border-t border-gray-100 pt-3">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Postas</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{m.title}</p>
         {!isLocked && (
           <button
             type="button"
             onClick={openCreate}
             className="rounded bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand hover:bg-brand/20"
           >
-            + Asignar posta
+            {m.asignar}
           </button>
         )}
       </div>
 
       {asignaciones.length === 0 ? (
-        <p className="text-xs text-gray-400">Sin postas asignadas.</p>
+        <p className="text-xs text-gray-400">{m.empty}</p>
       ) : (
         <div className="space-y-1">
           {asignaciones.map((asig, idx) => (

@@ -2,6 +2,9 @@
 
 import { useActionState, useState } from "react"
 import { desasignarPostaAction, reorderAsignacionAction } from "@/app/(app)/admin/eventos/[id]/actions"
+import messages from "@/messages/es.json"
+
+const m = messages.admin.eventos.postas
 
 type Template = { id: string; nombre: string; archivedAt: Date | null } | null
 
@@ -51,12 +54,12 @@ export function AsignacionRow({ asignacion, isFirst, isLast, isLocked, onEdit }:
           {template.nombre}{template.archivedAt ? " [archivada]" : ""}
         </span>
       ) : (
-        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">Sin plantilla</span>
+        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{m.sinPlantilla}</span>
       )}
 
       {/* Juez */}
       <span className="text-xs text-gray-500">
-        {juez ? `Juez: ${juez.name ?? juez.email}` : "Sin juez"}
+        {juez ? `Juez: ${juez.name ?? juez.email}` : m.sinJuez}
       </span>
 
       {/* Encargado */}

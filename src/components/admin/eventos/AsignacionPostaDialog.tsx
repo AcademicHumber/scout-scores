@@ -54,8 +54,7 @@ export function AsignacionPostaDialog({ actividadId, asignacion, postasDisponibl
 
   // Cerrar al completar sin error
   useEffect(() => {
-    if ((asignarState && !asignarState.error && !asignarState.fieldErrors && Object.keys(asignarState).length > 0) ||
-        (updateState && !updateState.error && !updateState.fieldErrors && updateState.asignacion)) {
+    if (asignarState.success || updateState.asignacion) {
       onClose()
     }
   }, [asignarState, updateState, onClose])

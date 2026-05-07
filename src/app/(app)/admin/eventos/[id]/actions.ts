@@ -336,6 +336,7 @@ const UpdateAsignacionSchema = z.object({
 })
 
 export type AsignacionState = {
+  success?: true
   error?: string
   fieldErrors?: Record<string, string[]>
   asignacion?: {
@@ -394,7 +395,7 @@ export async function asignarPostaAction(
       },
       org.userId,
     )
-    return {}
+    return { success: true }
   } catch (err) {
     if (err instanceof BusinessError) return asignacionError(err.code)
     throw err
