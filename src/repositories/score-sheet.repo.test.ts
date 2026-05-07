@@ -57,6 +57,8 @@ function makeCriterios(count = 3) {
   }))
 }
 
+type CriterioFixture = { id: string; nombre: string; tipo: "PUNTUABLE" | "DESEMPATE"; orden: number }
+
 function makeAsignacion({
   userId = "user-juez",
   isJuez = true,
@@ -64,7 +66,7 @@ function makeAsignacion({
   templateModo = "CRITERIOS" as "CRITERIOS" | "PUNTAJE_UNICO",
   valoresValidos = [1, 2, 3, 4, 5],
   valoresValidosDesempate = [1, 2, 3],
-  criterios = makeCriterios(3),
+  criterios = makeCriterios(3) as CriterioFixture[],
 } = {}) {
   return {
     id: "asig-1",

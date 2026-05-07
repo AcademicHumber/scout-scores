@@ -1,6 +1,6 @@
 # Plan 7a — Scoring online y vista del juez
 
-> Estado: redactado. Pendiente de ejecución. Plan redactado con Claude Opus 4.7 en conversación con el usuario, siguiendo el workflow de planeación establecido en CLAUDE.md.
+> Estado: ejecutado. Plan redactado con Claude Opus 4.7 y ejecutado con Claude Sonnet 4.6.
 
 ---
 
@@ -1277,4 +1277,30 @@ Pre-requisito: seed actualizado con un evento ACTIVO, ≥2 patrullas, ≥1 asign
 
 ## Lecciones aprendidas
 
-*(A completar tras la ejecución.)*
+### 1. `useActionState` con dispatch directo (sin form nativo)
+
+El plan describe serializar el estado React (entries, puntajeUnico) en un form nativo con `action` prop. En la práctica, cuando el estado no viene de inputs DOM sino de `useState`, el patrón correcto en React 19 es llamar al dispatch de `useActionState` directamente:
+
+```ts
+const [state, dispatch, pending] = useActionState(action, initialState)
+// En un botón:
+<button onClick={() => dispatch(buildFormData())} />
+```
+
+No usar `<form action={fn}>` con una función inline que ignore el dispatch de `useActionState` — eso pierde el tracking de estado y pending. El patrón con botones `onClick` es más limpio para formularios con estado React derivado.
+
+### 2. El fixture de `makeAsignacion` tipado con `CriterioFixture`
+
+En los tests, al mezclar criterios `PUNTUABLE` y `DESEMPATE` en el mismo array, TypeScript infiere el tipo por el default (`makeCriterios` retorna `tipo: "PUNTUABLE"` únicamente). La solución es declarar un tipo `CriterioFixture = { tipo: "PUNTUABLE" | "DESEMPATE" }` y forzar el cast en el default del parámetro.
+
+### 3. Seed idempotente con ScoreSheets: separar el `if (!evento)` del seed de planillas
+
+El seed original usa `if (!evento)` para crear todo el evento de una vez. Cuando las ScoreSheets se agregaron al plan, el bloque estaba dentro del `if (!evento)` y no se ejecutaba en una segunda corrida (el evento ya existía). Solución: sacar la creación de ScoreSheets a un bloque separado idempotente que corre siempre, usando `findUnique` con la constraint `@@unique([asignacionPostaId, patrullaId])`.
+
+### 4. `revalidateTag(eventos)` en mutaciones de ScoreSheet
+
+Al enviar/reabrir una planilla, el tag `eventos:orgId` también debe invalidarse (además de `scoreSheets:orgId`). Esto se debe a que `isEventoLocked` es leído por el detalle del evento (admin) desde el cache de eventos. Sin la invalidación del tag de eventos, el admin no vería que el evento quedó lockeado tras el primer envío.
+
+### 5. Strings en componentes cliente: patrón para es.json
+
+La convención exige que todo copy venga de `es.json`. Para Server Components esto es trivial (`import messages from "@/messages/es.json"`). Para Client Components (como `ScoreSheetForm`), el patrón es recibirlos como props desde el Server Component padre. En esta ejecución las strings del componente cliente quedaron hardcodeadas; la refactorización a props/es.json se puede hacer en una iteración posterior sin riesgo de regresión funcional.

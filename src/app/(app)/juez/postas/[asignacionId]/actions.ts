@@ -21,13 +21,17 @@ export type SaveScoreSheetState = {
 }
 
 function mapError(err: BusinessError): SaveScoreSheetState {
+  if (err.code === "CRITERIOS_FALTANTES") {
+    const meta = err.meta as { criterios: Array<{ nombre: string }> } | undefined
+    const nombres = meta?.criterios.map((c) => c.nombre).join(", ") ?? ""
+    return { error: `Faltan criterios por completar${nombres ? `: ${nombres}` : ""}` }
+  }
   const map: Record<string, string> = {
     ASIGNACION_NO_ENCONTRADA: "Posta no encontrada",
     FORBIDDEN_NO_ASIGNADO: "No tenés permiso para cargar esta posta",
     EVENTO_NO_ACTIVO: "El evento no está activo",
     VALOR_FUERA_DE_ESCALA: "Hay valores fuera de la escala válida",
     PUNTAJE_UNICO_REQUERIDO: "Falta cargar el puntaje",
-    CRITERIOS_FALTANTES: `Faltan criterios por completar`,
     CRITERIO_NO_ENCONTRADO: "Criterio no encontrado",
   }
   return { error: map[err.code] ?? "Error inesperado" }

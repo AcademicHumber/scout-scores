@@ -387,5 +387,47 @@
     "errors": {
       "forbidden": "No tenés permiso para acceder a esta sección"
     }
+  },
+  "juez": {
+    "eventos": {
+      "title": "Mis eventos",
+      "subtitle": "Eventos activos donde tenés postas asignadas",
+      "empty": "No tenés postas asignadas en eventos activos.",
+      "emptyHint": "Avisale al admin si pensás que es un error."
+    },
+    "evento": {
+      "postasTitle": "Mis postas en este evento",
+      "empty": "No tenés postas asignadas en este evento.",
+      "postasCount": "{{count}} posta",
+      "postasCountPlural": "{{count}} postas"
+    },
+    "posta": {
+      "patrullasTitle": "Patrullas",
+      "estado": {
+        "SIN_CARGAR": "Sin cargar",
+        "BORRADOR": "Borrador",
+        "ENVIADA": "Enviada"
+      },
+      "modo": {
+        "CRITERIOS": "Por criterios",
+        "PUNTAJE_UNICO": "Puntaje único"
+      }
+    },
+    "planilla": {
+      "titleEnviada": "Puntaje enviado",
+      "titleNueva": "Cargar puntaje",
+      "enviadaBanner": "Planilla enviada",
+      "enviadaHint": "Si necesitás corregirla, pedile al admin que la reabra.",
+      "puntajeUnicoLabel": "Puntaje",
+      "criteriosPuntuables": "Criterios puntuables",
+      "criteriosDesempate": "Criterios de desempate",
+      "tipoPuntuable": "Puntuable",
+      "tipoDesempate": "Desempate",
+      "guardarBorrador": "Guardar borrador",
+      "enviar": "Enviar",
+      "guardando": "Guardando…",
+      "enviando": "Enviando…",
+      "toastBorrador": "Borrador guardado"
+    }
   }
 }

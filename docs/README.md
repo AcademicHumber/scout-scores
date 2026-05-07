@@ -16,7 +16,7 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [06a — Eventos y ciclo de vida](plans/06a-eventos.md) ✓
 - [06b — Postas, patrullas, asignación de jueces](plans/06b-postas-patrullas-jueces.md) ✓
 - [06c — Postas como biblioteca reutilizable](plans/06c-postas-biblioteca.md) ✓
-- 07a — Vista del juez (online) _(pendiente)_
+- [07a — Scoring online y vista del juez](plans/07a-scoring-juez.md) ✓
 - 07b — PWA + cola offline + sync _(pendiente)_
 - 08 — Reportes, leaderboard y vistas públicas _(pendiente)_
 - 09 — Cierre de evento y publicación _(pendiente)_

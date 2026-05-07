@@ -101,6 +101,8 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 21. **`<dialog>` nativo + Tailwind requiere `m-auto` explícito**: el preflight de Tailwind v4 aplica `* { margin: 0 }` que pisa el `margin: auto` del UA stylesheet del browser, quitando el centrado automático de `<dialog showModal()>`. Siempre agregar `m-auto` al elemento `<dialog>`. (Ver Plan 6c lección #2).
 
+22. **`useActionState` con estado React: usar dispatch directo, no `<form action>`**: cuando el formulario tiene estado en `useState` (no en inputs DOM), serializar ese estado en un `FormData` y llamar al dispatch directamente desde un `onClick`, no mediante `<form action={dispatch}>` con una función inline. La forma inline `action={(fd) => fn(buildFd())}` bypasea el mecanismo de pending/state de `useActionState`. (Ver Plan 7a lección #1).
+
 ## Documentación
 
 Toda la planificación vive en `docs/` versionada con git:
@@ -114,6 +116,7 @@ Toda la planificación vive en `docs/` versionada con git:
 - `docs/plans/06a-eventos.md` — Plan 6a, ya ejecutado (Evento + Actividad, máquina de estados, CRUD inline)
 - `docs/plans/06b-postas-patrullas-jueces.md` — Plan 6b, ya ejecutado (Posta inline, Patrulla, gates de pre-activación, isTemplateLocked)
 - `docs/plans/06c-postas-biblioteca.md` — Plan 6c, ya ejecutado (Posta standalone, AsignacionPosta, /admin/postas, dialog de asignación)
+- `docs/plans/07a-scoring-juez.md` — Plan 7a, ya ejecutado (ScoreSheet, ScoreEntry, vista del juez mobile-first, gate canTransitionToCerrado)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
 - `docs/adr/0002-repository-layer.md` — decisión de capa de repositorios con `unstable_cache` y `revalidateTag`
 - `docs/adr/0003-jerarquia-evento-actividad-posta.md` — cambio de jerarquía respecto al master plan original
@@ -143,4 +146,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 6c completado** (Postas como biblioteca reutilizable — `Posta` standalone con `organizationId` y `materiales` JSON, `AsignacionPosta` join table con datos por uso (juez, encargado, ayudantes, weight), CRUD en `/admin/postas` con historial de eventos, dialog de asignación en `/admin/eventos/[id]`, validación de unicidad por evento).
 
-**Próximo: Plan 7a** — Carga de scoring (ScoreSheet, ScoreEntry, vista del juez).
+**Plan 7a completado** (Scoring online y vista del juez — `ScoreSheet` + `ScoreEntry` con totales cacheados, `isEventoLocked` activado, gate `canTransitionToCerrado`, rutas `/juez/*` mobile-first con formulario de criterios y puntaje único, vista admin `/admin/eventos/[id]/planillas` con reapertura de planillas, AuditLog).
+
+**Próximo: Plan 7b** — Sync offline / PWA (ScoreSheetRevision, service worker).
