@@ -131,4 +131,4 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 6b completado** (Postas y Patrullas — `Posta` dentro de actividades con plantilla y juez asignables, `Patrulla` por evento con grupo scout, gates ampliados de pre-activación con acumulación de errores, `isTemplateLocked` activado, CRUD inline en `/admin/eventos/[id]`, audit log).
 
-**Próximo: Plan 7a** — Carga de scoring (ScoreSheet, ScoreEntry, vista del juez).
+**Próximo: Plan 6c** — Postas como biblioteca reutilizable (`Posta` standalone con `organizationId`, `AsignacionPosta` join table, CRUD en `/admin/postas`, dialog de asignación en eventos, historial de uso por posta, validación de unicidad por evento).
