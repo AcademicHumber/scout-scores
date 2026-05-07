@@ -11,12 +11,10 @@ import {
   reorderActividad,
 } from "@/repositories/evento.repo"
 import {
-  createPosta,
-  updatePosta,
-  deletePosta,
-  reorderPosta,
-  assignTemplate,
-  assignJuez,
+  asignarPosta,
+  updateAsignacion,
+  desasignarPosta,
+  reorderAsignacion,
 } from "@/repositories/posta.repo"
 import {
   createPatrulla,
@@ -320,211 +318,170 @@ export async function reorderActividadAction(
   }
 }
 
-// ─── Postas ───────────────────────────────────────────────────────────────────
+// ─── AsignacionPosta ──────────────────────────────────────────────────────────
 
-const PostaSchema = z.object({
-  nombre: z.string().trim().min(2).max(100),
-  descripcion: z.string().trim().max(500).optional(),
-  weight: z.coerce.number().min(0.01).max(999.99),
+const AsignacionSchema = z.object({
+  postaId: z.string().min(1),
+  juezUserId: z.string().optional(),
+  encargado: z.string().trim().max(100).optional(),
+  ayudantes: z.string().trim().max(300).optional(),
+  weight: z.coerce.number().min(0.01).max(999.99).default(1),
 })
 
-export type PostaState = {
+const UpdateAsignacionSchema = z.object({
+  juezUserId: z.string().optional(),
+  encargado: z.string().trim().max(100).optional(),
+  ayudantes: z.string().trim().max(300).optional(),
+  weight: z.coerce.number().min(0.01).max(999.99).default(1),
+})
+
+export type AsignacionState = {
   error?: string
   fieldErrors?: Record<string, string[]>
-  posta?: {
+  asignacion?: {
     id: string
-    nombre: string
-    descripcion: string | null
-    weight: string
-    templateId: string | null
-    template: { id: string; nombre: string; archivedAt: Date | null } | null
+    postaId: string
     juezUserId: string | null
+    encargado: string | null
+    ayudantes: string | null
+    weight: string
     juezUser: { id: string; name: string | null; email: string } | null
-    orden: number
   }
 }
 
-function postaError(code: string): PostaState {
+function asignacionError(code: string): AsignacionState {
   const map: Record<string, string> = {
     POSTA_NO_ENCONTRADA: "Posta no encontrada",
+    ASIGNACION_NO_ENCONTRADA: "Asignación no encontrada",
     ACTIVIDAD_NO_ENCONTRADA: "Actividad no encontrada",
-    EVENTO_LOCKED: "El evento ya tiene puntajes cargados; no se pueden modificar las postas",
-    NOT_FOUND: "Evento no encontrado",
-    PLANTILLA_INVALIDA: "La plantilla seleccionada no es válida o está archivada",
+    POSTA_YA_ASIGNADA_EN_EVENTO: "Esta posta ya está asignada a otra actividad de este evento",
+    EVENTO_LOCKED: "El evento ya tiene puntajes cargados",
     JUEZ_INVALIDO: "El usuario seleccionado no tiene rol de juez en este distrito",
   }
   return { error: map[code] ?? "Error inesperado" }
 }
 
-export async function addPostaAction(
-  _prev: PostaState,
+export async function asignarPostaAction(
+  _prev: AsignacionState,
   formData: FormData,
-): Promise<PostaState> {
+): Promise<AsignacionState> {
   const org = await requireRole(["ADMIN"])
   const actividadId = formData.get("actividadId") as string
 
   const raw = {
-    nombre: formData.get("nombre") as string,
-    descripcion: formData.get("descripcion") as string || undefined,
+    postaId: formData.get("postaId") as string,
+    juezUserId: (formData.get("juezUserId") as string) || undefined,
+    encargado: (formData.get("encargado") as string) || undefined,
+    ayudantes: (formData.get("ayudantes") as string) || undefined,
     weight: formData.get("weight") as string,
   }
 
-  const result = PostaSchema.safeParse(raw)
+  const result = AsignacionSchema.safeParse(raw)
   if (!result.success) {
     return { fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> }
   }
 
   try {
-    await createPosta(
+    await asignarPosta(
       org.organizationId,
       actividadId,
-      { nombre: result.data.nombre, descripcion: result.data.descripcion, weight: new Decimal(result.data.weight) },
+      {
+        postaId: result.data.postaId,
+        juezUserId: result.data.juezUserId || null,
+        encargado: result.data.encargado || null,
+        ayudantes: result.data.ayudantes || null,
+        weight: new Decimal(result.data.weight),
+      },
       org.userId,
     )
     return {}
   } catch (err) {
-    if (err instanceof BusinessError) return postaError(err.code)
+    if (err instanceof BusinessError) return asignacionError(err.code)
     throw err
   }
 }
 
-export async function updatePostaAction(
-  _prev: PostaState,
+export async function updateAsignacionAction(
+  _prev: AsignacionState,
   formData: FormData,
-): Promise<PostaState> {
+): Promise<AsignacionState> {
   const org = await requireRole(["ADMIN"])
-  const postaId = formData.get("postaId") as string
+  const asignacionId = formData.get("asignacionId") as string
 
   const raw = {
-    nombre: formData.get("nombre") as string,
-    descripcion: formData.get("descripcion") as string || undefined,
+    juezUserId: (formData.get("juezUserId") as string) || undefined,
+    encargado: (formData.get("encargado") as string) || undefined,
+    ayudantes: (formData.get("ayudantes") as string) || undefined,
     weight: formData.get("weight") as string,
   }
 
-  const result = PostaSchema.safeParse(raw)
+  const result = UpdateAsignacionSchema.safeParse(raw)
   if (!result.success) {
     return { fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> }
   }
 
   try {
-    const updated = await updatePosta(
+    const updated = await updateAsignacion(
       org.organizationId,
-      postaId,
-      { nombre: result.data.nombre, descripcion: result.data.descripcion, weight: new Decimal(result.data.weight) },
+      asignacionId,
+      {
+        juezUserId: result.data.juezUserId || null,
+        encargado: result.data.encargado || null,
+        ayudantes: result.data.ayudantes || null,
+        weight: new Decimal(result.data.weight),
+      },
       org.userId,
     )
     return {
-      posta: {
+      asignacion: {
         id: updated.id,
-        nombre: updated.nombre,
-        descripcion: updated.descripcion,
-        weight: updated.weight.toString(),
-        templateId: updated.templateId,
-        template: updated.template,
+        postaId: updated.postaId,
         juezUserId: updated.juezUserId,
+        encargado: updated.encargado,
+        ayudantes: updated.ayudantes,
+        weight: updated.weight.toString(),
         juezUser: updated.juezUser,
-        orden: updated.orden,
       },
     }
   } catch (err) {
-    if (err instanceof BusinessError) return postaError(err.code)
+    if (err instanceof BusinessError) return asignacionError(err.code)
     throw err
   }
 }
 
-export type DeletePostaState = { error?: string }
+export type DesasignarState = { error?: string }
 
-export async function deletePostaAction(
-  _prev: DeletePostaState,
+export async function desasignarPostaAction(
+  _prev: DesasignarState,
   formData: FormData,
-): Promise<DeletePostaState> {
+): Promise<DesasignarState> {
   const org = await requireRole(["ADMIN"])
-  const postaId = formData.get("postaId") as string
+  const asignacionId = formData.get("asignacionId") as string
 
   try {
-    await deletePosta(org.organizationId, postaId, org.userId)
+    await desasignarPosta(org.organizationId, asignacionId, org.userId)
     return {}
   } catch (err) {
-    if (err instanceof BusinessError) return { error: postaError(err.code).error }
+    if (err instanceof BusinessError) return { error: asignacionError(err.code).error }
     throw err
   }
 }
 
-export type ReorderPostaState = { error?: string }
+export type ReorderAsignacionState = { error?: string }
 
-export async function reorderPostaAction(
-  _prev: ReorderPostaState,
+export async function reorderAsignacionAction(
+  _prev: ReorderAsignacionState,
   formData: FormData,
-): Promise<ReorderPostaState> {
+): Promise<ReorderAsignacionState> {
   const org = await requireRole(["ADMIN"])
-  const postaId = formData.get("postaId") as string
+  const asignacionId = formData.get("asignacionId") as string
   const direction = formData.get("direction") as "up" | "down"
 
   try {
-    await reorderPosta(org.organizationId, postaId, direction, org.userId)
+    await reorderAsignacion(org.organizationId, asignacionId, direction, org.userId)
     return {}
   } catch (err) {
-    if (err instanceof BusinessError) return { error: postaError(err.code).error }
-    throw err
-  }
-}
-
-export async function assignTemplateAction(
-  _prev: PostaState,
-  formData: FormData,
-): Promise<PostaState> {
-  const org = await requireRole(["ADMIN"])
-  const postaId = formData.get("postaId") as string
-  const templateIdRaw = formData.get("templateId") as string
-  const templateId = templateIdRaw && templateIdRaw !== "" ? templateIdRaw : null
-
-  try {
-    const updated = await assignTemplate(org.organizationId, postaId, templateId, org.userId)
-    return {
-      posta: {
-        id: updated.id,
-        nombre: updated.nombre,
-        descripcion: updated.descripcion,
-        weight: updated.weight.toString(),
-        templateId: updated.templateId,
-        template: updated.template,
-        juezUserId: updated.juezUserId,
-        juezUser: updated.juezUser,
-        orden: updated.orden,
-      },
-    }
-  } catch (err) {
-    if (err instanceof BusinessError) return postaError(err.code)
-    throw err
-  }
-}
-
-export async function assignJuezAction(
-  _prev: PostaState,
-  formData: FormData,
-): Promise<PostaState> {
-  const org = await requireRole(["ADMIN"])
-  const postaId = formData.get("postaId") as string
-  const juezUserIdRaw = formData.get("juezUserId") as string
-  const juezUserId = juezUserIdRaw && juezUserIdRaw !== "" ? juezUserIdRaw : null
-
-  try {
-    const updated = await assignJuez(org.organizationId, postaId, juezUserId, org.userId)
-    return {
-      posta: {
-        id: updated.id,
-        nombre: updated.nombre,
-        descripcion: updated.descripcion,
-        weight: updated.weight.toString(),
-        templateId: updated.templateId,
-        template: updated.template,
-        juezUserId: updated.juezUserId,
-        juezUser: updated.juezUser,
-        orden: updated.orden,
-      },
-    }
-  } catch (err) {
-    if (err instanceof BusinessError) return postaError(err.code)
+    if (err instanceof BusinessError) return { error: asignacionError(err.code).error }
     throw err
   }
 }

@@ -31,3 +31,7 @@ export class BusinessError extends Error {
 // GRUPO_SCOUT_INVALIDO     — grupo scout no pertenece a la org
 // PLANTILLA_INVALIDA       — plantilla no pertenece a la org o está archivada
 // PRE_ACTIVACION_INCOMPLETA — acumulación de errores de gates al activar
+// NOMBRE_POSTA_DUPLICADO   — ya existe una posta con ese nombre en la org
+// POSTA_YA_ASIGNADA_EN_EVENTO — posta ya asignada a otra actividad del mismo evento
+// POSTA_EN_USO             — posta tiene asignaciones activas, no se puede eliminar
+// ASIGNACION_NO_ENCONTRADA — AsignacionPosta no encontrada o no pertenece a la org

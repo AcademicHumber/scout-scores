@@ -15,10 +15,12 @@ async function _findById(organizationId: string, id: string) {
       actividades: {
         orderBy: { orden: "asc" },
         include: {
-          postas: {
+          asignaciones: {
             orderBy: { orden: "asc" },
             include: {
-              template: { select: { id: true, nombre: true, archivedAt: true } },
+              posta: {
+                include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
+              },
               juezUser: { select: { id: true, name: true, email: true } },
             },
           },
@@ -65,7 +67,11 @@ async function canTransitionToActivo(eventoId: string): Promise<void> {
     where: { id: eventoId },
     include: {
       actividades: {
-        include: { postas: { select: { id: true, nombre: true, templateId: true } } },
+        include: {
+          asignaciones: {
+            include: { posta: { select: { id: true, nombre: true, templateId: true } } },
+          },
+        },
       },
       patrullas: { select: { id: true } },
     },
@@ -88,8 +94,8 @@ async function canTransitionToActivo(eventoId: string): Promise<void> {
     }
   }
 
-  // 2. Cada actividad ≥ 1 posta
-  const actividadesSinPostas = evento.actividades.filter((a) => a.postas.length === 0)
+  // 2. Cada actividad ≥ 1 asignación de posta
+  const actividadesSinPostas = evento.actividades.filter((a) => a.asignaciones.length === 0)
   if (actividadesSinPostas.length > 0) {
     errores.push({
       code: "ACTIVIDAD_SIN_POSTAS",
@@ -97,11 +103,11 @@ async function canTransitionToActivo(eventoId: string): Promise<void> {
     })
   }
 
-  // 3. Cada posta tiene plantilla
+  // 3. Cada posta asignada tiene plantilla
   const postasSinPlantilla = evento.actividades.flatMap((a) =>
-    a.postas
-      .filter((p) => p.templateId === null)
-      .map((p) => ({ id: p.id, nombre: p.nombre, actividadNombre: a.nombre })),
+    a.asignaciones
+      .filter((asig) => asig.posta.templateId === null)
+      .map((asig) => ({ id: asig.posta.id, nombre: asig.posta.nombre, actividadNombre: a.nombre })),
   )
   if (postasSinPlantilla.length > 0) {
     errores.push({ code: "POSTA_SIN_PLANTILLA", meta: { postas: postasSinPlantilla } })

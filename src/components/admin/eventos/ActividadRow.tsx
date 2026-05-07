@@ -2,24 +2,35 @@
 
 import { useActionState, useEffect, useState } from "react"
 import { updateActividadAction, deleteActividadAction, reorderActividadAction } from "@/app/(app)/admin/eventos/[id]/actions"
-import { PostasInActividad } from "./PostasInActividad"
+import { AsignacionesInActividad } from "./AsignacionesInActividad"
 import messages from "@/messages/es.json"
 import type { ActividadTipo } from "@/generated/prisma/enums"
 
 const m = messages.admin.eventos
 
-type Template = { id: string; nombre: string; archivedAt: Date | null } | null
-
-type Posta = {
+type Asignacion = {
   id: string
-  nombre: string
-  descripcion: string | null
-  weight: string
-  templateId: string | null
-  template: Template
+  postaId: string
+  posta: {
+    nombre: string
+    templateId: string | null
+    template: { id: string; nombre: string; archivedAt: Date | null } | null
+  }
   juezUserId: string | null
   juezUser: { id: string; name: string | null; email: string } | null
+  encargado: string | null
+  ayudantes: string | null
+  weight: string
   orden: number
+}
+
+type PostaDisponible = {
+  id: string
+  nombre: string
+  templateId: string | null
+  template: { id: string; nombre: string; archivedAt: Date | null } | null
+  duracionMinutos: number | null
+  asignadaEnActividad: string | null
 }
 
 type Actividad = {
@@ -29,7 +40,7 @@ type Actividad = {
   tipo: ActividadTipo
   pesoRelativo: string
   orden: number
-  postas: Posta[]
+  asignaciones: Asignacion[]
 }
 
 type Props = {
@@ -38,11 +49,11 @@ type Props = {
   isFirst: boolean
   isLast: boolean
   isLocked: boolean
-  templates: Array<{ id: string; nombre: string }>
+  postasDisponibles: PostaDisponible[]
   jueces: Array<{ userId: string; name: string | null; email: string }>
 }
 
-export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, templates, jueces }: Props) {
+export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, postasDisponibles, jueces }: Props) {
   const [editState, editAction, editPending] = useActionState(updateActividadAction, {})
   const [deleteState, deleteAction, deletePending] = useActionState(deleteActividadAction, {})
   const [, upAction, upPending] = useActionState(reorderActividadAction, {})
@@ -118,7 +129,6 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, t
 
         {/* Acciones */}
         <div className="flex items-center gap-1">
-          {/* Guardar (solo si dirty) */}
           {isDirty && (
             <form action={editAction}>
               <input type="hidden" name="eventoId" value={eventoId} />
@@ -137,72 +147,44 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, t
             </form>
           )}
 
-          {/* Subir */}
           <form action={upAction}>
             <input type="hidden" name="eventoId" value={eventoId} />
             <input type="hidden" name="actividadId" value={actividad.id} />
             <input type="hidden" name="direction" value="up" />
-            <button
-              type="submit"
-              disabled={isFirst || upPending || isLocked}
-              title={m.actividades.row.moveUp}
-              className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              ▲
-            </button>
+            <button type="submit" disabled={isFirst || upPending || isLocked} title={m.actividades.row.moveUp}
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30">▲</button>
           </form>
 
-          {/* Bajar */}
           <form action={downAction}>
             <input type="hidden" name="eventoId" value={eventoId} />
             <input type="hidden" name="actividadId" value={actividad.id} />
             <input type="hidden" name="direction" value="down" />
-            <button
-              type="submit"
-              disabled={isLast || downPending || isLocked}
-              title={m.actividades.row.moveDown}
-              className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              ▼
-            </button>
+            <button type="submit" disabled={isLast || downPending || isLocked} title={m.actividades.row.moveDown}
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30">▼</button>
           </form>
 
-          {/* Eliminar */}
           {!isLocked && (
             showDeleteConfirm ? (
               <form action={deleteAction} className="flex items-center gap-1">
                 <input type="hidden" name="eventoId" value={eventoId} />
                 <input type="hidden" name="actividadId" value={actividad.id} />
-                <button
-                  type="submit"
-                  disabled={deletePending}
-                  className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                >
+                <button type="submit" disabled={deletePending}
+                  className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50">
                   {deletePending ? "..." : "Confirmar"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
-                >
+                <button type="button" onClick={() => setShowDeleteConfirm(false)}
+                  className="rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-100">
                   Cancelar
                 </button>
               </form>
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                title={m.actividades.row.delete}
-                className="rounded p-1 text-red-500 hover:bg-red-50"
-              >
-                ✕
-              </button>
+              <button type="button" onClick={() => setShowDeleteConfirm(true)} title={m.actividades.row.delete}
+                className="rounded p-1 text-red-500 hover:bg-red-50">✕</button>
             )
           )}
         </div>
       </div>
 
-      {/* Descripción (fila extra) */}
       <div className="mt-2">
         <input
           value={descripcion}
@@ -213,12 +195,11 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, t
         />
       </div>
 
-      {/* Postas de esta actividad */}
-      <PostasInActividad
+      <AsignacionesInActividad
         actividadId={actividad.id}
-        postas={actividad.postas}
+        asignaciones={actividad.asignaciones}
         isLocked={isLocked}
-        templates={templates}
+        postasDisponibles={postasDisponibles}
         jueces={jueces}
       />
     </div>

@@ -7,43 +7,114 @@ import { isEventoLocked } from "./evento.repo"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-async function _listByActividad(organizationId: string, actividadId: string) {
+async function _listPostas(organizationId: string) {
   return prisma.posta.findMany({
+    where: { organizationId },
+    include: {
+      template: { select: { id: true, nombre: true, archivedAt: true } },
+      _count: { select: { asignaciones: true } },
+    },
+    orderBy: { nombre: "asc" },
+  })
+}
+
+async function _findPostaById(organizationId: string, postaId: string) {
+  return prisma.posta.findFirst({
+    where: { id: postaId, organizationId },
+    include: {
+      template: { select: { id: true, nombre: true, archivedAt: true } },
+      asignaciones: {
+        include: {
+          actividad: {
+            include: {
+              evento: { select: { id: true, nombre: true, fechaInicio: true, estado: true } },
+            },
+          },
+          juezUser: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { actividad: { evento: { fechaInicio: "desc" } } },
+      },
+    },
+  })
+}
+
+async function _listPostasParaEvento(organizationId: string, eventoId: string) {
+  const [postas, asignacionesDelEvento] = await Promise.all([
+    prisma.posta.findMany({
+      where: { organizationId },
+      include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
+      orderBy: { nombre: "asc" },
+    }),
+    prisma.asignacionPosta.findMany({
+      where: { actividad: { eventoId } },
+      include: { actividad: { select: { nombre: true } } },
+    }),
+  ])
+
+  const asignadasMap = new Map(
+    asignacionesDelEvento.map((a) => [a.postaId, a.actividad.nombre]),
+  )
+
+  return postas.map((p) => ({
+    ...p,
+    asignadaEnActividad: asignadasMap.get(p.id) ?? null,
+  }))
+}
+
+export type PostaConTemplate = Awaited<ReturnType<typeof _listPostas>>[number]
+export type PostaDetalle = Awaited<ReturnType<typeof _findPostaById>>
+export type PostaParaEvento = Awaited<ReturnType<typeof _listPostasParaEvento>>[number]
+
+async function _listAsignacionesByActividad(organizationId: string, actividadId: string) {
+  return prisma.asignacionPosta.findMany({
     where: {
       actividadId,
       actividad: { evento: { organizationId } },
     },
     include: {
-      template: { select: { id: true, nombre: true, archivedAt: true } },
+      posta: {
+        include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
+      },
       juezUser: { select: { id: true, name: true, email: true } },
     },
     orderBy: { orden: "asc" },
   })
 }
 
-export type PostaConTemplateYJuez = Awaited<ReturnType<typeof _listByActividad>>[number]
+export type AsignacionConPosta = Awaited<ReturnType<typeof _listAsignacionesByActividad>>[number]
 
-// ─── Reads ────────────────────────────────────────────────────────────────────
+// ─── Reads — Posta standalone ─────────────────────────────────────────────────
 
-export function listPostasByActividad(organizationId: string, actividadId: string) {
+export function listPostas(organizationId: string) {
   return unstable_cache(
-    async () => _listByActividad(organizationId, actividadId),
-    ["postas", organizationId, actividadId],
-    { tags: [cacheTags.eventos(organizationId)] },
+    async () => _listPostas(organizationId),
+    ["postas", organizationId],
+    { tags: [cacheTags.postas(organizationId)] },
   )()
 }
 
 export function findPostaById(organizationId: string, postaId: string) {
   return unstable_cache(
-    async () =>
-      prisma.posta.findFirst({
-        where: { id: postaId, actividad: { evento: { organizationId } } },
-        include: {
-          template: { select: { id: true, nombre: true, archivedAt: true } },
-          juezUser: { select: { id: true, name: true, email: true } },
-        },
-      }),
+    async () => _findPostaById(organizationId, postaId),
     ["posta", organizationId, postaId],
+    { tags: [cacheTags.postas(organizationId)] },
+  )()
+}
+
+export function listPostasParaEvento(organizationId: string, eventoId: string) {
+  return unstable_cache(
+    async () => _listPostasParaEvento(organizationId, eventoId),
+    ["postasParaEvento", organizationId, eventoId],
+    { tags: [cacheTags.postas(organizationId), cacheTags.eventos(organizationId)] },
+  )()
+}
+
+// ─── Reads — AsignacionPosta ──────────────────────────────────────────────────
+
+export function listAsignacionesByActividad(organizationId: string, actividadId: string) {
+  return unstable_cache(
+    async () => _listAsignacionesByActividad(organizationId, actividadId),
+    ["asignaciones", organizationId, actividadId],
     { tags: [cacheTags.eventos(organizationId)] },
   )()
 }
@@ -51,37 +122,37 @@ export function findPostaById(organizationId: string, postaId: string) {
 // ─── Helpers de validación ────────────────────────────────────────────────────
 
 async function requirePosta(organizationId: string, postaId: string) {
-  const posta = await prisma.posta.findFirst({
-    where: { id: postaId, actividad: { evento: { organizationId } } },
-    include: { actividad: { select: { eventoId: true } } },
-  })
+  const posta = await prisma.posta.findFirst({ where: { id: postaId, organizationId } })
   if (!posta) throw new BusinessError("POSTA_NO_ENCONTRADA")
   return posta
 }
 
-// ─── Mutations ────────────────────────────────────────────────────────────────
+async function requireAsignacion(organizationId: string, asignacionId: string) {
+  const asignacion = await prisma.asignacionPosta.findFirst({
+    where: { id: asignacionId, actividad: { evento: { organizationId } } },
+    include: { actividad: { select: { eventoId: true, nombre: true } } },
+  })
+  if (!asignacion) throw new BusinessError("ASIGNACION_NO_ENCONTRADA")
+  return asignacion
+}
+
+// ─── Mutations — Posta standalone ─────────────────────────────────────────────
+
+type Material = { nombre: string; cantidad?: string }
 
 type CreatePostaData = {
   nombre: string
   descripcion?: string
-  weight?: Decimal
+  duracionMinutos?: number | null
   templateId?: string | null
+  materiales?: Material[]
 }
 
 export async function createPosta(
   organizationId: string,
-  actividadId: string,
   data: CreatePostaData,
   actorUserId: string,
 ): Promise<{ id: string }> {
-  const actividad = await prisma.actividad.findFirst({
-    where: { id: actividadId, evento: { organizationId } },
-    include: { evento: { select: { id: true } } },
-  })
-  if (!actividad) throw new BusinessError("ACTIVIDAD_NO_ENCONTRADA")
-
-  if (await isEventoLocked(actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
-
   if (data.templateId) {
     const template = await prisma.scoreTemplate.findFirst({
       where: { id: data.templateId, organizationId, archivedAt: null },
@@ -89,23 +160,17 @@ export async function createPosta(
     if (!template) throw new BusinessError("PLANTILLA_INVALIDA")
   }
 
-  const maxOrden = await prisma.posta.aggregate({
-    where: { actividadId },
-    _max: { orden: true },
-  })
-  const nextOrden = (maxOrden._max.orden ?? 0) + 1
-
   let createdId: string
 
   await prisma.$transaction(async (tx) => {
     const posta = await tx.posta.create({
       data: {
-        actividadId,
+        organizationId,
         nombre: data.nombre,
-        descripcion: data.descripcion,
-        weight: data.weight ?? new Decimal(1.0),
+        descripcion: data.descripcion ?? null,
+        duracionMinutos: data.duracionMinutos ?? null,
         templateId: data.templateId ?? null,
-        orden: nextOrden,
+        materiales: data.materiales ?? [],
       },
     })
     await tx.auditLog.create({
@@ -115,21 +180,20 @@ export async function createPosta(
         action: "posta.created",
         targetType: "Posta",
         targetId: posta.id,
-        metadata: { actividadId, nombre: posta.nombre },
+        metadata: { nombre: posta.nombre },
       },
     })
     createdId = posta.id
+  }).catch((e: { code?: string }) => {
+    if (e?.code === "P2002") throw new BusinessError("NOMBRE_POSTA_DUPLICADO")
+    throw e
   })
 
-  revalidateTag(cacheTags.eventos(organizationId))
+  revalidateTag(cacheTags.postas(organizationId))
   return { id: createdId! }
 }
 
-type UpdatePostaData = {
-  nombre: string
-  descripcion?: string
-  weight: Decimal
-}
+type UpdatePostaData = CreatePostaData
 
 export async function updatePosta(
   organizationId: string,
@@ -137,18 +201,26 @@ export async function updatePosta(
   data: UpdatePostaData,
   actorUserId: string,
 ) {
-  const posta = await requirePosta(organizationId, postaId)
+  await requirePosta(organizationId, postaId)
 
-  if (await isEventoLocked(posta.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+  if (data.templateId) {
+    const template = await prisma.scoreTemplate.findFirst({
+      where: { id: data.templateId, organizationId, archivedAt: null },
+    })
+    if (!template) throw new BusinessError("PLANTILLA_INVALIDA")
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.posta.update({
       where: { id: postaId },
-      data: { nombre: data.nombre, descripcion: data.descripcion, weight: data.weight },
-      include: {
-        template: { select: { id: true, nombre: true, archivedAt: true } },
-        juezUser: { select: { id: true, name: true, email: true } },
+      data: {
+        nombre: data.nombre,
+        descripcion: data.descripcion ?? null,
+        duracionMinutos: data.duracionMinutos ?? null,
+        templateId: data.templateId ?? null,
+        materiales: data.materiales ?? [],
       },
+      include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
     })
     await tx.auditLog.create({
       data: {
@@ -157,13 +229,16 @@ export async function updatePosta(
         action: "posta.updated",
         targetType: "Posta",
         targetId: postaId,
-        metadata: { nombre: data.nombre, weight: data.weight.toNumber() },
+        metadata: { nombre: data.nombre },
       },
     })
     return result
+  }).catch((e: { code?: string }) => {
+    if (e?.code === "P2002") throw new BusinessError("NOMBRE_POSTA_DUPLICADO")
+    throw e
   })
 
-  revalidateTag(cacheTags.eventos(organizationId))
+  revalidateTag(cacheTags.postas(organizationId))
   return updated
 }
 
@@ -174,23 +249,18 @@ export async function deletePosta(
 ): Promise<void> {
   const posta = await requirePosta(organizationId, postaId)
 
-  if (await isEventoLocked(posta.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+  const asignaciones = await prisma.asignacionPosta.findMany({
+    where: { postaId },
+    include: { actividad: { include: { evento: { select: { nombre: true } } } } },
+  })
 
-  const actividadId = posta.actividadId
+  if (asignaciones.length > 0) {
+    const eventos = [...new Set(asignaciones.map((a) => a.actividad.evento.nombre))]
+    throw new BusinessError("POSTA_EN_USO", { eventos })
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.posta.delete({ where: { id: postaId } })
-
-    const restantes = await tx.posta.findMany({
-      where: { actividadId },
-      orderBy: { orden: "asc" },
-    })
-    for (let i = 0; i < restantes.length; i++) {
-      if (restantes[i]!.orden !== i + 1) {
-        await tx.posta.update({ where: { id: restantes[i]!.id }, data: { orden: i + 1 } })
-      }
-    }
-
     await tx.auditLog.create({
       data: {
         organizationId,
@@ -198,119 +268,135 @@ export async function deletePosta(
         action: "posta.deleted",
         targetType: "Posta",
         targetId: postaId,
-        metadata: { actividadId, nombre: posta.nombre },
+        metadata: { nombre: posta.nombre },
       },
     })
   })
 
-  revalidateTag(cacheTags.eventos(organizationId))
+  revalidateTag(cacheTags.postas(organizationId))
 }
 
-export async function reorderPosta(
-  organizationId: string,
-  postaId: string,
-  direction: "up" | "down",
-  actorUserId: string,
-): Promise<void> {
-  const posta = await requirePosta(organizationId, postaId)
+// ─── Mutations — AsignacionPosta ──────────────────────────────────────────────
 
-  if (await isEventoLocked(posta.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
-
-  const postas = await prisma.posta.findMany({
-    where: { actividadId: posta.actividadId },
-    orderBy: { orden: "asc" },
-  })
-
-  const current = postas.find((p) => p.id === postaId)!
-  const targetOrden = direction === "up" ? current.orden - 1 : current.orden + 1
-  const swap = postas.find((p) => p.orden === targetOrden)
-  if (!swap) return
-
-  await prisma.$transaction(async (tx) => {
-    await tx.posta.update({ where: { id: current.id }, data: { orden: -1 } })
-    await tx.posta.update({ where: { id: swap.id }, data: { orden: current.orden } })
-    await tx.posta.update({ where: { id: current.id }, data: { orden: targetOrden } })
-    await tx.auditLog.create({
-      data: {
-        organizationId,
-        actorUserId,
-        action: "posta.reordered",
-        targetType: "Posta",
-        targetId: postaId,
-        metadata: { actividadId: posta.actividadId, direction, fromOrden: current.orden, toOrden: targetOrden },
-      },
-    })
-  })
-
-  revalidateTag(cacheTags.eventos(organizationId))
+type AsignarPostaData = {
+  postaId: string
+  juezUserId?: string | null
+  encargado?: string | null
+  ayudantes?: string | null
+  weight?: Decimal
 }
 
-export async function assignTemplate(
+export async function asignarPosta(
   organizationId: string,
-  postaId: string,
-  templateId: string | null,
+  actividadId: string,
+  data: AsignarPostaData,
   actorUserId: string,
-) {
-  const posta = await requirePosta(organizationId, postaId)
+): Promise<{ id: string }> {
+  const actividad = await prisma.actividad.findFirst({
+    where: { id: actividadId, evento: { organizationId } },
+    select: { eventoId: true },
+  })
+  if (!actividad) throw new BusinessError("ACTIVIDAD_NO_ENCONTRADA")
 
-  if (await isEventoLocked(posta.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+  await requirePosta(organizationId, data.postaId)
 
-  if (templateId !== null) {
-    const template = await prisma.scoreTemplate.findFirst({
-      where: { id: templateId, organizationId, archivedAt: null },
+  if (await isEventoLocked(actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+
+  // Validar que la posta no esté ya en otra actividad del mismo evento
+  const conflicto = await prisma.asignacionPosta.findFirst({
+    where: {
+      postaId: data.postaId,
+      actividad: { eventoId: actividad.eventoId },
+      NOT: { actividadId },
+    },
+    include: { actividad: { select: { nombre: true } } },
+  })
+  if (conflicto) {
+    throw new BusinessError("POSTA_YA_ASIGNADA_EN_EVENTO", {
+      actividadNombre: conflicto.actividad.nombre,
     })
-    if (!template) throw new BusinessError("PLANTILLA_INVALIDA")
   }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const result = await tx.posta.update({
-      where: { id: postaId },
-      data: { templateId },
-      include: {
-        template: { select: { id: true, nombre: true, archivedAt: true } },
-        juezUser: { select: { id: true, name: true, email: true } },
+  if (data.juezUserId) {
+    const membership = await prisma.membership.findFirst({
+      where: { userId: data.juezUserId, organizationId, role: { in: ["JUEZ", "ADMIN"] } },
+    })
+    if (!membership) throw new BusinessError("JUEZ_INVALIDO")
+  }
+
+  const maxOrden = await prisma.asignacionPosta.aggregate({
+    where: { actividadId },
+    _max: { orden: true },
+  })
+  const nextOrden = (maxOrden._max.orden ?? 0) + 1
+
+  let createdId: string
+
+  await prisma.$transaction(async (tx) => {
+    const asignacion = await tx.asignacionPosta.create({
+      data: {
+        postaId: data.postaId,
+        actividadId,
+        juezUserId: data.juezUserId ?? null,
+        encargado: data.encargado ?? null,
+        ayudantes: data.ayudantes ?? null,
+        weight: data.weight ?? new Decimal(1.0),
+        orden: nextOrden,
       },
     })
     await tx.auditLog.create({
       data: {
         organizationId,
         actorUserId,
-        action: "posta.templateAssigned",
-        targetType: "Posta",
-        targetId: postaId,
-        metadata: { templateId },
+        action: "asignacionPosta.created",
+        targetType: "AsignacionPosta",
+        targetId: asignacion.id,
+        metadata: { postaId: data.postaId, actividadId },
       },
     })
-    return result
+    createdId = asignacion.id
   })
 
   revalidateTag(cacheTags.eventos(organizationId))
-  return updated
+  revalidateTag(cacheTags.postas(organizationId))
+  return { id: createdId! }
 }
 
-export async function assignJuez(
+type UpdateAsignacionData = {
+  juezUserId?: string | null
+  encargado?: string | null
+  ayudantes?: string | null
+  weight?: Decimal
+}
+
+export async function updateAsignacion(
   organizationId: string,
-  postaId: string,
-  juezUserId: string | null,
+  asignacionId: string,
+  data: UpdateAsignacionData,
   actorUserId: string,
 ) {
-  const posta = await requirePosta(organizationId, postaId)
+  const asignacion = await requireAsignacion(organizationId, asignacionId)
 
-  if (await isEventoLocked(posta.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+  if (await isEventoLocked(asignacion.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
 
-  if (juezUserId !== null) {
+  if (data.juezUserId) {
     const membership = await prisma.membership.findFirst({
-      where: { userId: juezUserId, organizationId, role: { in: ["JUEZ", "ADMIN"] } },
+      where: { userId: data.juezUserId, organizationId, role: { in: ["JUEZ", "ADMIN"] } },
     })
     if (!membership) throw new BusinessError("JUEZ_INVALIDO")
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    const result = await tx.posta.update({
-      where: { id: postaId },
-      data: { juezUserId },
+    const result = await tx.asignacionPosta.update({
+      where: { id: asignacionId },
+      data: {
+        juezUserId: data.juezUserId ?? null,
+        encargado: data.encargado ?? null,
+        ayudantes: data.ayudantes ?? null,
+        weight: data.weight ?? new Decimal(1.0),
+      },
       include: {
-        template: { select: { id: true, nombre: true, archivedAt: true } },
+        posta: { include: { template: { select: { id: true, nombre: true, archivedAt: true } } } },
         juezUser: { select: { id: true, name: true, email: true } },
       },
     })
@@ -318,10 +404,10 @@ export async function assignJuez(
       data: {
         organizationId,
         actorUserId,
-        action: juezUserId ? "posta.juezAssigned" : "posta.juezUnassigned",
-        targetType: "Posta",
-        targetId: postaId,
-        metadata: { juezUserId },
+        action: "asignacionPosta.updated",
+        targetType: "AsignacionPosta",
+        targetId: asignacionId,
+        metadata: { juezUserId: data.juezUserId },
       },
     })
     return result
@@ -329,4 +415,84 @@ export async function assignJuez(
 
   revalidateTag(cacheTags.eventos(organizationId))
   return updated
+}
+
+export async function desasignarPosta(
+  organizationId: string,
+  asignacionId: string,
+  actorUserId: string,
+): Promise<void> {
+  const asignacion = await requireAsignacion(organizationId, asignacionId)
+
+  if (await isEventoLocked(asignacion.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+
+  const actividadId = asignacion.actividadId
+
+  await prisma.$transaction(async (tx) => {
+    await tx.asignacionPosta.delete({ where: { id: asignacionId } })
+
+    // Renumerar orden restante
+    const restantes = await tx.asignacionPosta.findMany({
+      where: { actividadId },
+      orderBy: { orden: "asc" },
+    })
+    for (let i = 0; i < restantes.length; i++) {
+      if (restantes[i]!.orden !== i + 1) {
+        await tx.asignacionPosta.update({ where: { id: restantes[i]!.id }, data: { orden: i + 1 } })
+      }
+    }
+
+    await tx.auditLog.create({
+      data: {
+        organizationId,
+        actorUserId,
+        action: "asignacionPosta.deleted",
+        targetType: "AsignacionPosta",
+        targetId: asignacionId,
+        metadata: { actividadId },
+      },
+    })
+  })
+
+  revalidateTag(cacheTags.eventos(organizationId))
+  revalidateTag(cacheTags.postas(organizationId))
+}
+
+export async function reorderAsignacion(
+  organizationId: string,
+  asignacionId: string,
+  direction: "up" | "down",
+  actorUserId: string,
+): Promise<void> {
+  const asignacion = await requireAsignacion(organizationId, asignacionId)
+
+  if (await isEventoLocked(asignacion.actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+
+  const todas = await prisma.asignacionPosta.findMany({
+    where: { actividadId: asignacion.actividadId },
+    orderBy: { orden: "asc" },
+  })
+
+  const current = todas.find((a) => a.id === asignacionId)!
+  const targetOrden = direction === "up" ? current.orden - 1 : current.orden + 1
+  const swap = todas.find((a) => a.orden === targetOrden)
+  if (!swap) return
+
+  await prisma.$transaction(async (tx) => {
+    await tx.asignacionPosta.update({ where: { id: current.id }, data: { orden: -1 } })
+    await tx.asignacionPosta.update({ where: { id: swap.id }, data: { orden: current.orden } })
+    await tx.asignacionPosta.update({ where: { id: current.id }, data: { orden: targetOrden } })
+    await tx.auditLog.create({
+      data: {
+        organizationId,
+        actorUserId,
+        action: "asignacionPosta.reordered",
+        targetType: "AsignacionPosta",
+        targetId: asignacionId,
+        metadata: { actividadId: asignacion.actividadId, direction },
+      },
+    })
+  })
+
+  revalidateTag(cacheTags.eventos(organizationId))
 }

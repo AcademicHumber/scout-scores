@@ -5,4 +5,5 @@ export const cacheTags = {
   distrito:       (orgId: string) => `distrito:${orgId}`,
   scoreTemplates: (orgId: string) => `scoreTemplates:${orgId}`,
   eventos:        (orgId: string) => `eventos:${orgId}`,
+  postas:         (orgId: string) => `postas:${orgId}`,
 } as const

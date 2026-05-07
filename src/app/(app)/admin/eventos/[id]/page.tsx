@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/auth-helpers"
 import { findEventoById, isEventoLocked } from "@/repositories/evento.repo"
 import { listJuecesAsignables } from "@/repositories/membership.repo"
-import { listScoreTemplates } from "@/repositories/score-template.repo"
+import { listPostasParaEvento } from "@/repositories/posta.repo"
 import { listGrupos } from "@/repositories/grupo.repo"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -43,18 +43,15 @@ export default async function EventoDetailPage({
   const org = await requireRole(["ADMIN"])
   const { id } = await params
 
-  const [evento, locked, jueces, allTemplates, grupos] = await Promise.all([
+  const [evento, locked, jueces, postasDisponibles, grupos] = await Promise.all([
     findEventoById(org.organizationId, id),
     isEventoLocked(id),
     listJuecesAsignables(org.organizationId),
-    listScoreTemplates(org.organizationId),
+    listPostasParaEvento(org.organizationId, id),
     listGrupos(org.organizationId),
   ])
 
   if (!evento) notFound()
-
-  // Solo plantillas activas (no archivadas) para los selects de postas
-  const templates = allTemplates.filter((t) => !t.archivedAt).map((t) => ({ id: t.id, nombre: t.nombre }))
 
   const suma = evento.actividades.reduce(
     (acc, a) => acc + parseFloat(a.pesoRelativo.toString()),
@@ -133,23 +130,34 @@ export default async function EventoDetailPage({
                   tipo: a.tipo,
                   pesoRelativo: a.pesoRelativo.toString(),
                   orden: a.orden,
-                  postas: a.postas.map((p) => ({
-                    id: p.id,
-                    nombre: p.nombre,
-                    descripcion: p.descripcion,
-                    weight: p.weight.toString(),
-                    templateId: p.templateId,
-                    template: p.template,
-                    juezUserId: p.juezUserId,
-                    juezUser: p.juezUser,
-                    orden: p.orden,
+                  asignaciones: a.asignaciones.map((asig) => ({
+                    id: asig.id,
+                    postaId: asig.postaId,
+                    posta: {
+                      nombre: asig.posta.nombre,
+                      templateId: asig.posta.templateId,
+                      template: asig.posta.template,
+                    },
+                    juezUserId: asig.juezUserId,
+                    juezUser: asig.juezUser,
+                    encargado: asig.encargado,
+                    ayudantes: asig.ayudantes,
+                    weight: asig.weight.toString(),
+                    orden: asig.orden,
                   })),
                 }}
                 eventoId={evento.id}
                 isFirst={idx === 0}
                 isLast={idx === evento.actividades.length - 1}
                 isLocked={locked}
-                templates={templates}
+                postasDisponibles={postasDisponibles.map((p) => ({
+                  id: p.id,
+                  nombre: p.nombre,
+                  templateId: p.templateId,
+                  template: p.template,
+                  duracionMinutos: p.duracionMinutos,
+                  asignadaEnActividad: p.asignadaEnActividad,
+                }))}
                 jueces={jueces}
               />
             ))}
