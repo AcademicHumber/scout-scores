@@ -97,6 +97,10 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 19. **`BusinessError(code, meta?)` para errores de negocio en repositorios**: los repos lanzan `BusinessError` con un código semántico. Las actions lo capturan y convierten a `{ error: string }` para el cliente. Nunca propagar `BusinessError` sin capturar; `throw` sin catch solo para errores inesperados (fallo de DB, bug).
 
+20. **`useActionState` con retorno `{}` no sirve para detectar éxito**: si una action no tiene datos que devolver, retornar `{ success: true }` en vez de `{}`. El estado inicial también es `{}`, así que `{}` como resultado es indistinguible del estado pre-submit. (Ver Plan 6c lección #1).
+
+21. **`<dialog>` nativo + Tailwind requiere `m-auto` explícito**: el preflight de Tailwind v4 aplica `* { margin: 0 }` que pisa el `margin: auto` del UA stylesheet del browser, quitando el centrado automático de `<dialog showModal()>`. Siempre agregar `m-auto` al elemento `<dialog>`. (Ver Plan 6c lección #2).
+
 ## Documentación
 
 Toda la planificación vive en `docs/` versionada con git:
@@ -108,6 +112,8 @@ Toda la planificación vive en `docs/` versionada con git:
 - `docs/plans/04-invitaciones-memberships.md` — Plan 4, ya ejecutado (incluye lecciones aprendidas sobre cache y repositorios)
 - `docs/plans/05-plantillas.md` — Plan 5, ya ejecutado (plantillas de puntaje, criterios PUNTUABLE/DESEMPATE, doble escala)
 - `docs/plans/06a-eventos.md` — Plan 6a, ya ejecutado (Evento + Actividad, máquina de estados, CRUD inline)
+- `docs/plans/06b-postas-patrullas-jueces.md` — Plan 6b, ya ejecutado (Posta inline, Patrulla, gates de pre-activación, isTemplateLocked)
+- `docs/plans/06c-postas-biblioteca.md` — Plan 6c, ya ejecutado (Posta standalone, AsignacionPosta, /admin/postas, dialog de asignación)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
 - `docs/adr/0002-repository-layer.md` — decisión de capa de repositorios con `unstable_cache` y `revalidateTag`
 - `docs/adr/0003-jerarquia-evento-actividad-posta.md` — cambio de jerarquía respecto al master plan original

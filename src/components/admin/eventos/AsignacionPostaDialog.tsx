@@ -65,7 +65,7 @@ export function AsignacionPostaDialog({ actividadId, asignacion, postasDisponibl
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      className="w-full max-w-lg rounded-xl border bg-white p-0 shadow-xl backdrop:bg-black/40"
+      className="w-full max-w-lg m-auto rounded-xl border bg-white p-0 shadow-xl backdrop:bg-black/40"
     >
       <div className="border-b px-6 py-4">
         <h2 className="text-lg font-semibold text-gray-900">

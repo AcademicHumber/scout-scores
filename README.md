@@ -60,9 +60,9 @@ pnpm db:reset      # reiniciar DB y volver a aplicar migraciones + seed
 - **Grupos scouts y miembros**: CRUD de grupos, gestión de memberships, perfil del distrito.
 - **Plantillas de puntaje**: biblioteca de plantillas con modos `CRITERIOS` y `PUNTAJE_UNICO`, criterios `PUNTUABLE` y `DESEMPATE`, escalas discretas.
 - **Eventos**: ciclo de vida `BORRADOR → ACTIVO → CERRADO → PUBLICADO`, actividades con peso porcentual (suma 100%), patrullas por evento.
-- **Postas**: CRUD inline dentro de actividades, asignación de plantilla y juez por posta, gates de pre-activación con acumulación de errores.
+- **Postas**: biblioteca reutilizable del distrito (`/admin/postas`) con descripción, duración, materiales y plantilla fija. Se asignan a actividades de eventos vía dialog; cada asignación tiene su propio juez, encargado y ayudantes. Historial de eventos por posta. Validación de unicidad por evento.
 
-**Próximo:** refactorizar postas como entidad de biblioteca reutilizable (Plan 6c), luego scoring real — carga de planillas por el juez (Plan 7a).
+**Próximo:** scoring real — carga de planillas por el juez (Plan 7a).
 
 ## Documentación
 

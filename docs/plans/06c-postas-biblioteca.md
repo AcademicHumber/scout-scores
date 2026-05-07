@@ -720,4 +720,30 @@ Pre-requisito: admin logueado, distrito con ≥1 plantilla activa, ≥1 grupo sc
 
 ## Lecciones aprendidas
 
-*(A completar tras la ejecución con Sonnet.)*
+### Lección #1 — `useActionState` con retorno `{}` no puede detectarse como "éxito" con `Object.keys`
+
+**Problema:** `asignarPostaAction` retornaba `{}` al completar exitosamente. El dialog de asignación usaba `Object.keys(asignarState).length > 0` para detectar el éxito y cerrarse. Como `{}` tiene 0 claves, la condición nunca se cumplía y el dialog quedaba abierto incluso después de una asignación exitosa.
+
+**Solución:** Retornar `{ success: true }` desde la action en el camino feliz, y chequear `asignarState.success` en el efecto de cierre. Agregar `success?: true` al tipo `AsignacionState`.
+
+**Regla derivada:** cuando una action no tiene datos que devolver en éxito (no hay entidad a sincronizar en el cliente), retornar `{ success: true }` en vez de `{}`. El estado inicial también es `{}`, así que `{}` como resultado es indistinguible del estado inicial para cualquier efecto que dependa del estado.
+
+---
+
+### Lección #2 — El preflight de Tailwind v4 pisa el `margin: auto` del `<dialog>` nativo
+
+**Problema:** El elemento `<dialog>` abierto con `showModal()` debería centrarse automáticamente en el viewport — el browser lo hace con `margin: auto` en su UA stylesheet. Pero el preflight de Tailwind v4 aplica `* { margin: 0 }` que anula ese default. El dialog apareció pegado al borde superior izquierdo.
+
+**Solución:** Agregar `m-auto` explícito al `<dialog>` en Tailwind. Una sola clase restaura el comportamiento esperado sin necesidad de CSS custom.
+
+**Regla derivada:** al usar `<dialog>` nativo con Tailwind, siempre agregar `m-auto` al elemento. El centrado automático del browser no sobrevive el reset de Tailwind.
+
+---
+
+### Lección #3 — Los tests de `canTransitionToActivo` deben mockearse al nivel del evento completo, no al nivel de actividades separadas
+
+**Problema:** `canTransitionToActivo` usa `prisma.evento.findUnique` con un include profundo (`actividades → asignaciones → posta`, `patrullas`). Los tests anteriores mockeaban `evento.findFirst` + `actividad.findMany` por separado, porque la implementación de Plan 6b hacía dos queries. Al consolidarlo en un único `findUnique`, todos los tests de transición fallaron con "not a function".
+
+**Solución:** Agregar `findUnique` al mock de `evento`, y construir el objeto de evento con el shape completo (actividades con asignaciones y postas anidadas, patrullas) en cada test. Extraer un helper `makeEventoActivo(pesos, conPatrulla, conAsignaciones)` para no repetir el shape en cada caso.
+
+**Regla derivada:** cuando se refactoriza un repositorio que tiene tests de unidad, revisar en qué funciones de Prisma se apoya cada test mockeado. Un cambio de `findFirst` + `findMany` a `findUnique` con include profundo cambia qué mocks son necesarios.
