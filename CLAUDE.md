@@ -81,7 +81,11 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 ## Convenciones de repositorios y cache (establecidas en Plan 4)
 
-14. **Capa de repositorios**: toda interacción con DB vive en `src/repositories/`. Ningún archivo fuera de esa carpeta importa `@/lib/db` en código de feature (excepción: `src/auth.ts` y `src/lib/auth-onboarding.ts` por ser config del framework). Ver `docs/adr/0002-repository-layer.md`.
+14. **Capa de repositorios**: toda interacción con DB vive en `src/repositories/`. Ningún archivo fuera de esa carpeta importa `@/lib/db` en código de feature. Excepciones documentadas y justificadas:
+   - `src/auth.ts` y `src/lib/auth-onboarding.ts` — config del framework Auth.js.
+   - `src/app/(auth)/onboarding/actions.ts` — flujo de bootstrap: crea la organización del usuario antes de que exista cualquier contexto de tenant. No hay repositorio de org aplicable en este punto.
+   - `src/app/invite/[token]/page.tsx` — deep link pre-tenant: valida y acepta una invitación antes de que el usuario tenga membership. Igual que el onboarding, opera fuera del contexto de org.
+   Ver `docs/adr/0002-repository-layer.md`.
 
 15. **Lecturas cacheadas con `unstable_cache` + tags por organización**: formato `entidad:orgId` (ej: `memberships:org-abc`). Tags definidos en `src/repositories/cache-tags.ts`. Garantiza aislamiento entre tenants: revalidar `memberships:org-A` nunca afecta `org-B`.
 
