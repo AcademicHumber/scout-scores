@@ -1,6 +1,8 @@
 # Plan 6b — Postas, patrullas y asignación de jueces
 
-> Estado: pendiente de ejecución. Redactado con Claude Opus en plan mode siguiendo el workflow Opus/Sonnet establecido en CLAUDE.md.
+> Estado: ejecutado. Redactado con Claude Opus en plan mode siguiendo el workflow Opus/Sonnet establecido en CLAUDE.md.
+>
+> **Nota post-ejecución:** el modelo `Posta` que este plan introduce (con `actividadId` directo) fue refactorizado en **Plan 6c**. `Posta` pasó a ser una entidad standalone del distrito (con `organizationId`), y la vinculación con actividades se delega a la tabla `AsignacionPosta`. Ver `docs/plans/06c-postas-biblioteca.md`.
 
 ---
 
