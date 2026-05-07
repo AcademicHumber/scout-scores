@@ -52,6 +52,7 @@
       "invitaciones": "Invitaciones",
       "miembros": "Miembros",
       "plantillas": "Plantillas",
+      "postas": "Postas",
       "eventos": "Eventos"
     },
     "landing": {
@@ -226,6 +227,32 @@
         "inUse": "No se puede modificar: la plantilla está en uso en un evento",
         "lastValor": "Una plantilla debe tener al menos 2 valores en la escala",
         "notFound": "Plantilla no encontrada"
+      }
+    },
+    "postas": {
+      "title": "Postas",
+      "subtitle": "Biblioteca de postas del distrito. Asignables a actividades de eventos.",
+      "empty": "Aún no hay postas registradas. Creá la primera.",
+      "nueva": "Nueva posta",
+      "fields": {
+        "nombre": "Nombre",
+        "descripcion": "Descripción / funcionamiento",
+        "duracionMinutos": "Duración estimada (minutos)",
+        "plantilla": "Plantilla de evaluación",
+        "plantillaSinAsignar": "Sin plantilla",
+        "materiales": "Materiales",
+        "agregarMaterial": "+ Agregar material",
+        "materialNombre": "Material",
+        "materialCantidad": "Cantidad (ej: 10 metros)"
+      },
+      "historial": {
+        "title": "Historial de eventos",
+        "empty": "Esta posta no fue asignada a ningún evento aún."
+      },
+      "errors": {
+        "nombreDuplicado": "Ya existe una posta con ese nombre en el distrito",
+        "postaEnUso": "La posta está en uso en: {{eventos}}. Desasignala primero.",
+        "noEncontrada": "Posta no encontrada"
       }
     },
     "eventos": {
