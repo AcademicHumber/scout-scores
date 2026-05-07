@@ -10,14 +10,48 @@ Next.js 15 (App Router) + TypeScript strict + Tailwind v4 + Prisma 7 + PostgreSQ
 
 Requisitos: Node 22+, pnpm 10+, Docker.
 
+**1. Instalar dependencias**
+
 ```bash
 pnpm install
-cp .env.example .env        # DATABASE_URL apunta a Postgres local
-docker compose up -d db     # Postgres 16 en localhost:5432
-pnpm dev                    # Next.js en localhost:3000
+```
+
+**2. Configurar variables de entorno**
+
+```bash
+cp .env.example .env
+```
+
+Editar `.env` y completar:
+
+- `AUTH_SECRET` — generarlo con `pnpm dlx auth secret`
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — crear credenciales OAuth en [Google Cloud Console](https://console.cloud.google.com/). URI de redirección autorizada: `http://localhost:3000/api/auth/callback/google`
+- `DATABASE_URL` — ya apunta a Postgres local por defecto; no requiere cambios si se usa Docker
+
+**3. Levantar la base de datos y aplicar migraciones**
+
+```bash
+docker compose up -d db          # Postgres 16 en localhost:5432
+pnpm prisma migrate dev          # aplica todas las migraciones
+pnpm db:seed                     # carga datos demo (1 distrito, grupos, usuarios, eventos)
+```
+
+**4. Iniciar el servidor**
+
+```bash
+pnpm dev
 ```
 
 Abrir http://localhost:3000.
+
+**Scripts útiles**
+
+```bash
+pnpm typecheck     # verificar tipos TypeScript
+pnpm lint          # ESLint
+pnpm test          # tests Vitest
+pnpm db:reset      # reiniciar DB y volver a aplicar migraciones + seed
+```
 
 ## Qué funciona hoy
 
