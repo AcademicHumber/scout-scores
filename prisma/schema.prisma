@@ -59,6 +59,11 @@ enum EventoEstado {
   PUBLICADO
 }
 
+enum ScoreSheetEstado {
+  BORRADOR
+  ENVIADA
+}
+
 enum ActividadTipo {
   COMPETICION
   CONSTRUCCION
@@ -129,12 +134,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts         Account[]
-  sessions         Session[]
-  memberships      Membership[]
-  miembrosScout    MiembroScout[]
-  auditLogs        AuditLog[]        @relation("AuditLogActor")
-  asignacionesJuez AsignacionPosta[] @relation("AsignacionPostaJuez")
+  accounts              Account[]
+  sessions              Session[]
+  memberships           Membership[]
+  miembrosScout         MiembroScout[]
+  auditLogs             AuditLog[]        @relation("AuditLogActor")
+  asignacionesJuez      AsignacionPosta[] @relation("AsignacionPostaJuez")
+  scoreSheetsEnviadas   ScoreSheet[]      @relation("ScoreSheetEnviadaBy")
+  scoreSheetsReabiertas ScoreSheet[]      @relation("ScoreSheetReopenedBy")
 }
 
 model Account {
@@ -286,6 +293,7 @@ model TemplateCriterion {
   updatedAt   DateTime              @updatedAt
 
   template ScoreTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  entries  ScoreEntry[]
 
   @@unique([templateId, orden])
   @@index([templateId])
@@ -383,9 +391,10 @@ model AsignacionPosta {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  posta     Posta     @relation(fields: [postaId], references: [id], onDelete: Restrict)
-  actividad Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
-  juezUser  User?     @relation("AsignacionPostaJuez", fields: [juezUserId], references: [id], onDelete: SetNull)
+  posta       Posta       @relation(fields: [postaId], references: [id], onDelete: Restrict)
+  actividad   Actividad   @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  juezUser    User?       @relation("AsignacionPostaJuez", fields: [juezUserId], references: [id], onDelete: SetNull)
+  scoreSheets ScoreSheet[]
 
   @@unique([actividadId, orden])
   @@unique([postaId, actividadId])
@@ -407,12 +416,78 @@ model Patrulla {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  evento     Evento     @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  grupoScout GrupoScout @relation(fields: [grupoScoutId], references: [id], onDelete: Restrict)
+  evento      Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  grupoScout  GrupoScout   @relation(fields: [grupoScoutId], references: [id], onDelete: Restrict)
+  scoreSheets ScoreSheet[]
 
   @@unique([eventoId, nombre])
   @@index([eventoId])
   @@index([grupoScoutId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// ScoreSheet — planilla del juez por (asignacion × patrulla)
+// Invariantes:
+//   estado=ENVIADA  ⇒ enviadaAt != null, enviadaByUserId != null, totalPuntuable != null, totalDesempate != null
+//   estado=BORRADOR ⇒ enviadaAt = null, enviadaByUserId = null, totalPuntuable = null, totalDesempate = null
+// ──────────────────────────────────────────────────────────────
+
+model ScoreSheet {
+  id                String           @id @default(cuid(2))
+  asignacionPostaId String
+  patrullaId        String
+  estado            ScoreSheetEstado @default(BORRADOR)
+
+  // PUNTAJE_UNICO: valor directo validado contra template.valoresValidos
+  puntajeUnico   Decimal? @db.Decimal(8, 2)
+
+  // Totales cacheados — calculados al ENVIAR, null en BORRADOR
+  // totalPuntuable = (suma criterios PUNTUABLE × asignacion.weight) o (puntajeUnico × asignacion.weight)
+  // totalDesempate = suma criterios DESEMPATE (sin weight)
+  totalPuntuable Decimal? @db.Decimal(10, 2)
+  totalDesempate Decimal? @db.Decimal(10, 2)
+
+  // Metadata denormalizada para vista admin (evita escanear AuditLog)
+  enviadaAt        DateTime?
+  enviadaByUserId  String?
+  reopenedAt       DateTime?
+  reopenedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asignacionPosta AsignacionPosta @relation(fields: [asignacionPostaId], references: [id], onDelete: Cascade)
+  patrulla        Patrulla        @relation(fields: [patrullaId], references: [id], onDelete: Cascade)
+  enviadaBy       User?           @relation("ScoreSheetEnviadaBy", fields: [enviadaByUserId], references: [id], onDelete: SetNull)
+  reopenedBy      User?           @relation("ScoreSheetReopenedBy", fields: [reopenedByUserId], references: [id], onDelete: SetNull)
+  entries         ScoreEntry[]
+
+  @@unique([asignacionPostaId, patrullaId])
+  @@index([asignacionPostaId])
+  @@index([patrullaId])
+  @@index([estado])
+  @@index([enviadaByUserId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// ScoreEntry — un valor por criterio dentro de una planilla
+// Invariante: valor debe pertenecer a la escala efectiva del criterio
+// ──────────────────────────────────────────────────────────────
+
+model ScoreEntry {
+  id           String   @id @default(cuid(2))
+  scoreSheetId String
+  criterionId  String
+  valor        Decimal  @db.Decimal(8, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  scoreSheet ScoreSheet        @relation(fields: [scoreSheetId], references: [id], onDelete: Cascade)
+  criterion  TemplateCriterion @relation(fields: [criterionId], references: [id], onDelete: Restrict)
+
+  @@unique([scoreSheetId, criterionId])
+  @@index([scoreSheetId])
+  @@index([criterionId])
 }
 
 // ──────────────────────────────────────────────────────────────
