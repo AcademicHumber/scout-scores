@@ -164,7 +164,7 @@ export default async function EventoDetailPage({
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{m.patrullas.title}</h2>
           <span className="text-sm text-gray-500">
-            {evento.patrullas.length} inscripta{evento.patrullas.length !== 1 ? "s" : ""}
+            {evento.patrullas.length} registrada{evento.patrullas.length !== 1 ? "s" : ""}
           </span>
         </div>
         <PatrullasList
