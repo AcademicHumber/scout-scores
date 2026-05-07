@@ -1,6 +1,6 @@
 # Plan 6c — Postas como entidad de biblioteca reutilizable
 
-> Estado: pendiente de ejecución. Redactado con Claude Sonnet 4.6 en conversación con el usuario, siguiendo el workflow de planeación establecido en CLAUDE.md.
+> Estado: ejecutado. Redactado con Claude Sonnet 4.6 en conversación con el usuario, siguiendo el workflow de planeación establecido en CLAUDE.md.
 
 ---
 
