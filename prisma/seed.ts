@@ -3,6 +3,9 @@ import {
   Role,
   CategoriaScout,
   InvitationStatus,
+  EventoEstado,
+  ActividadTipo,
+  PatrullaCategoria,
 } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createId } from "@paralleldrive/cuid2";
@@ -237,6 +240,204 @@ async function main() {
     ),
   );
 
+  // ── 7. ScoreTemplate demo ────────────────────────────────────────────────────
+  const templateConstruccion = await prisma.scoreTemplate.upsert({
+    where: { organizationId_nombre: { organizationId: distrito.id, nombre: "Construcción básica" } },
+    update: {},
+    create: {
+      organizationId: distrito.id,
+      nombre: "Construcción básica",
+      descripcion: "Criterios para evaluar construcciones con palos y cuerdas",
+      modo: "CRITERIOS",
+      categoria: "CONSTRUCCION",
+      valoresValidos: [1, 2, 3, 4, 5],
+      valoresValidosDesempate: [1, 2, 3],
+      criterios: {
+        create: [
+          { nombre: "Técnica de amarres", tipo: "PUNTUABLE", orden: 1 },
+          { nombre: "Solidez estructural", tipo: "PUNTUABLE", orden: 2 },
+          { nombre: "Presentación", tipo: "PUNTUABLE", orden: 3 },
+          { nombre: "Espíritu scout", tipo: "DESEMPATE", orden: 4 },
+        ],
+      },
+    },
+  });
+
+  const templateCocina = await prisma.scoreTemplate.upsert({
+    where: { organizationId_nombre: { organizationId: distrito.id, nombre: "Cocina de campamento" } },
+    update: {},
+    create: {
+      organizationId: distrito.id,
+      nombre: "Cocina de campamento",
+      descripcion: "Evaluación de preparación de alimentos en campamento",
+      modo: "CRITERIOS",
+      categoria: "COCINA",
+      valoresValidos: [1, 2, 3, 4, 5],
+      valoresValidosDesempate: [1, 2, 3],
+      criterios: {
+        create: [
+          { nombre: "Sabor", tipo: "PUNTUABLE", orden: 1 },
+          { nombre: "Presentación", tipo: "PUNTUABLE", orden: 2 },
+          { nombre: "Higiene", tipo: "PUNTUABLE", orden: 3 },
+        ],
+      },
+    },
+  });
+
+  // ── 8. Postas del distrito (biblioteca) ──────────────────────────────────────
+  const postasData = [
+    {
+      nombre: "Amarres básicos",
+      descripcion: "Evaluación de nudos de amarre cuadrado y diagonal con cuerdas de 5mm",
+      duracionMinutos: 15,
+      templateId: templateConstruccion.id,
+      materiales: [
+        { nombre: "Cuerdas de 5mm", cantidad: "20 metros" },
+        { nombre: "Palos de 1m", cantidad: "10 unidades" },
+      ],
+    },
+    {
+      nombre: "Torre de pionerismo",
+      descripcion: "Construcción de una torre de al menos 1.5m usando palos y cuerdas",
+      duracionMinutos: 30,
+      templateId: templateConstruccion.id,
+      materiales: [
+        { nombre: "Palos de 2m", cantidad: "6 unidades" },
+        { nombre: "Cuerdas de 8mm", cantidad: "15 metros" },
+      ],
+    },
+    {
+      nombre: "Desayuno de campamento",
+      descripcion: "Preparación de un desayuno completo en fogón",
+      duracionMinutos: 45,
+      templateId: templateCocina.id,
+      materiales: [
+        { nombre: "Utensilios de cocina", cantidad: "1 set" },
+        { nombre: "Ingredientes", cantidad: "según receta" },
+      ],
+    },
+    {
+      nombre: "Orientación con brújula",
+      descripcion: "Navegación por puntos usando brújula y mapa topográfico",
+      duracionMinutos: 20,
+      templateId: null,
+      materiales: [
+        { nombre: "Brújulas", cantidad: "1 por participante" },
+        { nombre: "Mapas topográficos", cantidad: "1 por patrulla" },
+      ],
+    },
+  ];
+
+  const postas = await Promise.all(
+    postasData.map((p) =>
+      prisma.posta
+        .findFirst({ where: { organizationId: distrito.id, nombre: p.nombre } })
+        .then((existing) =>
+          existing
+            ? prisma.posta.update({ where: { id: existing.id }, data: { descripcion: p.descripcion, duracionMinutos: p.duracionMinutos, templateId: p.templateId, materiales: p.materiales } })
+            : prisma.posta.create({ data: { organizationId: distrito.id, ...p, materiales: p.materiales } }),
+        ),
+    ),
+  );
+
+  const [postaAmarres, postaTorre, postaDesayuno] = postas;
+
+  // ── 9. Evento demo con actividades, asignaciones y patrullas ─────────────────
+  const slugEvento = "campamento-distrital-2026";
+  let evento = await prisma.evento.findFirst({ where: { organizationId: distrito.id, slug: slugEvento } });
+
+  if (!evento) {
+    const [juez1User, juez2User] = users.slice(1, 3);
+
+    evento = await prisma.evento.create({
+      data: {
+        organizationId: distrito.id,
+        nombre: "Campamento Distrital 2026",
+        slug: slugEvento,
+        descripcion: "Campamento anual del distrito con pruebas de habilidades scouts",
+        lugar: "Campo Escuela La Montaña",
+        fechaInicio: new Date("2026-08-15"),
+        fechaFin: new Date("2026-08-17"),
+        estado: EventoEstado.BORRADOR,
+      },
+    });
+
+    // Actividades
+    const actConstruccion = await prisma.actividad.create({
+      data: {
+        eventoId: evento.id,
+        nombre: "Construcción y pionerismo",
+        tipo: ActividadTipo.CONSTRUCCION,
+        pesoRelativo: 60,
+        orden: 1,
+      },
+    });
+
+    const actCocina = await prisma.actividad.create({
+      data: {
+        eventoId: evento.id,
+        nombre: "Cocina de campamento",
+        tipo: ActividadTipo.COCINA,
+        pesoRelativo: 40,
+        orden: 2,
+      },
+    });
+
+    // AsignacionPostas
+    await prisma.asignacionPosta.createMany({
+      data: [
+        {
+          id: createId(),
+          postaId: postaAmarres!.id,
+          actividadId: actConstruccion.id,
+          juezUserId: juez1User!.id,
+          encargado: "Carlos López",
+          ayudantes: "María García",
+          weight: 1.0,
+          orden: 1,
+        },
+        {
+          id: createId(),
+          postaId: postaTorre!.id,
+          actividadId: actConstruccion.id,
+          juezUserId: juez2User!.id,
+          encargado: "Roberto Silva",
+          weight: 1.5,
+          orden: 2,
+        },
+        {
+          id: createId(),
+          postaId: postaDesayuno!.id,
+          actividadId: actCocina.id,
+          juezUserId: juez1User!.id,
+          encargado: "Ana Torres",
+          weight: 1.0,
+          orden: 1,
+        },
+      ],
+    });
+
+    // Patrullas
+    await prisma.patrulla.createMany({
+      data: [
+        { id: createId(), eventoId: evento.id, grupoScoutId: jpii.id, nombre: "Halcones", categoria: PatrullaCategoria.EXPLORADOR },
+        { id: createId(), eventoId: evento.id, grupoScoutId: donBosco.id, nombre: "Águilas", categoria: PatrullaCategoria.EXPLORADOR },
+        { id: createId(), eventoId: evento.id, grupoScoutId: sanJorge.id, nombre: "Cóndores", categoria: PatrullaCategoria.PIONERO },
+      ],
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: distrito.id,
+        actorUserId: adminUser.id,
+        action: "evento.created",
+        targetType: "Evento",
+        targetId: evento.id,
+        metadata: { nombre: evento.nombre },
+      },
+    });
+  }
+
   // ── Resumen ──────────────────────────────────────────────────────────────────
   const counts = await Promise.all([
     prisma.organization.count(),
@@ -246,6 +447,8 @@ async function main() {
     prisma.miembroScout.count({ where: { organizationId: distrito.id } }),
     prisma.invitation.count({ where: { organizationId: distrito.id, status: InvitationStatus.PENDING } }),
     prisma.auditLog.count({ where: { organizationId: distrito.id } }),
+    prisma.posta.count({ where: { organizationId: distrito.id } }),
+    prisma.evento.count({ where: { organizationId: distrito.id } }),
   ]);
 
   console.log(`
@@ -257,6 +460,8 @@ async function main() {
   MiembrosScout  : ${counts[4]}
   Invitaciones   : ${counts[5]} PENDING
   AuditLogs      : ${counts[6]}
+  Postas         : ${counts[7]}
+  Eventos        : ${counts[8]}
 `);
 }
 

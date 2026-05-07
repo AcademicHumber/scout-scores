@@ -91,6 +91,7 @@ model Organization {
   auditLogs      AuditLog[]
   scoreTemplates ScoreTemplate[]
   eventos        Evento[]
+  postas         Posta[]
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -128,12 +129,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  memberships   Membership[]
-  miembrosScout MiembroScout[]
-  auditLogs     AuditLog[]     @relation("AuditLogActor")
-  postasJuez    Posta[]        @relation("PostaJuez")
+  accounts         Account[]
+  sessions         Session[]
+  memberships      Membership[]
+  miembrosScout    MiembroScout[]
+  auditLogs        AuditLog[]        @relation("AuditLogActor")
+  asignacionesJuez AsignacionPosta[] @relation("AsignacionPostaJuez")
 }
 
 model Account {
@@ -335,36 +336,61 @@ model Actividad {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  postas Posta[]
+  evento       Evento            @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  asignaciones AsignacionPosta[]
 
   @@unique([eventoId, orden])
   @@index([eventoId])
 }
 
 // ──────────────────────────────────────────────────────────────
-// Posta — estación dentro de una actividad
+// Posta — entidad de biblioteca del distrito (standalone)
 // ──────────────────────────────────────────────────────────────
 
 model Posta {
+  id              String   @id @default(cuid(2))
+  organizationId  String
+  nombre          String
+  descripcion     String?
+  duracionMinutos Int?
+  templateId      String?
+  materiales      Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     ScoreTemplate?  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  asignaciones AsignacionPosta[]
+
+  @@unique([organizationId, nombre])
+  @@index([organizationId])
+  @@index([templateId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// AsignacionPosta — posta asignada a una actividad con datos por uso
+// ──────────────────────────────────────────────────────────────
+
+model AsignacionPosta {
   id          String   @id @default(cuid(2))
+  postaId     String
   actividadId String
-  nombre      String
-  descripcion String?
-  templateId  String?
-  weight      Decimal  @db.Decimal(6, 2) @default(1.0)
   juezUserId  String?
+  encargado   String?
+  ayudantes   String?
+  weight      Decimal  @db.Decimal(6, 2) @default(1.0)
   orden       Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  actividad Actividad      @relation(fields: [actividadId], references: [id], onDelete: Cascade)
-  template  ScoreTemplate? @relation(fields: [templateId], references: [id], onDelete: Restrict)
-  juezUser  User?          @relation("PostaJuez", fields: [juezUserId], references: [id], onDelete: SetNull)
+  posta     Posta     @relation(fields: [postaId], references: [id], onDelete: Restrict)
+  actividad Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  juezUser  User?     @relation("AsignacionPostaJuez", fields: [juezUserId], references: [id], onDelete: SetNull)
 
   @@unique([actividadId, orden])
+  @@unique([postaId, actividadId])
+  @@index([postaId])
   @@index([actividadId])
-  @@index([templateId])
   @@index([juezUserId])
 }
 
