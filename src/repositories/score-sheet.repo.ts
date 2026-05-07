@@ -323,6 +323,7 @@ export function listPatrullasParaPosta(
 }
 
 export type ScoreSheetForJuez = {
+  patrullaNombre: string
   scoreSheet: {
     id: string
     estado: ScoreSheetEstado
@@ -373,14 +374,18 @@ export function findScoreSheetForJuez(
       if (!asignacion) throw new BusinessError("ASIGNACION_NO_ENCONTRADA")
       if (!isAdmin && asignacion.juezUserId !== userId) throw new BusinessError("FORBIDDEN_NO_ASIGNADO")
 
-      const sheet = await prisma.scoreSheet.findUnique({
-        where: { asignacionPostaId_patrullaId: { asignacionPostaId: asignacionId, patrullaId } },
-        include: { entries: { select: { criterionId: true, valor: true } } },
-      })
+      const [sheet, patrulla] = await Promise.all([
+        prisma.scoreSheet.findUnique({
+          where: { asignacionPostaId_patrullaId: { asignacionPostaId: asignacionId, patrullaId } },
+          include: { entries: { select: { criterionId: true, valor: true } } },
+        }),
+        prisma.patrulla.findUnique({ where: { id: patrullaId }, select: { nombre: true } }),
+      ])
 
       const template = asignacion.posta.template
 
       return {
+        patrullaNombre: patrulla?.nombre ?? patrullaId,
         scoreSheet: sheet
           ? {
               id: sheet.id,
