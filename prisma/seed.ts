@@ -6,6 +6,7 @@ import {
   EventoEstado,
   ActividadTipo,
   PatrullaCategoria,
+  ScoreSheetEstado,
 } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createId } from "@paralleldrive/cuid2";
@@ -284,6 +285,25 @@ async function main() {
     },
   });
 
+  const templatePuntajeUnico = await prisma.scoreTemplate.upsert({
+    where: { organizationId_nombre: { organizationId: distrito.id, nombre: "Orientación con brújula" } },
+    update: {},
+    create: {
+      organizationId: distrito.id,
+      nombre: "Orientación con brújula",
+      descripcion: "Evaluación directa de orientación en campo",
+      modo: "PUNTAJE_UNICO",
+      categoria: "OTRO",
+      valoresValidos: [0, 25, 50, 75, 100],
+      valoresValidosDesempate: [],
+      criterios: {
+        create: [
+          { nombre: "Trabajo en equipo", tipo: "DESEMPATE", orden: 1 },
+        ],
+      },
+    },
+  });
+
   // ── 8. Postas del distrito (biblioteca) ──────────────────────────────────────
   const postasData = [
     {
@@ -320,7 +340,7 @@ async function main() {
       nombre: "Orientación con brújula",
       descripcion: "Navegación por puntos usando brújula y mapa topográfico",
       duracionMinutos: 20,
-      templateId: null,
+      templateId: templatePuntajeUnico.id,
       materiales: [
         { nombre: "Brújulas", cantidad: "1 por participante" },
         { nombre: "Mapas topográficos", cantidad: "1 por patrulla" },
@@ -340,16 +360,22 @@ async function main() {
     ),
   );
 
-  const [postaAmarres, postaTorre, postaDesayuno] = postas;
+  const [postaAmarres, postaTorre, postaDesayuno, postaOrientacion] = postas;
 
-  // ── 9. Evento demo con actividades, asignaciones y patrullas ─────────────────
+  // ── 9. Evento demo con actividades, asignaciones, patrullas y planillas ────────
   const slugEvento = "campamento-distrital-2026";
-  let evento = await prisma.evento.findFirst({ where: { organizationId: distrito.id, slug: slugEvento } });
+  const [juez1User, juez2User] = users.slice(1, 3);
+
+  let evento = await prisma.evento.findFirst({
+    where: { organizationId: distrito.id, slug: slugEvento },
+    include: {
+      actividades: { include: { asignaciones: true } },
+      patrullas: true,
+    },
+  });
 
   if (!evento) {
-    const [juez1User, juez2User] = users.slice(1, 3);
-
-    evento = await prisma.evento.create({
+    const eventoBase = await prisma.evento.create({
       data: {
         organizationId: distrito.id,
         nombre: "Campamento Distrital 2026",
@@ -358,14 +384,15 @@ async function main() {
         lugar: "Campo Escuela La Montaña",
         fechaInicio: new Date("2026-08-15"),
         fechaFin: new Date("2026-08-17"),
-        estado: EventoEstado.BORRADOR,
+        estado: EventoEstado.ACTIVO,
+        activatedAt: new Date("2026-08-14"),
       },
     });
 
     // Actividades
     const actConstruccion = await prisma.actividad.create({
       data: {
-        eventoId: evento.id,
+        eventoId: eventoBase.id,
         nombre: "Construcción y pionerismo",
         tipo: ActividadTipo.CONSTRUCCION,
         pesoRelativo: 60,
@@ -375,7 +402,7 @@ async function main() {
 
     const actCocina = await prisma.actividad.create({
       data: {
-        eventoId: evento.id,
+        eventoId: eventoBase.id,
         nombre: "Cocina de campamento",
         tipo: ActividadTipo.COCINA,
         pesoRelativo: 40,
@@ -384,46 +411,99 @@ async function main() {
     });
 
     // AsignacionPostas
-    await prisma.asignacionPosta.createMany({
-      data: [
-        {
-          id: createId(),
-          postaId: postaAmarres!.id,
-          actividadId: actConstruccion.id,
-          juezUserId: juez1User!.id,
-          encargado: "Carlos López",
-          ayudantes: "María García",
-          weight: 1.0,
-          orden: 1,
-        },
-        {
-          id: createId(),
-          postaId: postaTorre!.id,
-          actividadId: actConstruccion.id,
-          juezUserId: juez2User!.id,
-          encargado: "Roberto Silva",
-          weight: 1.5,
-          orden: 2,
-        },
-        {
-          id: createId(),
-          postaId: postaDesayuno!.id,
-          actividadId: actCocina.id,
-          juezUserId: juez1User!.id,
-          encargado: "Ana Torres",
-          weight: 1.0,
-          orden: 1,
-        },
-      ],
+    const asig1 = await prisma.asignacionPosta.create({
+      data: {
+        id: createId(),
+        postaId: postaAmarres!.id,
+        actividadId: actConstruccion.id,
+        juezUserId: juez1User!.id,
+        encargado: "Carlos López",
+        ayudantes: "María García",
+        weight: 1.0,
+        orden: 1,
+      },
+    });
+    const asig2 = await prisma.asignacionPosta.create({
+      data: {
+        id: createId(),
+        postaId: postaTorre!.id,
+        actividadId: actConstruccion.id,
+        juezUserId: juez2User!.id,
+        encargado: "Roberto Silva",
+        weight: 1.5,
+        orden: 2,
+      },
+    });
+    const asig3 = await prisma.asignacionPosta.create({
+      data: {
+        id: createId(),
+        postaId: postaDesayuno!.id,
+        actividadId: actCocina.id,
+        juezUserId: juez1User!.id,
+        encargado: "Ana Torres",
+        weight: 1.0,
+        orden: 1,
+      },
+    });
+    const asig4 = await prisma.asignacionPosta.create({
+      data: {
+        id: createId(),
+        postaId: postaOrientacion!.id,
+        actividadId: actCocina.id,
+        juezUserId: juez2User!.id,
+        encargado: "Laura Méndez",
+        weight: 1.0,
+        orden: 2,
+      },
     });
 
     // Patrullas
-    await prisma.patrulla.createMany({
-      data: [
-        { id: createId(), eventoId: evento.id, grupoScoutId: jpii.id, nombre: "Halcones", categoria: PatrullaCategoria.EXPLORADOR },
-        { id: createId(), eventoId: evento.id, grupoScoutId: donBosco.id, nombre: "Águilas", categoria: PatrullaCategoria.EXPLORADOR },
-        { id: createId(), eventoId: evento.id, grupoScoutId: sanJorge.id, nombre: "Cóndores", categoria: PatrullaCategoria.PIONERO },
-      ],
+    const pat1 = await prisma.patrulla.create({ data: { id: createId(), eventoId: eventoBase.id, grupoScoutId: jpii.id, nombre: "Halcones", categoria: PatrullaCategoria.EXPLORADOR } });
+    const pat2 = await prisma.patrulla.create({ data: { id: createId(), eventoId: eventoBase.id, grupoScoutId: donBosco.id, nombre: "Águilas", categoria: PatrullaCategoria.EXPLORADOR } });
+    const pat3 = await prisma.patrulla.create({ data: { id: createId(), eventoId: eventoBase.id, grupoScoutId: sanJorge.id, nombre: "Cóndores", categoria: PatrullaCategoria.PIONERO } });
+
+    // ScoreSheets demo: asig1 (juez1, CRITERIOS, weight 1.0)
+    //   Halcones → ENVIADA con totales calculados
+    //   Águilas  → BORRADOR sin totales
+    const criteriosConstruccion = await prisma.templateCriterion.findMany({
+      where: { templateId: templateConstruccion.id },
+      orderBy: { orden: "asc" },
+    });
+    const [cTecnica, cSolidez, cPresentacion, cEspiritu] = criteriosConstruccion;
+
+    const sheetHalconesEnviada = await prisma.scoreSheet.create({
+      data: {
+        asignacionPostaId: asig1.id,
+        patrullaId: pat1.id,
+        estado: ScoreSheetEstado.ENVIADA,
+        totalPuntuable: 12, // (4+4+4) × weight 1.0
+        totalDesempate: 3,  // espíritu scout = 3
+        enviadaAt: new Date("2026-08-15T10:30:00"),
+        enviadaByUserId: juez1User!.id,
+        entries: {
+          create: [
+            { criterionId: cTecnica!.id, valor: 4 },
+            { criterionId: cSolidez!.id, valor: 4 },
+            { criterionId: cPresentacion!.id, valor: 4 },
+            { criterionId: cEspiritu!.id, valor: 3 },
+          ],
+        },
+      },
+    });
+
+    await prisma.scoreSheet.create({
+      data: {
+        asignacionPostaId: asig1.id,
+        patrullaId: pat2.id,
+        estado: ScoreSheetEstado.BORRADOR,
+        entries: {
+          create: [
+            { criterionId: cTecnica!.id, valor: 3 },
+            { criterionId: cSolidez!.id, valor: 3 },
+            // Presentación sin cargar (borrador puede estar incompleto)
+          ],
+        },
+      },
     });
 
     await prisma.auditLog.create({
@@ -432,10 +512,131 @@ async function main() {
         actorUserId: adminUser.id,
         action: "evento.created",
         targetType: "Evento",
-        targetId: evento.id,
-        metadata: { nombre: evento.nombre },
+        targetId: eventoBase.id,
+        metadata: { nombre: eventoBase.nombre },
       },
     });
+    await prisma.auditLog.create({
+      data: {
+        organizationId: distrito.id,
+        actorUserId: adminUser.id,
+        action: "evento.activated",
+        targetType: "Evento",
+        targetId: eventoBase.id,
+        metadata: {},
+      },
+    });
+    await prisma.auditLog.create({
+      data: {
+        organizationId: distrito.id,
+        actorUserId: juez1User!.id,
+        action: "scoreSheet.submitted",
+        targetType: "ScoreSheet",
+        targetId: sheetHalconesEnviada.id,
+        metadata: { patrulla: "Halcones", totalPuntuable: "12", totalDesempate: "3" },
+      },
+    });
+
+    evento = await prisma.evento.findFirst({
+      where: { id: eventoBase.id },
+      include: {
+        actividades: { include: { asignaciones: true } },
+        patrullas: true,
+      },
+    });
+  } else if (evento.estado === EventoEstado.BORRADOR) {
+    // Si ya existe pero está en BORRADOR, activarlo para que la vista del juez lo muestre
+    await prisma.evento.update({
+      where: { id: evento.id },
+      data: { estado: EventoEstado.ACTIVO, activatedAt: new Date() },
+    });
+  }
+
+  // ── 10. ScoreSheets demo (idempotente) ─────────────────────────────────────
+  // Buscar la asignacion de "Amarres básicos" en el evento demo
+  const eventoConAsignaciones = await prisma.evento.findFirst({
+    where: { organizationId: distrito.id, slug: slugEvento },
+    include: {
+      actividades: {
+        include: {
+          asignaciones: {
+            include: { posta: true },
+          },
+        },
+      },
+      patrullas: { orderBy: { nombre: "asc" } },
+    },
+  });
+
+  if (eventoConAsignaciones) {
+    const todasAsignaciones = eventoConAsignaciones.actividades.flatMap((a) => a.asignaciones);
+    const asigAmarres = todasAsignaciones.find((a) => a.posta.nombre === "Amarres básicos");
+    const patrullaHalcones = eventoConAsignaciones.patrullas.find((p) => p.nombre === "Halcones");
+    const patrullaAguilas = eventoConAsignaciones.patrullas.find((p) => p.nombre === "Águilas");
+
+    if (asigAmarres && patrullaHalcones && patrullaAguilas) {
+      const criteriosConstruccion = await prisma.templateCriterion.findMany({
+        where: { templateId: templateConstruccion.id },
+        orderBy: { orden: "asc" },
+      });
+      const [cTecnica, cSolidez, cPresentacion, cEspiritu] = criteriosConstruccion;
+
+      // Planilla ENVIADA para Halcones
+      const existeHalcones = await prisma.scoreSheet.findUnique({
+        where: { asignacionPostaId_patrullaId: { asignacionPostaId: asigAmarres.id, patrullaId: patrullaHalcones.id } },
+      });
+      if (!existeHalcones) {
+        const sheetEnviada = await prisma.scoreSheet.create({
+          data: {
+            asignacionPostaId: asigAmarres.id,
+            patrullaId: patrullaHalcones.id,
+            estado: ScoreSheetEstado.ENVIADA,
+            totalPuntuable: 12,
+            totalDesempate: 3,
+            enviadaAt: new Date("2026-08-15T10:30:00"),
+            enviadaByUserId: juez1User!.id,
+            entries: {
+              create: [
+                { criterionId: cTecnica!.id, valor: 4 },
+                { criterionId: cSolidez!.id, valor: 4 },
+                { criterionId: cPresentacion!.id, valor: 4 },
+                { criterionId: cEspiritu!.id, valor: 3 },
+              ],
+            },
+          },
+        });
+        await prisma.auditLog.create({
+          data: {
+            organizationId: distrito.id,
+            actorUserId: juez1User!.id,
+            action: "scoreSheet.submitted",
+            targetType: "ScoreSheet",
+            targetId: sheetEnviada.id,
+            metadata: { patrulla: "Halcones", totalPuntuable: "12", totalDesempate: "3" },
+          },
+        });
+      }
+
+      // Planilla BORRADOR para Águilas
+      const existeAguilas = await prisma.scoreSheet.findUnique({
+        where: { asignacionPostaId_patrullaId: { asignacionPostaId: asigAmarres.id, patrullaId: patrullaAguilas.id } },
+      });
+      if (!existeAguilas) {
+        await prisma.scoreSheet.create({
+          data: {
+            asignacionPostaId: asigAmarres.id,
+            patrullaId: patrullaAguilas.id,
+            estado: ScoreSheetEstado.BORRADOR,
+            entries: {
+              create: [
+                { criterionId: cTecnica!.id, valor: 3 },
+                { criterionId: cSolidez!.id, valor: 3 },
+              ],
+            },
+          },
+        });
+      }
+    }
   }
 
   // ── Resumen ──────────────────────────────────────────────────────────────────
@@ -449,6 +650,7 @@ async function main() {
     prisma.auditLog.count({ where: { organizationId: distrito.id } }),
     prisma.posta.count({ where: { organizationId: distrito.id } }),
     prisma.evento.count({ where: { organizationId: distrito.id } }),
+    prisma.scoreSheet.count(),
   ]);
 
   console.log(`
@@ -462,6 +664,7 @@ async function main() {
   AuditLogs      : ${counts[6]}
   Postas         : ${counts[7]}
   Eventos        : ${counts[8]}
+  ScoreSheets    : ${counts[9]}
 `);
 }
 

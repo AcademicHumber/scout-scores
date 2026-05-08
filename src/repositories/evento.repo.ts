@@ -157,10 +157,70 @@ export async function countEventosActivos(organizationId: string): Promise<numbe
   return prisma.evento.count({ where: { organizationId, estado: "ACTIVO" } })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function isEventoLocked(_eventoId: string): Promise<boolean> {
-  // Plan 6b activará esto cuando exista el modelo Posta con ScoreSheet.
-  return false
+export async function isEventoLocked(eventoId: string): Promise<boolean> {
+  const count = await prisma.scoreSheet.count({
+    where: {
+      estado: "ENVIADA",
+      asignacionPosta: { actividad: { eventoId } },
+    },
+  })
+  return count > 0
+}
+
+type CierreIncompletoFaltante = {
+  postaNombre: string
+  actividadNombre: string
+  patrullaNombre: string
+  estado: "SIN_CARGAR" | "BORRADOR"
+}
+
+async function canTransitionToCerrado(eventoId: string): Promise<void> {
+  const evento = await prisma.evento.findUnique({
+    where: { id: eventoId },
+    include: {
+      actividades: {
+        include: {
+          asignaciones: {
+            include: {
+              posta: { select: { id: true, nombre: true } },
+              scoreSheets: { select: { patrullaId: true, estado: true } },
+            },
+          },
+        },
+      },
+      patrullas: { select: { id: true, nombre: true } },
+    },
+  })
+  if (!evento) throw new BusinessError("NOT_FOUND")
+
+  const faltantes: CierreIncompletoFaltante[] = []
+
+  for (const actividad of evento.actividades) {
+    for (const asignacion of actividad.asignaciones) {
+      for (const patrulla of evento.patrullas) {
+        const sheet = asignacion.scoreSheets.find((s) => s.patrullaId === patrulla.id)
+        if (!sheet) {
+          faltantes.push({
+            postaNombre: asignacion.posta.nombre,
+            actividadNombre: actividad.nombre,
+            patrullaNombre: patrulla.nombre,
+            estado: "SIN_CARGAR",
+          })
+        } else if (sheet.estado === "BORRADOR") {
+          faltantes.push({
+            postaNombre: asignacion.posta.nombre,
+            actividadNombre: actividad.nombre,
+            patrullaNombre: patrulla.nombre,
+            estado: "BORRADOR",
+          })
+        }
+      }
+    }
+  }
+
+  if (faltantes.length > 0) {
+    throw new BusinessError("CIERRE_INCOMPLETO", { faltantes })
+  }
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
@@ -297,6 +357,9 @@ export async function transicionarEstado(
 
   if (target === "ACTIVO") {
     await canTransitionToActivo(id)
+  }
+  if (target === "CERRADO") {
+    await canTransitionToCerrado(id)
   }
 
   const now = new Date()

@@ -188,6 +188,24 @@ export default async function EventoDetailPage({
         />
       </section>
 
+      {/* Link a planillas (visible cuando el evento está ACTIVO o CERRADO) */}
+      {(evento.estado === "ACTIVO" || evento.estado === "CERRADO") && (
+        <section className="rounded-xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Planillas</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Estado de carga de puntajes por posta y patrulla</p>
+            </div>
+            <Link
+              href={`/admin/eventos/${id}/planillas`}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              Ver planillas
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Acciones peligrosas (solo en BORRADOR) */}
       {evento.estado === "BORRADOR" && (
         <section className="rounded-xl border border-red-200 bg-white p-6 shadow-sm">

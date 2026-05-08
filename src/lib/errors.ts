@@ -35,3 +35,11 @@ export class BusinessError extends Error {
 // POSTA_YA_ASIGNADA_EN_EVENTO — posta ya asignada a otra actividad del mismo evento
 // POSTA_EN_USO             — posta tiene asignaciones activas, no se puede eliminar
 // ASIGNACION_NO_ENCONTRADA — AsignacionPosta no encontrada o no pertenece a la org
+// SCORE_SHEET_NO_ENCONTRADA — ScoreSheet no encontrada
+// FORBIDDEN_NO_ASIGNADO    — userId no es el juez asignado ni es ADMIN
+// EVENTO_NO_ACTIVO         — intento de cargar/enviar en evento que no está ACTIVO
+// VALOR_FUERA_DE_ESCALA    — valor no pertenece a la escala efectiva del criterio (meta: { criterioId?, esperados, recibido })
+// PUNTAJE_UNICO_REQUERIDO  — al enviar en modo PUNTAJE_UNICO sin valor
+// CRITERIOS_FALTANTES      — al enviar en modo CRITERIOS, faltan entries de PUNTUABLE (meta: { criterios: [{id,nombre}] })
+// SCORE_SHEET_NO_ENVIADA   — intento de reabrir una planilla en BORRADOR
+// CIERRE_INCOMPLETO        — no todas las planillas están ENVIADAS (meta: { faltantes: [{postaNombre,actividadNombre,patrullaNombre,estado}] })
