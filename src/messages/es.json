@@ -389,6 +389,9 @@
     }
   },
   "juez": {
+    "nav": {
+      "salir": "Salir"
+    },
     "eventos": {
       "title": "Mis eventos",
       "subtitle": "Eventos activos donde tenés postas asignadas",
@@ -403,6 +406,7 @@
     },
     "posta": {
       "patrullasTitle": "Patrullas",
+      "empty": "No hay patrullas en este evento.",
       "estado": {
         "SIN_CARGAR": "Sin cargar",
         "BORRADOR": "Borrador",

@@ -200,6 +200,12 @@ export type PostaJuezSummary = {
   sinCargar: number
 }
 
+export type PostaJuezContext = {
+  eventoId: string
+  eventoNombre: string
+  postas: PostaJuezSummary[]
+}
+
 export function listPostasParaJuez(
   organizationId: string,
   eventoId: string,
@@ -207,7 +213,7 @@ export function listPostasParaJuez(
   isAdmin: boolean,
 ) {
   return unstable_cache(
-    async (): Promise<PostaJuezSummary[]> => {
+    async (): Promise<PostaJuezContext | null> => {
       const evento = await prisma.evento.findFirst({
         where: { id: eventoId, organizationId },
         include: {
@@ -230,16 +236,16 @@ export function listPostasParaJuez(
         },
       })
 
-      if (!evento) return []
+      if (!evento) return null
 
       const totalPatrullas = evento.patrullas.length
-      const result: PostaJuezSummary[] = []
+      const postas: PostaJuezSummary[] = []
 
       for (const actividad of evento.actividades) {
         for (const asignacion of actividad.asignaciones) {
           const enviadas = asignacion.scoreSheets.filter((s) => s.estado === "ENVIADA").length
           const borradores = asignacion.scoreSheets.filter((s) => s.estado === "BORRADOR").length
-          result.push({
+          postas.push({
             asignacionId: asignacion.id,
             postaNombre: asignacion.posta.nombre,
             actividadNombre: actividad.nombre,
@@ -252,7 +258,7 @@ export function listPostasParaJuez(
         }
       }
 
-      return result
+      return { eventoId: evento.id, eventoNombre: evento.nombre, postas }
     },
     [`listPostasParaJuez:${organizationId}:${eventoId}:${userId}:${isAdmin}`],
     { tags: [cacheTags.scoreSheets(organizationId), cacheTags.eventos(organizationId)] },
@@ -271,6 +277,14 @@ export type PatrullaPostaRow = {
   } | null
 }
 
+export type PatrullaPostaContext = {
+  eventoId: string
+  eventoNombre: string
+  postaNombre: string
+  actividadNombre: string
+  patrullas: PatrullaPostaRow[]
+}
+
 export function listPatrullasParaPosta(
   organizationId: string,
   asignacionId: string,
@@ -278,11 +292,18 @@ export function listPatrullasParaPosta(
   isAdmin: boolean,
 ) {
   return unstable_cache(
-    async (): Promise<PatrullaPostaRow[]> => {
+    async (): Promise<PatrullaPostaContext> => {
       const asignacion = await prisma.asignacionPosta.findFirst({
         where: { id: asignacionId, actividad: { evento: { organizationId } } },
         include: {
-          actividad: { select: { eventoId: true, evento: { select: { estado: true } } } },
+          posta: { select: { nombre: true } },
+          actividad: {
+            select: {
+              nombre: true,
+              eventoId: true,
+              evento: { select: { id: true, nombre: true, estado: true } },
+            },
+          },
         },
       })
       if (!asignacion) throw new BusinessError("ASIGNACION_NO_ENCONTRADA")
@@ -300,22 +321,28 @@ export function listPatrullasParaPosta(
         orderBy: { nombre: "asc" },
       })
 
-      return patrullas.map((p) => {
-        const sheet = p.scoreSheets[0] ?? null
-        return {
-          patrullaId: p.id,
-          patrullaNombre: p.nombre,
-          grupoScoutNombre: p.grupoScout.nombre,
-          scoreSheet: sheet
-            ? {
-                id: sheet.id,
-                estado: sheet.estado,
-                puntajeMostrado: sheet.estado === "ENVIADA" ? sheet.totalPuntuable : null,
-                enviadaAt: sheet.enviadaAt,
-              }
-            : null,
-        }
-      })
+      return {
+        eventoId: asignacion.actividad.evento.id,
+        eventoNombre: asignacion.actividad.evento.nombre,
+        postaNombre: asignacion.posta.nombre,
+        actividadNombre: asignacion.actividad.nombre,
+        patrullas: patrullas.map((p) => {
+          const sheet = p.scoreSheets[0] ?? null
+          return {
+            patrullaId: p.id,
+            patrullaNombre: p.nombre,
+            grupoScoutNombre: p.grupoScout.nombre,
+            scoreSheet: sheet
+              ? {
+                  id: sheet.id,
+                  estado: sheet.estado,
+                  puntajeMostrado: sheet.estado === "ENVIADA" ? sheet.totalPuntuable : null,
+                  enviadaAt: sheet.enviadaAt,
+                }
+              : null,
+          }
+        }),
+      }
     },
     [`listPatrullasParaPosta:${organizationId}:${asignacionId}:${userId}:${isAdmin}`],
     { tags: [cacheTags.scoreSheets(organizationId)] },

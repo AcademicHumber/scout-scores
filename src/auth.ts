@@ -9,16 +9,13 @@ export const { auth, handlers, signIn, signOut, unstable_update } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   callbacks: {
-    async signIn({ user }) {
-      if (user.id && user.email) {
-        await aceptarInvitacionEnSignIn(user.id, user.email)
-      }
-      return true
-    },
-
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id!
+        // User is guaranteed to exist in DB at this point (adapter ran before jwt)
+        if (user.email) {
+          await aceptarInvitacionEnSignIn(user.id!, user.email)
+        }
         const ms = await prisma.membership.findMany({
           where: { userId: user.id! },
           include: {

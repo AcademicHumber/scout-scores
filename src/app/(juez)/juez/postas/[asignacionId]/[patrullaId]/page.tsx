@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation"
-import Link from "next/link"
 import { requireRole } from "@/lib/auth-helpers"
 import { findScoreSheetForJuez } from "@/repositories/score-sheet.repo"
 import { ScoreSheetForm } from "@/components/juez/ScoreSheetForm"
+import { Breadcrumb } from "@/components/juez/Breadcrumb"
 import { BusinessError } from "@/lib/errors"
+import messages from "@/messages/es.json"
+
+const t = messages.juez
 
 export default async function JuezPlanillaPage({
   params,
@@ -28,25 +31,27 @@ export default async function JuezPlanillaPage({
 
   const { scoreSheet, asignacion, patrullaNombre } = data
   const isEnviada = scoreSheet?.estado === "ENVIADA"
-  const backHref = `/juez/postas/${asignacionId}`
 
   return (
     <div>
-      <div className="mb-4">
-        <Link href={backHref} className="text-sm text-brand hover:underline">
-          ← {asignacion.postaNombre}
-        </Link>
-        <p className="text-xs text-gray-400 mt-0.5">
-          {asignacion.actividadNombre} · {asignacion.eventoNombre}
-        </p>
-      </div>
+      <Breadcrumb
+        items={[
+          { label: t.eventos.title, href: "/juez/eventos" },
+          { label: asignacion.eventoNombre, href: `/juez/eventos/${asignacion.eventoId}` },
+          { label: asignacion.postaNombre, href: `/juez/postas/${asignacionId}` },
+        ]}
+      />
 
       <ScoreSheetForm
         asignacionId={asignacionId}
         patrullaId={patrullaId}
         patrullaNombre={patrullaNombre}
-        backHref={backHref}
-        template={asignacion.template}
+        backHref={`/juez/postas/${asignacionId}`}
+        template={asignacion.template ? {
+          ...asignacion.template,
+          valoresValidos: asignacion.template.valoresValidos.map(Number),
+          valoresValidosDesempate: asignacion.template.valoresValidosDesempate.map(Number),
+        } : null}
         initialPuntajeUnico={
           scoreSheet?.puntajeUnico != null ? Number(scoreSheet.puntajeUnico) : null
         }

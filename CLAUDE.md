@@ -101,7 +101,15 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 21. **`<dialog>` nativo + Tailwind requiere `m-auto` explícito**: el preflight de Tailwind v4 aplica `* { margin: 0 }` que pisa el `margin: auto` del UA stylesheet del browser, quitando el centrado automático de `<dialog showModal()>`. Siempre agregar `m-auto` al elemento `<dialog>`. (Ver Plan 6c lección #2).
 
-22. **`useActionState` con estado React: usar dispatch directo, no `<form action>`**: cuando el formulario tiene estado en `useState` (no en inputs DOM), serializar ese estado en un `FormData` y llamar al dispatch directamente desde un `onClick`, no mediante `<form action={dispatch}>` con una función inline. La forma inline `action={(fd) => fn(buildFd())}` bypasea el mecanismo de pending/state de `useActionState`. (Ver Plan 7a lección #1).
+22. **`useActionState` con estado React: usar dispatch directo dentro de `startTransition`**: cuando el formulario tiene estado en `useState` (no en inputs DOM), serializar ese estado en un `FormData` y llamar al dispatch directamente desde un `onClick` envuelto en `startTransition(() => dispatch(fd))`. No usar `<form action={dispatch}>` con función inline (bypasea el mecanismo de pending/state). No llamar dispatch fuera de una transition: React 19 requiere `startTransition` para que `isPending` actualice correctamente. (Ver Plan 7a lección #1).
+
+23. **Skill de frontend design**: antes de cualquier trabajo de UI, leer y aplicar `.agents/skills/frontend-design/SKILL.md`. El skill guía hacia interfaces distintivas y production-grade. Requiere elegir una dirección estética concreta (ej: "field tool", "editorial", "brutalist") y ejecutarla con precisión. Evita la estética genérica de AI.
+
+24. **Route groups para shells visuales independientes**: si una sección necesita su propio header/layout (ej: vista mobile del juez sin el `AppHeader` del admin), moverla a su propio route group `(seccion)/` en lugar de anidar dentro de `(app)/`. Los route groups no afectan las URLs pero sí qué layouts se aplican. Si el layout usa `SignOutButton` (que depende de `next-auth/react`), el group layout debe envolver con `<SessionProvider>` directamente. El único import que suele cambiar al mover: las Server Actions en `@/app/(grupo)/ruta/actions.ts` — actualizar en los Client Components que las importan.
+
+25. **Patrones UX mobile validados**: touch targets `min-h-[56px]` para botones de acción y ScaleButtons, `min-h-[64px]` para cards de lista; `active:scale-[0.99]` en cards y `active:scale-95` en botones para feedback táctil; borde de color por estado en cards (`border-green-200` / `border-amber-200` / `border-gray-200`); ScaleButtons seleccionados con `scale-[1.04] shadow-md`; barra de progreso `h-1.5 rounded-full` con width dinámico en lugar de solo contador de texto; breadcrumb con back button `← Nombre` en brand color como elemento principal.
+
+26. **`Decimal` de Prisma no se puede pasar a Client Components**: Next.js no puede serializar objetos `Decimal` al cruzar el boundary Server→Client. Convertir en el Server Component antes de pasar como prop: arrays con `.map(Number)`, valores individuales con `Number(val)` o `.toString()`.
 
 ## Documentación
 

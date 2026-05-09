@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useActionState, useEffect, startTransition } from "react"
 import { useRouter } from "next/navigation"
 import { reopenScoreSheetAction, type ReopenState } from "@/app/(app)/admin/eventos/[id]/planillas/actions"
 
@@ -21,7 +21,7 @@ export function ReopenButton({ scoreSheetId, patrullaNombre }: Props) {
     if (!confirm(`¿Reabrir la planilla de "${patrullaNombre}"? El juez podrá editarla nuevamente.`)) return
     const fd = new FormData()
     fd.set("scoreSheetId", scoreSheetId)
-    dispatch(fd)
+    startTransition(() => dispatch(fd))
   }
 
   return (
