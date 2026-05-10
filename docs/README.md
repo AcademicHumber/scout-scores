@@ -17,7 +17,9 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [06b — Postas, patrullas, asignación de jueces](plans/06b-postas-patrullas-jueces.md) ✓
 - [06c — Postas como biblioteca reutilizable](plans/06c-postas-biblioteca.md) ✓
 - [07a — Scoring online y vista del juez](plans/07a-scoring-juez.md) ✓
-- 07b — PWA + cola offline + sync _(pendiente)_
+- [07b — PWA + cola offline + sync](plans/07b-pwa-offline-sync.md) ✓
+- [07c — Vista del juez como Client Components hidratados desde IDB](plans/07c-juez-client-components.md) ✓
+- [07d — Catch-all SPA para `/juez/**` + fixes de SW caching offline](plans/07d-catch-all-spa-y-fixes-sw.md) ✓
 - 08 — Reportes, leaderboard y vistas públicas _(pendiente)_
 - 09 — Cierre de evento y publicación _(pendiente)_
 - 10 — Correcciones post-cierre _(pendiente)_
@@ -36,3 +38,4 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [ADR-0001 — Arquitectura en dos capas: scoring primero, personas después](adr/0001-arquitectura-en-capas.md)
 - [ADR-0002 — Capa de repositorios con unstable_cache y revalidateTag](adr/0002-repository-layer.md)
 - [ADR-0003 — Jerarquía Evento → Actividad → Posta](adr/0003-jerarquia-evento-actividad-posta.md)
+- [ADR-0004 — Modo offline del juez: PWA con IndexedDB, cola de sync y SPA catch-all](adr/0004-modo-offline-pwa-spa.md)

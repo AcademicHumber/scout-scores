@@ -1,4 +1,6 @@
-import Link from "next/link"
+"use client"
+
+import { JuezLink } from "@/lib/offline/juez-router"
 
 type BreadcrumbItem = {
   label: string
@@ -16,25 +18,25 @@ export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
           {ancestors.map((item, i) => (
             <span key={i} className="flex items-center gap-1 min-w-0">
               {i > 0 && <span aria-hidden="true" className="shrink-0">›</span>}
-              <Link
+              <JuezLink
                 href={item.href}
                 className="hover:text-brand truncate max-w-[100px] sm:max-w-[160px] transition-colors"
               >
                 {item.label}
-              </Link>
+              </JuezLink>
             </span>
           ))}
           <span aria-hidden="true" className="shrink-0">›</span>
         </div>
       )}
 
-      <Link
+      <JuezLink
         href={backItem.href}
         className="inline-flex items-center gap-1.5 text-brand font-semibold text-base hover:text-brand-dark active:text-brand-dark transition-colors"
       >
         <span className="text-xl leading-none" aria-hidden="true">←</span>
         <span>{backItem.label}</span>
-      </Link>
+      </JuezLink>
     </nav>
   )
 }

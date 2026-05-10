@@ -140,321 +140,6 @@ function _calcularTotales(
 
 // ─── Reads ────────────────────────────────────────────────────────────────────
 
-export type EventoJuezSummary = {
-  id: string
-  nombre: string
-  lugar: string | null
-  fechaInicio: Date
-  postasCount: number
-}
-
-export function listEventosParaJuez(
-  organizationId: string,
-  userId: string,
-  isAdmin: boolean,
-) {
-  return unstable_cache(
-    async (): Promise<EventoJuezSummary[]> => {
-      const eventos = await prisma.evento.findMany({
-        where: {
-          organizationId,
-          estado: "ACTIVO",
-          actividades: isAdmin
-            ? undefined
-            : { some: { asignaciones: { some: { juezUserId: userId } } } },
-        },
-        include: {
-          actividades: {
-            include: {
-              asignaciones: {
-                where: isAdmin ? {} : { juezUserId: userId },
-                select: { id: true },
-              },
-            },
-          },
-        },
-        orderBy: { fechaInicio: "asc" },
-      })
-
-      return eventos.map((e) => ({
-        id: e.id,
-        nombre: e.nombre,
-        lugar: e.lugar,
-        fechaInicio: e.fechaInicio,
-        postasCount: e.actividades.flatMap((a) => a.asignaciones).length,
-      }))
-    },
-    [`listEventosParaJuez:${organizationId}:${userId}:${isAdmin}`],
-    { tags: [cacheTags.scoreSheets(organizationId), cacheTags.eventos(organizationId)] },
-  )()
-}
-
-export type PostaJuezSummary = {
-  asignacionId: string
-  postaNombre: string
-  actividadNombre: string
-  plantillaModo: "CRITERIOS" | "PUNTAJE_UNICO" | null
-  totalPatrullas: number
-  enviadas: number
-  borradores: number
-  sinCargar: number
-}
-
-export type PostaJuezContext = {
-  eventoId: string
-  eventoNombre: string
-  postas: PostaJuezSummary[]
-}
-
-export function listPostasParaJuez(
-  organizationId: string,
-  eventoId: string,
-  userId: string,
-  isAdmin: boolean,
-) {
-  return unstable_cache(
-    async (): Promise<PostaJuezContext | null> => {
-      const evento = await prisma.evento.findFirst({
-        where: { id: eventoId, organizationId },
-        include: {
-          patrullas: { select: { id: true } },
-          actividades: {
-            orderBy: { orden: "asc" },
-            include: {
-              asignaciones: {
-                where: isAdmin ? {} : { juezUserId: userId },
-                orderBy: { orden: "asc" },
-                include: {
-                  posta: {
-                    include: { template: { select: { modo: true } } },
-                  },
-                  scoreSheets: { select: { estado: true } },
-                },
-              },
-            },
-          },
-        },
-      })
-
-      if (!evento) return null
-
-      const totalPatrullas = evento.patrullas.length
-      const postas: PostaJuezSummary[] = []
-
-      for (const actividad of evento.actividades) {
-        for (const asignacion of actividad.asignaciones) {
-          const enviadas = asignacion.scoreSheets.filter((s) => s.estado === "ENVIADA").length
-          const borradores = asignacion.scoreSheets.filter((s) => s.estado === "BORRADOR").length
-          postas.push({
-            asignacionId: asignacion.id,
-            postaNombre: asignacion.posta.nombre,
-            actividadNombre: actividad.nombre,
-            plantillaModo: (asignacion.posta.template?.modo ?? null) as "CRITERIOS" | "PUNTAJE_UNICO" | null,
-            totalPatrullas,
-            enviadas,
-            borradores,
-            sinCargar: totalPatrullas - enviadas - borradores,
-          })
-        }
-      }
-
-      return { eventoId: evento.id, eventoNombre: evento.nombre, postas }
-    },
-    [`listPostasParaJuez:${organizationId}:${eventoId}:${userId}:${isAdmin}`],
-    { tags: [cacheTags.scoreSheets(organizationId), cacheTags.eventos(organizationId)] },
-  )()
-}
-
-export type PatrullaPostaRow = {
-  patrullaId: string
-  patrullaNombre: string
-  grupoScoutNombre: string
-  scoreSheet: {
-    id: string
-    estado: ScoreSheetEstado
-    puntajeMostrado: Decimal | null
-    enviadaAt: Date | null
-  } | null
-}
-
-export type PatrullaPostaContext = {
-  eventoId: string
-  eventoNombre: string
-  postaNombre: string
-  actividadNombre: string
-  patrullas: PatrullaPostaRow[]
-}
-
-export function listPatrullasParaPosta(
-  organizationId: string,
-  asignacionId: string,
-  userId: string,
-  isAdmin: boolean,
-) {
-  return unstable_cache(
-    async (): Promise<PatrullaPostaContext> => {
-      const asignacion = await prisma.asignacionPosta.findFirst({
-        where: { id: asignacionId, actividad: { evento: { organizationId } } },
-        include: {
-          posta: { select: { nombre: true } },
-          actividad: {
-            select: {
-              nombre: true,
-              eventoId: true,
-              evento: { select: { id: true, nombre: true, estado: true } },
-            },
-          },
-        },
-      })
-      if (!asignacion) throw new BusinessError("ASIGNACION_NO_ENCONTRADA")
-      if (!isAdmin && asignacion.juezUserId !== userId) throw new BusinessError("FORBIDDEN_NO_ASIGNADO")
-
-      const patrullas = await prisma.patrulla.findMany({
-        where: { eventoId: asignacion.actividad.eventoId },
-        include: {
-          grupoScout: { select: { nombre: true } },
-          scoreSheets: {
-            where: { asignacionPostaId: asignacionId },
-            select: { id: true, estado: true, totalPuntuable: true, enviadaAt: true },
-          },
-        },
-        orderBy: { nombre: "asc" },
-      })
-
-      return {
-        eventoId: asignacion.actividad.evento.id,
-        eventoNombre: asignacion.actividad.evento.nombre,
-        postaNombre: asignacion.posta.nombre,
-        actividadNombre: asignacion.actividad.nombre,
-        patrullas: patrullas.map((p) => {
-          const sheet = p.scoreSheets[0] ?? null
-          return {
-            patrullaId: p.id,
-            patrullaNombre: p.nombre,
-            grupoScoutNombre: p.grupoScout.nombre,
-            scoreSheet: sheet
-              ? {
-                  id: sheet.id,
-                  estado: sheet.estado,
-                  puntajeMostrado: sheet.estado === "ENVIADA" ? sheet.totalPuntuable : null,
-                  enviadaAt: sheet.enviadaAt,
-                }
-              : null,
-          }
-        }),
-      }
-    },
-    [`listPatrullasParaPosta:${organizationId}:${asignacionId}:${userId}:${isAdmin}`],
-    { tags: [cacheTags.scoreSheets(organizationId)] },
-  )()
-}
-
-export type ScoreSheetForJuez = {
-  patrullaNombre: string
-  scoreSheet: {
-    id: string
-    estado: ScoreSheetEstado
-    puntajeUnico: Decimal | null
-    entries: { criterionId: string; valor: Decimal }[]
-    enviadaAt: Date | null
-    totalPuntuable: Decimal | null
-    totalDesempate: Decimal | null
-  } | null
-  asignacion: {
-    id: string
-    weight: Decimal
-    juezUserId: string | null
-    postaNombre: string
-    actividadNombre: string
-    eventoNombre: string
-    eventoId: string
-    template: {
-      id: string
-      modo: "CRITERIOS" | "PUNTAJE_UNICO"
-      valoresValidos: Decimal[]
-      valoresValidosDesempate: Decimal[]
-      criterios: { id: string; nombre: string; descripcion: string | null; tipo: "PUNTUABLE" | "DESEMPATE"; orden: number }[]
-    } | null
-  }
-}
-
-export function findScoreSheetForJuez(
-  organizationId: string,
-  asignacionId: string,
-  patrullaId: string,
-  userId: string,
-  isAdmin: boolean,
-) {
-  return unstable_cache(
-    async (): Promise<ScoreSheetForJuez> => {
-      const asignacion = await prisma.asignacionPosta.findFirst({
-        where: { id: asignacionId, actividad: { evento: { organizationId } } },
-        include: {
-          actividad: { include: { evento: { select: { id: true, nombre: true, estado: true } } } },
-          posta: {
-            include: {
-              template: { include: { criterios: { orderBy: { orden: "asc" } } } },
-            },
-          },
-        },
-      })
-      if (!asignacion) throw new BusinessError("ASIGNACION_NO_ENCONTRADA")
-      if (!isAdmin && asignacion.juezUserId !== userId) throw new BusinessError("FORBIDDEN_NO_ASIGNADO")
-
-      const [sheet, patrulla] = await Promise.all([
-        prisma.scoreSheet.findUnique({
-          where: { asignacionPostaId_patrullaId: { asignacionPostaId: asignacionId, patrullaId } },
-          include: { entries: { select: { criterionId: true, valor: true } } },
-        }),
-        prisma.patrulla.findUnique({ where: { id: patrullaId }, select: { nombre: true } }),
-      ])
-
-      const template = asignacion.posta.template
-
-      return {
-        patrullaNombre: patrulla?.nombre ?? patrullaId,
-        scoreSheet: sheet
-          ? {
-              id: sheet.id,
-              estado: sheet.estado,
-              puntajeUnico: sheet.puntajeUnico,
-              entries: sheet.entries,
-              enviadaAt: sheet.enviadaAt,
-              totalPuntuable: sheet.totalPuntuable,
-              totalDesempate: sheet.totalDesempate,
-            }
-          : null,
-        asignacion: {
-          id: asignacion.id,
-          weight: asignacion.weight,
-          juezUserId: asignacion.juezUserId,
-          postaNombre: asignacion.posta.nombre,
-          actividadNombre: asignacion.actividad.nombre,
-          eventoNombre: asignacion.actividad.evento.nombre,
-          eventoId: asignacion.actividad.evento.id,
-          template: template
-            ? {
-                id: template.id,
-                modo: template.modo as "CRITERIOS" | "PUNTAJE_UNICO",
-                valoresValidos: template.valoresValidos,
-                valoresValidosDesempate: template.valoresValidosDesempate,
-                criterios: template.criterios.map((c) => ({
-                  id: c.id,
-                  nombre: c.nombre,
-                  descripcion: c.descripcion,
-                  tipo: c.tipo as "PUNTUABLE" | "DESEMPATE",
-                  orden: c.orden,
-                })),
-              }
-            : null,
-        },
-      }
-    },
-    [`findScoreSheetForJuez:${organizationId}:${asignacionId}:${patrullaId}:${userId}:${isAdmin}`],
-    { tags: [cacheTags.scoreSheets(organizationId)] },
-  )()
-}
-
 export type PlanillaEventoAdminRow = {
   patrullaId: string
   patrullaNombre: string
@@ -555,6 +240,144 @@ export function listPlanillasPorEventoAdmin(organizationId: string, eventoId: st
   )()
 }
 
+// ─── Snapshot para PWA offline (Plan 7b) ─────────────────────────────────────
+
+export type SnapshotEntry = {
+  asignacionId: string
+  patrullaId: string
+  eventoId: string
+  evento: {
+    nombre: string
+    lugar: string | null
+    fechaInicio: string // ISO
+  }
+  actividad: {
+    id: string
+    nombre: string
+  }
+  patrulla: { nombre: string; grupoScoutNombre: string }
+  posta: { nombre: string; descripcion: string | null }
+  template: {
+    id: string
+    modo: "CRITERIOS" | "PUNTAJE_UNICO"
+    valoresValidos: number[]
+    valoresValidosDesempate: number[]
+    criterios: { id: string; nombre: string; descripcion: string | null; tipo: "PUNTUABLE" | "DESEMPATE"; orden: number }[]
+  } | null
+  scoreSheet: {
+    id: string
+    estado: "BORRADOR" | "ENVIADA"
+    version: number
+    puntajeUnico: number | null
+    entries: { criterionId: string; valor: number }[]
+    enviadaAt: string | null
+    totalPuntuable: number | null
+    totalDesempate: number | null
+  } | null
+}
+
+export async function getSnapshotParaJuez(
+  organizationId: string,
+  userId: string,
+  isAdmin: boolean,
+): Promise<SnapshotEntry[]> {
+  const eventos = await prisma.evento.findMany({
+    where: {
+      organizationId,
+      estado: "ACTIVO",
+      actividades: isAdmin
+        ? undefined
+        : { some: { asignaciones: { some: { juezUserId: userId } } } },
+    },
+    include: {
+      patrullas: { include: { grupoScout: { select: { nombre: true } } } },
+      actividades: {
+        include: {
+          asignaciones: {
+            where: isAdmin ? {} : { juezUserId: userId },
+            include: {
+              posta: {
+                include: {
+                  template: { include: { criterios: { orderBy: { orden: "asc" } } } },
+                },
+              },
+              scoreSheets: {
+                include: { entries: { select: { criterionId: true, valor: true } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const entries: SnapshotEntry[] = []
+
+  for (const evento of eventos) {
+    for (const actividad of evento.actividades) {
+      for (const asignacion of actividad.asignaciones) {
+        const template = asignacion.posta.template
+        for (const patrulla of evento.patrullas) {
+          const sheet = asignacion.scoreSheets.find((s) => s.patrullaId === patrulla.id) ?? null
+          entries.push({
+            asignacionId: asignacion.id,
+            patrullaId: patrulla.id,
+            eventoId: evento.id,
+            evento: {
+              nombre: evento.nombre,
+              lugar: evento.lugar,
+              fechaInicio: evento.fechaInicio.toISOString(),
+            },
+            actividad: {
+              id: actividad.id,
+              nombre: actividad.nombre,
+            },
+            patrulla: { nombre: patrulla.nombre, grupoScoutNombre: patrulla.grupoScout.nombre },
+            posta: { nombre: asignacion.posta.nombre, descripcion: asignacion.posta.descripcion },
+            template: template
+              ? {
+                  id: template.id,
+                  modo: template.modo as "CRITERIOS" | "PUNTAJE_UNICO",
+                  valoresValidos: template.valoresValidos.map(Number),
+                  valoresValidosDesempate: template.valoresValidosDesempate.map(Number),
+                  criterios: template.criterios.map((c) => ({
+                    id: c.id,
+                    nombre: c.nombre,
+                    descripcion: c.descripcion,
+                    tipo: c.tipo as "PUNTUABLE" | "DESEMPATE",
+                    orden: c.orden,
+                  })),
+                }
+              : null,
+            scoreSheet: sheet
+              ? {
+                  id: sheet.id,
+                  estado: sheet.estado as "BORRADOR" | "ENVIADA",
+                  version: sheet.version,
+                  puntajeUnico: sheet.puntajeUnico != null ? Number(sheet.puntajeUnico) : null,
+                  entries: sheet.entries.map((e) => ({ criterionId: e.criterionId, valor: Number(e.valor) })),
+                  enviadaAt: sheet.enviadaAt?.toISOString() ?? null,
+                  totalPuntuable: sheet.totalPuntuable != null ? Number(sheet.totalPuntuable) : null,
+                  totalDesempate: sheet.totalDesempate != null ? Number(sheet.totalDesempate) : null,
+                }
+              : null,
+          })
+        }
+      }
+    }
+  }
+
+  return entries
+}
+
+// ─── Sync meta (Plan 7b) ──────────────────────────────────────────────────────
+
+export type SyncMeta = {
+  expectedVersion?: number   // si está definido, se valida contra ScoreSheet.version
+  clientId?: string          // UUID del dispositivo
+  clientSubmittedAt?: Date   // timestamp local del cliente
+}
+
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
 export async function saveScoreSheet(
@@ -564,7 +387,8 @@ export async function saveScoreSheet(
   data: SaveScoreSheetData,
   actorUserId: string,
   isAdmin: boolean,
-): Promise<{ id: string }> {
+  syncMeta?: SyncMeta,
+): Promise<{ id: string; version: number }> {
   const asignacion = await _findAsignacionAccesible(organizationId, asignacionId, actorUserId, isAdmin)
 
   _validateValoresEnEscala(asignacion, data)
@@ -580,13 +404,29 @@ export async function saveScoreSheet(
       where: { asignacionPostaId_patrullaId: { asignacionPostaId: asignacionId, patrullaId } },
     })
 
+    // Version check (solo cuando el cliente envía expectedVersion explícito)
+    if (syncMeta?.expectedVersion !== undefined) {
+      const currentVersion = existing?.version ?? 0
+      if (currentVersion !== syncMeta.expectedVersion) {
+        throw new BusinessError("VERSION_CONFLICT", {
+          currentVersion: existing?.version ?? 0,
+          scoreSheetId: existing?.id ?? null,
+          estado: existing?.estado ?? null,
+          enviadaAt: existing?.enviadaAt?.toISOString() ?? null,
+          reopenedAt: existing?.reopenedAt?.toISOString() ?? null,
+        })
+      }
+    }
+
     let sheet
     if (existing) {
       sheet = await tx.scoreSheet.update({
         where: { id: existing.id },
         data: {
           puntajeUnico: data.puntajeUnico ?? null,
-          // Preservar estado y totales si ya estaba ENVIADA (reabierta sin guardar aún = BORRADOR)
+          version: { increment: 1 },
+          clientId: syncMeta?.clientId,
+          clientSubmittedAt: syncMeta?.clientSubmittedAt,
         },
       })
       // Reemplazar entries en bloque
@@ -597,6 +437,9 @@ export async function saveScoreSheet(
           asignacionPostaId: asignacionId,
           patrullaId,
           puntajeUnico: data.puntajeUnico ?? null,
+          version: 1,
+          clientId: syncMeta?.clientId,
+          clientSubmittedAt: syncMeta?.clientSubmittedAt,
         },
       })
     }
@@ -627,7 +470,7 @@ export async function saveScoreSheet(
 
   revalidateTag(cacheTags.scoreSheets(organizationId))
 
-  return { id: sheet.id }
+  return { id: sheet.id, version: sheet.version }
 }
 
 export async function submitScoreSheet(
@@ -637,7 +480,8 @@ export async function submitScoreSheet(
   data: SaveScoreSheetData,
   actorUserId: string,
   isAdmin: boolean,
-): Promise<{ id: string; totalPuntuable: Decimal; totalDesempate: Decimal }> {
+  syncMeta?: SyncMeta,
+): Promise<{ id: string; version: number; totalPuntuable: Decimal; totalDesempate: Decimal }> {
   const asignacion = await _findAsignacionAccesible(organizationId, asignacionId, actorUserId, isAdmin)
 
   _validateValoresEnEscala(asignacion, data)
@@ -655,6 +499,20 @@ export async function submitScoreSheet(
       where: { asignacionPostaId_patrullaId: { asignacionPostaId: asignacionId, patrullaId } },
     })
 
+    // Version check (solo cuando el cliente envía expectedVersion explícito)
+    if (syncMeta?.expectedVersion !== undefined) {
+      const currentVersion = existing?.version ?? 0
+      if (currentVersion !== syncMeta.expectedVersion) {
+        throw new BusinessError("VERSION_CONFLICT", {
+          currentVersion: existing?.version ?? 0,
+          scoreSheetId: existing?.id ?? null,
+          estado: existing?.estado ?? null,
+          enviadaAt: existing?.enviadaAt?.toISOString() ?? null,
+          reopenedAt: existing?.reopenedAt?.toISOString() ?? null,
+        })
+      }
+    }
+
     let sheet
     if (existing) {
       sheet = await tx.scoreSheet.update({
@@ -666,6 +524,9 @@ export async function submitScoreSheet(
           totalDesempate,
           enviadaAt: now,
           enviadaByUserId: actorUserId,
+          version: { increment: 1 },
+          clientId: syncMeta?.clientId,
+          clientSubmittedAt: syncMeta?.clientSubmittedAt,
         },
       })
       await tx.scoreEntry.deleteMany({ where: { scoreSheetId: existing.id } })
@@ -680,6 +541,9 @@ export async function submitScoreSheet(
           totalDesempate,
           enviadaAt: now,
           enviadaByUserId: actorUserId,
+          version: 1,
+          clientId: syncMeta?.clientId,
+          clientSubmittedAt: syncMeta?.clientSubmittedAt,
         },
       })
     }
@@ -717,7 +581,7 @@ export async function submitScoreSheet(
   // Invalidar eventos porque isEventoLocked cambia cuando se envía la primera planilla
   revalidateTag(cacheTags.eventos(organizationId))
 
-  return { id: sheet.id, totalPuntuable, totalDesempate }
+  return { id: sheet.id, version: sheet.version, totalPuntuable, totalDesempate }
 }
 
 export async function reopenScoreSheet(
@@ -742,6 +606,7 @@ export async function reopenScoreSheet(
       totalDesempate: null,
       reopenedAt: new Date(),
       reopenedByUserId: actorUserId,
+      version: { increment: 1 }, // invalida ops pendientes del cliente
     },
   })
 

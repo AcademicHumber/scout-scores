@@ -111,6 +111,30 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 26. **`Decimal` de Prisma no se puede pasar a Client Components**: Next.js no puede serializar objetos `Decimal` al cruzar el boundary Server→Client. Convertir en el Server Component antes de pasar como prop: arrays con `.map(Number)`, valores individuales con `Number(val)` o `.toString()`.
 
+27. **Service worker (`sw.ts`) debe excluirse del `tsconfig.json` principal**: `ServiceWorkerGlobalScope` pertenece a la lib `webworker` de TypeScript, no a `dom`. Agregar `"src/app/sw.ts"` al array `exclude` del tsconfig. Serwist/Next compila el SW por separado con webpack. Deshabilitar el SW en desarrollo con `disable: process.env.NODE_ENV === "development"` en `withSerwist()` para evitar conflictos con HMR. (Ver Plan 7b lección #1 y #3).
+
+28. **Cola offline: ordenar por `createdAt` antes de drenar**: `IndexedDB.getAllFromIndex` con índice no-único devuelve registros en orden de clave primaria (UUID), no de inserción. Para encadenar `expectedVersion` correctamente entre ops del mismo (asignacion × patrulla), agregar campo `createdAt: string` a `PendingOp` y ordenar por él al inicio de `drain()`. (Ver Plan 7b lección #5).
+
+29. **`useSyncEngine` requiere `userId`/`organizationId` para hidratar el snapshot**: pasar estos parámetros desde el Server Component del layout al Client Component del badge. Sin ellos, el engine solo hace drain sin actualizar el snapshot de IDB. La hidratación también detecta cambios de tenant y hace wipe del IDB si el usuario u organización cambiaron. (Ver Plan 7b lección #7).
+
+30. **Limitación offline de SSR**: las rutas `/juez/**` solo están disponibles offline si el Service Worker las cacheó en una visita anterior. El snapshot de IDB tiene los datos pero no existe mecanismo para inyectarlos en el SSR sin red. Soportar páginas no visitadas en modo avión requiere migrar esas rutas a CSR con hidratación desde IDB — fuera del alcance del Plan 7b. (Ver Plan 7b lección #6).
+
+31. **Serwist `runtimeCaching`: usar instancias de clase, no strings**: Serwist acepta strings como `"NetworkOnly"`, `"NetworkFirst"` en su API tipada pero NO los resuelve en runtime — el handler queda como `{handle: "NetworkOnly"}` (string no callable). Al ejecutarse lanza un `TypeError` que causa `event.respondWith(rejected Promise)`, fallando silenciosamente la request. Usar siempre instancias: `new NetworkOnly()`, `new NetworkFirst({ cacheName, plugins })`, `new CacheFirst(...)`. Las opciones de expiración van en el constructor via `plugins: [new ExpirationPlugin({ maxAgeSeconds })]`.
+
+32. **Serwist + Next.js App Router: todas las navegaciones deben ser `NetworkOnly`**: El `defaultCache` de `@serwist/next/worker` incluye un handler "others" `NetworkFirst` que intercepta cualquier navegación de página (`mode: "navigate"`) e intenta cachear la respuesta. Next.js 15 App Router produce respuestas SSR como `ReadableStream` que el Cache API no puede almacenar — el handler lanza `no-response` y rompe TODAS las páginas. Agregar un handler `new NetworkOnly()` para `request.mode === "navigate"` ANTES de `...defaultCache` para cortocircuitar el problema.
+
+33. **`useSyncEngine` necesita llamar `syncNow()` en el mount inicial**: El hook solo dispara la hidratación del snapshot en eventos `online` y `visibilitychange`. Si el usuario ya está online al cargar, ninguno de esos eventos dispara y el IDB queda vacío. Agregar `useEffect(() => { syncNow() }, [syncNow])` que corre en mount y también cuando cambia `userId`/`organizationId` (cambio de tenant).
+
+34. **IDB upgrade via `transaction.objectStore()`, no `db.clear()`**: durante el callback `upgrade` de `idb`, la transacción de upgrade ya está activa. Llamar `db.clear(store)` crea una nueva transacción interna que falla. Usar `transaction.objectStore(storeName).clear()` (4° parámetro del callback) que opera sobre la upgrade transaction existente. El `idb` library expone esta transacción como `IDBPTransaction<DBTypes, ..., "versionchange">`. (Ver Plan 7c lección #3).
+
+35. **`useJuezData`: mantener `status: "loading"` mientras el snapshot no ha sido hidratado en la sesión activa**: si el reader del IDB devuelve vacío (null o array vacío) y `lastHydratedAt === 0` y el user está online, el hook debe quedar en `"loading"` — el sync está en curso y puede traer datos en segundos. Cambiar a `"empty"` prematuramente causaría un flash de "sin datos" durante el primer sync. Solo transicionar a `"empty"` cuando `lastHydratedAt > 0` (se sabe que el sync completó y el IDB sigue vacío). (Ver Plan 7c lección #9).
+
+36. **`emptyCheck = () => false` para páginas donde `null` significa "no encontrado"**: cuando el reader puede devolver `null` (entidad no encontrada en IDB) o un objeto posiblemente vacío (encontrado pero sin items), `emptyCheck` no debe cubrir el caso `null` — ambos terminarían en `status: "empty"` sin distinción. Usar `emptyCheck = () => false` y manejar la UI de "lista vacía" en el branch `status: "ready"`. El branch `status: "empty"` queda exclusivo para "not found / nunca sincronizado". (Ver Plan 7c lección #8).
+
+37. **`Remove-Item` en PowerShell falla silenciosamente en rutas con `[` y `]`**: PowerShell interpreta los corchetes como glob wildcards. `Remove-Item "...\[param]\page.tsx"` no hace nada (sin error, sin borrado). Usar siempre `-LiteralPath` para paths que contengan corchetes en Next.js App Router (`[param]`, `[[...slug]]`). Aplica a `Move-Item`, `Copy-Item`, `Get-Item` y cualquier cmdlet que tome paths. (Ver Plan 7d lección #1).
+
+38. **`pnpm typecheck` falla tras eliminar páginas hasta limpiar `.next/types/`**: TypeScript cachea los tipos generados en `.next/types/app/**/page.ts`. Al eliminar un `page.tsx`, ese archivo de tipos queda y hace fallar `tsc --noEmit` con `Cannot find module`. Solución: `rm -rf .next/types` antes de correr typecheck tras cualquier eliminación de rutas. `pnpm build` regenera el directorio automáticamente. (Ver Plan 7d lección #2).
+
 ## Documentación
 
 Toda la planificación vive en `docs/` versionada con git:
@@ -125,9 +149,13 @@ Toda la planificación vive en `docs/` versionada con git:
 - `docs/plans/06b-postas-patrullas-jueces.md` — Plan 6b, ya ejecutado (Posta inline, Patrulla, gates de pre-activación, isTemplateLocked)
 - `docs/plans/06c-postas-biblioteca.md` — Plan 6c, ya ejecutado (Posta standalone, AsignacionPosta, /admin/postas, dialog de asignación)
 - `docs/plans/07a-scoring-juez.md` — Plan 7a, ya ejecutado (ScoreSheet, ScoreEntry, vista del juez mobile-first, gate canTransitionToCerrado)
+- `docs/plans/07b-pwa-offline-sync.md` — Plan 7b, ya ejecutado (PWA, IndexedDB, cola offline, sync engine, API routes, ConflictBanner)
+- `docs/plans/07c-juez-client-components.md` — Plan 7c, ya ejecutado (páginas del juez como Client Components hidratadas desde IDB, bump IDB v1→v2, readers del snapshot, hook useJuezData, sesión inicial al SessionProvider)
+- `docs/plans/07d-catch-all-spa-y-fixes-sw.md` — Plan 7d, ya ejecutado (catch-all SPA `/juez/[[...slug]]/page.tsx` con router cliente custom + fix `_rsc` cache buster + fix primer-navegación reload + skip `/dashboard` para jueces)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
 - `docs/adr/0002-repository-layer.md` — decisión de capa de repositorios con `unstable_cache` y `revalidateTag`
 - `docs/adr/0003-jerarquia-evento-actividad-posta.md` — cambio de jerarquía respecto al master plan original
+- `docs/adr/0004-modo-offline-pwa-spa.md` — arquitectura completa del modo offline del juez (Plans 7b–7d): IndexedDB, cola de sync, SPA catch-all, reglas permanentes
 - `docs/README.md` — índice de todos los planes y ADRs
 
 Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans/`.
@@ -156,4 +184,10 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 7a completado** (Scoring online y vista del juez — `ScoreSheet` + `ScoreEntry` con totales cacheados, `isEventoLocked` activado, gate `canTransitionToCerrado`, rutas `/juez/*` mobile-first con formulario de criterios y puntaje único, vista admin `/admin/eventos/[id]/planillas` con reapertura de planillas, AuditLog).
 
-**Próximo: Plan 7b** — Sync offline / PWA (ScoreSheetRevision, service worker).
+**Plan 7b completado** (PWA offline — Serwist service worker, IndexedDB con `idb`, cola de operaciones pendientes, sync engine con triggers `online`/`visibilitychange`, API routes `/api/juez/snapshot` y `/api/juez/sync`, idempotencia con `SyncOpLog`, detección de conflictos por `version`, `ConflictBanner`, `SyncStatusBadge`, `ScoreSheet.version` bump en todas las mutaciones, `session.maxAge` extendido a 7 días, `requireRoleApi` para API routes).
+
+**Plan 7c completado** (Vista del juez como Client Components — 4 páginas `/juez/**` migradas a Client Components que leen del IDB directamente; bump IDB v1→v2 con wipe del store `snapshot`; campos `evento`/`actividad` denormalizados en `SnapshotEntry`; readers `readEventosFromSnapshot`, `readPostasFromSnapshot`, `readPatrullasFromSnapshot`; hook `useJuezData` con estados loading/ready/empty y `firstTimeOffline`; `lastHydratedAt` en `useSyncEngine`; sesión inicial pasada al `SessionProvider` del group layout; eliminación de `listEventosParaJuez`, `listPostasParaJuez`, `listPatrullasParaPosta`, `findScoreSheetForJuez` del repo).
+
+**Plan 7d completado** (Catch-all SPA y fixes de SW — `/juez/[[...slug]]/page.tsx` con `JuezRouterProvider`/`useJuezRouter`/`JuezLink`, 4 vistas extraídas a `src/components/juez/views/`, plugin `stripRscParam` en el SW, fallback flexible del cache `juez-navigate`, reload en primera activación con `controllerchange` + `sessionStorage`, skip de `/dashboard` para jueces. Resuelve el escenario "ruta nunca visitada offline".)
+
+**Próximo: Plan 8** — pendiente de redacción.

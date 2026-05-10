@@ -1,15 +1,17 @@
 "use client"
 
-import { useActionState, useEffect, useState, useRef, startTransition } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import {
-  saveScoreSheetAction,
-  submitScoreSheetAction,
-  type SaveScoreSheetState,
-} from "@/app/(juez)/juez/postas/[asignacionId]/actions"
+import { enqueueOp } from "@/lib/offline/queue"
+import { getPendingOp } from "@/lib/offline/db"
+import { getOrCreateClientId } from "@/lib/offline/clientId"
+import { useSyncEngine } from "@/lib/offline/sync-engine"
 import messages from "@/messages/es.json"
 
 const t = messages.juez.planilla
+const tSync = messages.juez.sync
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 type Criterio = {
   id: string
@@ -22,26 +24,9 @@ type Criterio = {
 type Template = {
   id: string
   modo: "CRITERIOS" | "PUNTAJE_UNICO"
-  valoresValidos: unknown[]
-  valoresValidosDesempate: unknown[]
+  valoresValidos: number[]
+  valoresValidosDesempate: number[]
   criterios: Criterio[]
-}
-
-type Props = {
-  asignacionId: string
-  patrullaId: string
-  patrullaNombre: string
-  backHref: string
-  template: Template | null
-  initialPuntajeUnico?: number | null
-  initialEntries?: { criterionId: string; valor: number }[]
-  isEnviada?: boolean
-  totalPuntuable?: string | null
-  totalDesempate?: string | null
-}
-
-function toNumberList(vals: unknown[]): number[] {
-  return vals.map((v) => Number(v))
 }
 
 function ScaleButtons({
@@ -79,6 +64,22 @@ function ScaleButtons({
   )
 }
 
+// ─── Main form ────────────────────────────────────────────────────────────────
+
+type Props = {
+  asignacionId: string
+  patrullaId: string
+  patrullaNombre: string
+  backHref: string
+  template: Template | null
+  initialPuntajeUnico?: number | null
+  initialEntries?: { criterionId: string; valor: number }[]
+  initialVersion?: number   // ScoreSheet.version del server (o 0 si aún no existe)
+  isEnviada?: boolean
+  totalPuntuable?: string | null
+  totalDesempate?: string | null
+}
+
 export function ScoreSheetForm({
   asignacionId,
   patrullaId,
@@ -87,11 +88,13 @@ export function ScoreSheetForm({
   template,
   initialPuntajeUnico,
   initialEntries,
+  initialVersion = 0,
   isEnviada,
   totalPuntuable,
   totalDesempate,
 }: Props) {
   const router = useRouter()
+  const { syncNow } = useSyncEngine()
 
   const initMap = new Map<string, number>(
     (initialEntries ?? []).map((e) => [e.criterionId, e.valor]),
@@ -99,54 +102,96 @@ export function ScoreSheetForm({
 
   const [puntajeUnico, setPuntajeUnico] = useState<number | null>(initialPuntajeUnico ?? null)
   const [entries, setEntries] = useState<Map<string, number>>(initMap)
-  const initialSaveState: SaveScoreSheetState = {}
-  const initialSubmitState: SaveScoreSheetState = {}
+  // Versión local: se incrementa en cada op encolada para encadenar versiones correctamente
+  const [currentVersion, setCurrentVersion] = useState(initialVersion)
 
-  const [saveState, saveDispatch, savePending] = useActionState(saveScoreSheetAction, initialSaveState)
-  const [submitState, submitDispatch, submitPending] = useActionState(submitScoreSheetAction, initialSubmitState)
-
+  const [pending, setPending] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (saveState.success) {
-      setToastMsg(t.toastBorrador)
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-      toastTimerRef.current = setTimeout(() => setToastMsg(null), 3000)
-    }
-  }, [saveState])
-
-  useEffect(() => {
-    if (submitState.success && submitState.enviado) {
-      router.push(backHref)
-    }
-  }, [submitState, router, backHref])
-
-  function buildFormData(): FormData {
-    const fd = new FormData()
-    fd.set("asignacionId", asignacionId)
-    fd.set("patrullaId", patrullaId)
-    const entriesArr = Array.from(entries.entries()).map(([criterionId, valor]) => ({
-      criterionId,
-      valor: String(valor),
-    }))
-    fd.set("entries", JSON.stringify(entriesArr))
-    fd.set("puntajeUnico", puntajeUnico != null ? String(puntajeUnico) : "")
-    return fd
+  function showToast(msg: string) {
+    setToastMsg(msg)
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => setToastMsg(null), 3500)
   }
 
-  const errorMsg = saveState.error ?? submitState.error
-  const isPending = savePending || submitPending
-  const disabled = isPending || isEnviada
+  function buildPayload() {
+    return {
+      entries: Array.from(entries.entries()).map(([criterionId, valor]) => ({
+        criterionId,
+        valor: String(valor),
+      })),
+      puntajeUnico: puntajeUnico != null ? String(puntajeUnico) : null,
+    }
+  }
 
-  const valores = template ? toNumberList(template.valoresValidos) : []
-  const valoresDesempate = template
-    ? toNumberList(
-        template.valoresValidosDesempate.length > 0
-          ? template.valoresValidosDesempate
-          : template.valoresValidos,
-      )
-    : []
+  async function handleAction(type: "save" | "submit") {
+    if (pending) return
+    setPending(true)
+    setErrorMsg(null)
+
+    try {
+      const clientId = await getOrCreateClientId()
+      const clientOpId = crypto.randomUUID()
+      const expectedVersion = currentVersion
+
+      await enqueueOp({
+        clientOpId,
+        type,
+        asignacionId,
+        patrullaId,
+        payload: buildPayload(),
+        expectedVersion,
+        clientId,
+        clientSubmittedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        status: "pending",
+        attempts: 0,
+        lastError: null,
+        conflictData: null,
+      })
+
+      // Optimistic: increment local version so next op chains correctly
+      setCurrentVersion((v) => v + 1)
+
+      if (navigator.onLine) {
+        await syncNow()
+
+        const remaining = await getPendingOp(clientOpId)
+        if (!remaining) {
+          // Op procesada con éxito
+          if (type === "submit") {
+            router.push(backHref)
+            return
+          }
+          showToast(t.toastBorrador)
+        } else if (remaining.status === "conflict") {
+          // ConflictBanner se mostrará automáticamente (chequea IDB)
+          setErrorMsg(null)
+          router.refresh()
+        } else {
+          // Sigue pendiente (error de red transitorio)
+          showToast(tSync.toastGuardadoOffline)
+        }
+      } else {
+        showToast(tSync.toastGuardadoOffline)
+      }
+    } catch (err) {
+      console.error("ScoreSheetForm dispatch error", err)
+      setErrorMsg("Error inesperado. Volvé a intentar.")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const disabled = pending || isEnviada
+
+  const valores = template?.valoresValidos ?? []
+  const valoresDesempate =
+    template && template.valoresValidosDesempate.length > 0
+      ? template.valoresValidosDesempate
+      : template?.valoresValidos ?? []
 
   const criteriosPuntuables = (template?.criterios ?? []).filter((c) => c.tipo === "PUNTUABLE")
   const criteriosDesempate = (template?.criterios ?? []).filter((c) => c.tipo === "DESEMPATE")
@@ -254,19 +299,19 @@ export function ScoreSheetForm({
         <div className="flex gap-3 pt-2 pb-6">
           <button
             type="button"
-            disabled={isPending}
-            onClick={() => startTransition(() => saveDispatch(buildFormData()))}
+            disabled={disabled}
+            onClick={() => handleAction("save")}
             className="flex-1 min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white text-gray-700 font-semibold text-base hover:border-gray-300 hover:bg-gray-50 active:scale-[0.98] transition-all disabled:opacity-50"
           >
-            {savePending ? t.guardando : t.guardarBorrador}
+            {pending ? t.guardando : t.guardarBorrador}
           </button>
           <button
             type="button"
-            disabled={isPending}
-            onClick={() => startTransition(() => submitDispatch(buildFormData()))}
+            disabled={disabled}
+            onClick={() => handleAction("submit")}
             className="flex-1 min-h-[56px] rounded-2xl bg-brand text-white font-bold text-base hover:bg-brand-dark active:scale-[0.98] transition-all disabled:opacity-50 shadow-sm"
           >
-            {submitPending ? t.enviando : t.enviar}
+            {pending ? t.enviando : t.enviar}
           </button>
         </div>
       )}

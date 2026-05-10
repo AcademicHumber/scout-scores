@@ -88,8 +88,8 @@ function makeAsignacion({
   }
 }
 
-function makeSheet(id = "sheet-1", estado: "BORRADOR" | "ENVIADA" = "BORRADOR") {
-  return { id, estado, puntajeUnico: null, totalPuntuable: null, totalDesempate: null }
+function makeSheet(id = "sheet-1", estado: "BORRADOR" | "ENVIADA" = "BORRADOR", version = 0) {
+  return { id, estado, puntajeUnico: null, totalPuntuable: null, totalDesempate: null, version }
 }
 
 beforeEach(() => {
@@ -311,5 +311,129 @@ describe("reopenScoreSheet", () => {
     await expect(
       reopenScoreSheet("org-1", "no-existe", "admin-user"),
     ).rejects.toMatchObject({ code: "SCORE_SHEET_NO_ENCONTRADA" })
+  })
+
+  it("caso 20 — reopenScoreSheet bumps version para invalidar ops offline del cliente", async () => {
+    mockScoreSheetFindFirst.mockResolvedValue({ id: "sheet-1", estado: "ENVIADA" })
+    mockScoreSheetUpdate.mockResolvedValue({})
+
+    await reopenScoreSheet("org-1", "sheet-1", "admin-user")
+
+    const updateCall = mockScoreSheetUpdate.mock.calls[0][0]
+    expect(updateCall.data.version).toEqual({ increment: 1 })
+  })
+})
+
+// ─── Sync offline — Plan 7b ───────────────────────────────────────────────────
+
+describe("saveScoreSheet + syncMeta (Plan 7b)", () => {
+  it("caso 13 — sin syncMeta no hay validación de version (compat con server actions del Plan 7a)", async () => {
+    mockAsignacionFindFirst.mockResolvedValue(makeAsignacion({ userId: "juez-1", isJuez: true }))
+    // Sheet en DB con version=3; sin expectedVersion no debe lanzar
+    mockScoreSheetFindUnique.mockResolvedValue(makeSheet("s", "BORRADOR", 3))
+    mockScoreSheetUpdate.mockResolvedValue(makeSheet("s", "BORRADOR", 4))
+
+    await expect(
+      saveScoreSheet("org-1", "asig-1", "pat-1", {}, "juez-1", false),
+    ).resolves.toHaveProperty("id")
+  })
+
+  it("caso 14 — expectedVersion=0 sin sheet existente: crea con version=1", async () => {
+    mockAsignacionFindFirst.mockResolvedValue(makeAsignacion({ userId: "juez-1", isJuez: true }))
+    mockScoreSheetFindUnique.mockResolvedValue(null)
+    mockScoreSheetCreate.mockResolvedValue(makeSheet("s-new", "BORRADOR", 1))
+
+    const result = await saveScoreSheet(
+      "org-1", "asig-1", "pat-1",
+      { entries: [] },
+      "juez-1", false,
+      { expectedVersion: 0 },
+    )
+
+    expect(result.version).toBe(1)
+    expect(mockScoreSheetCreate.mock.calls[0][0].data.version).toBe(1)
+  })
+
+  it("caso 15 — expectedVersion coincide con sheet.version: pasa sin conflict", async () => {
+    mockAsignacionFindFirst.mockResolvedValue(makeAsignacion({ userId: "juez-1", isJuez: true }))
+    mockScoreSheetFindUnique.mockResolvedValue(makeSheet("s", "BORRADOR", 2))
+    mockScoreSheetUpdate.mockResolvedValue(makeSheet("s", "BORRADOR", 3))
+
+    await expect(
+      saveScoreSheet("org-1", "asig-1", "pat-1", {}, "juez-1", false, { expectedVersion: 2 }),
+    ).resolves.toHaveProperty("id")
+  })
+
+  it("caso 16 — VERSION_CONFLICT cuando expectedVersion ≠ sheet.version (admin reabrió offline)", async () => {
+    mockAsignacionFindFirst.mockResolvedValue(makeAsignacion({ userId: "juez-1", isJuez: true }))
+    // Admin reabrió → server version=2; cliente tiene snapshot con version=1
+    mockScoreSheetFindUnique.mockResolvedValue(makeSheet("s", "BORRADOR", 2))
+
+    await expect(
+      saveScoreSheet("org-1", "asig-1", "pat-1", {}, "juez-1", false, { expectedVersion: 1 }),
+    ).rejects.toMatchObject({
+      code: "VERSION_CONFLICT",
+      meta: { currentVersion: 2 },
+    })
+  })
+
+  it("caso 17 — update bumps version con { increment: 1 } y guarda clientId/clientSubmittedAt", async () => {
+    mockAsignacionFindFirst.mockResolvedValue(makeAsignacion({ userId: "juez-1", isJuez: true }))
+    mockScoreSheetFindUnique.mockResolvedValue(makeSheet("s", "BORRADOR", 1))
+    mockScoreSheetUpdate.mockResolvedValue(makeSheet("s", "BORRADOR", 2))
+
+    const clientSubmittedAt = new Date("2026-05-08T10:00:00Z")
+    await saveScoreSheet(
+      "org-1", "asig-1", "pat-1",
+      {},
+      "juez-1", false,
+      { expectedVersion: 1, clientId: "device-uuid", clientSubmittedAt },
+    )
+
+    const updateCall = mockScoreSheetUpdate.mock.calls[0][0]
+    expect(updateCall.data.version).toEqual({ increment: 1 })
+    expect(updateCall.data.clientId).toBe("device-uuid")
+    expect(updateCall.data.clientSubmittedAt).toEqual(clientSubmittedAt)
+  })
+})
+
+describe("submitScoreSheet + syncMeta (Plan 7b)", () => {
+  it("caso 18 — VERSION_CONFLICT en submit cuando version no coincide", async () => {
+    mockAsignacionFindFirst.mockResolvedValue(
+      makeAsignacion({ userId: "juez-1", isJuez: true, templateModo: "PUNTAJE_UNICO", criterios: [] }),
+    )
+    // Server version=3; cliente envía expectedVersion=1
+    mockScoreSheetFindUnique.mockResolvedValue(makeSheet("s", "BORRADOR", 3))
+
+    await expect(
+      submitScoreSheet(
+        "org-1", "asig-1", "pat-1",
+        { puntajeUnico: new Decimal("5") },
+        "juez-1", false,
+        { expectedVersion: 1 },
+      ),
+    ).rejects.toMatchObject({ code: "VERSION_CONFLICT", meta: { currentVersion: 3 } })
+  })
+
+  it("caso 19 — submit exitoso devuelve version junto con totalPuntuable/totalDesempate", async () => {
+    const criterios = [
+      { id: "c1", nombre: "Técnica", tipo: "PUNTUABLE" as const, orden: 1 },
+    ]
+    mockAsignacionFindFirst.mockResolvedValue(
+      makeAsignacion({ userId: "juez-1", isJuez: true, criterios, valoresValidos: [1, 2, 3] }),
+    )
+    mockScoreSheetFindUnique.mockResolvedValue(null) // primera vez → create
+    mockScoreSheetCreate.mockResolvedValue({ id: "s", estado: "ENVIADA", version: 1 })
+
+    const result = await submitScoreSheet(
+      "org-1", "asig-1", "pat-1",
+      { entries: [{ criterionId: "c1", valor: new Decimal("2") }] },
+      "juez-1", false,
+      { expectedVersion: 0 },
+    )
+
+    expect(result.version).toBe(1)
+    expect(result.totalPuntuable).toBeDefined()
+    expect(result.totalDesempate).toBeDefined()
   })
 })

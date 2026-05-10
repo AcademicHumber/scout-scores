@@ -42,7 +42,8 @@
     "header": {
       "logout": "Cerrar sesión",
       "switchDistrict": "Cambiar de distrito",
-      "admin": "Administración"
+      "admin": "Administración",
+      "juez": "Vista Juez"
     }
   },
   "admin": {
@@ -432,6 +433,37 @@
       "guardando": "Guardando…",
       "enviando": "Enviando…",
       "toastBorrador": "Borrador guardado"
+    },
+    "sync": {
+      "online": "En línea",
+      "offline": "Sin red",
+      "pendientes": "{{count}} pendiente",
+      "pendientesPlural": "{{count}} pendientes",
+      "sincronizando": "Sincronizando…",
+      "conflicto": "Conflicto",
+      "reintentar": "Sincronizar",
+      "toastGuardadoOffline": "Guardado en este dispositivo. Se enviará al volver online.",
+      "toastEnviado": "Enviado y sincronizado."
+    },
+    "conflicto": {
+      "titulo": "Planilla desactualizada",
+      "mensaje": "Esta planilla fue reabierta por el admin mientras no tenías red. ¿Qué querés hacer con tu versión?",
+      "reenviar": "Reenviar mi versión",
+      "descartar": "Descartar y refrescar"
+    },
+    "pwa": {
+      "instalar": "Instalar app",
+      "instalarHint": "Instalá la app para usarla sin internet"
+    },
+    "cargando": "Cargando...",
+    "primeraVezOffline": {
+      "titulo": "Primera vez sin conexión",
+      "mensaje": "Conectate a internet la primera vez para descargar tus eventos. Después podés cargar puntajes sin red."
+    },
+    "notFound": {
+      "titulo": "Esto no está en tu snapshot",
+      "mensaje": "Volvé a la lista de eventos. Si pensás que es un error, sincronizá manualmente.",
+      "volver": "Volver a eventos"
     }
   }
 }

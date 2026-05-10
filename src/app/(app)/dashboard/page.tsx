@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth-helpers"
 import { MembershipRefresher } from "./MembershipRefresher"
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
+
+  if (user?.activeRole === "JUEZ") {
+    redirect("/juez/eventos")
+  }
 
   const hasMemberships = (user?.memberships?.length ?? 0) > 0
 

@@ -7,6 +7,7 @@ import messages from "@/messages/es.json"
 export async function AppHeader() {
   const user = await getCurrentUser()
   const isAdmin = user?.activeRole === "ADMIN"
+  const isJuez = user?.activeRole === "JUEZ" || isAdmin
 
   return (
     <header className="bg-brand">
@@ -21,6 +22,14 @@ export async function AppHeader() {
                 className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
               >
                 {messages.auth.header.admin}
+              </Link>
+            )}
+            {isJuez && (
+              <Link
+                href="/juez/eventos"
+                className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+              >
+                {messages.auth.header.juez}
               </Link>
             )}
           </div>

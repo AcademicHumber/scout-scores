@@ -43,3 +43,4 @@ export class BusinessError extends Error {
 // CRITERIOS_FALTANTES      — al enviar en modo CRITERIOS, faltan entries de PUNTUABLE (meta: { criterios: [{id,nombre}] })
 // SCORE_SHEET_NO_ENVIADA   — intento de reabrir una planilla en BORRADOR
 // CIERRE_INCOMPLETO        — no todas las planillas están ENVIADAS (meta: { faltantes: [{postaNombre,actividadNombre,patrullaNombre,estado}] })
+// VERSION_CONFLICT         — ScoreSheet.version no coincide con expectedVersion del cliente (meta: { currentVersion, scoreSheetId, estado, enviadaAt, reopenedAt })

@@ -13,6 +13,12 @@ const barlow = Barlow({
 export const metadata: Metadata = {
   title: messages.app.name,
   description: messages.app.tagline,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: messages.app.name,
+  },
 };
 
 export const viewport: Viewport = {

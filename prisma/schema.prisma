@@ -453,6 +453,11 @@ model ScoreSheet {
   reopenedAt       DateTime?
   reopenedByUserId String?
 
+  // Sync offline — Plan 7b
+  clientId          String?   // UUID del dispositivo que envió por última vez
+  clientSubmittedAt DateTime? // timestamp local del envío (para auditar drift)
+  version           Int       @default(0) // bump en cada save/submit/reopen
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -461,6 +466,7 @@ model ScoreSheet {
   enviadaBy       User?           @relation("ScoreSheetEnviadaBy", fields: [enviadaByUserId], references: [id], onDelete: SetNull)
   reopenedBy      User?           @relation("ScoreSheetReopenedBy", fields: [reopenedByUserId], references: [id], onDelete: SetNull)
   entries         ScoreEntry[]
+  syncOpLogs      SyncOpLog[]
 
   @@unique([asignacionPostaId, patrullaId])
   @@index([asignacionPostaId])
@@ -488,6 +494,24 @@ model ScoreEntry {
   @@unique([scoreSheetId, criterionId])
   @@index([scoreSheetId])
   @@index([criterionId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// SyncOpLog — idempotencia de operaciones offline (Plan 7b)
+// TTL lógico: procesadas hace más de 7 días se pueden borrar
+// ──────────────────────────────────────────────────────────────
+
+model SyncOpLog {
+  clientOpId   String   @id           // UUID generado por el client
+  scoreSheetId String
+  version      Int                    // versión resultante tras procesar la op
+  processedAt  DateTime @default(now())
+  result       Json                   // respuesta serializada que el server devolvió
+
+  scoreSheet ScoreSheet @relation(fields: [scoreSheetId], references: [id], onDelete: Cascade)
+
+  @@index([scoreSheetId])
+  @@index([processedAt])
 }
 
 // ──────────────────────────────────────────────────────────────

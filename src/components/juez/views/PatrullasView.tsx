@@ -1,30 +1,45 @@
-import { notFound } from "next/navigation"
-import { requireRole } from "@/lib/auth-helpers"
-import { listPatrullasParaPosta } from "@/repositories/score-sheet.repo"
+"use client"
+
+import { useSession } from "next-auth/react"
+import { JuezLink } from "@/lib/offline/juez-router"
+import { useJuezData } from "@/lib/offline/use-juez-data"
+import { readPatrullasFromSnapshot, type PatrullaPostaContextOffline } from "@/lib/offline/snapshot"
 import { Breadcrumb } from "@/components/juez/Breadcrumb"
-import { BusinessError } from "@/lib/errors"
 import messages from "@/messages/es.json"
 
 const t = messages.juez
 
-export default async function JuezPostaPage({
-  params,
+function SkeletonRow() {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white px-4 py-4 min-h-[64px] animate-pulse">
+      <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
+      <div className="h-3 bg-gray-100 rounded w-1/4" />
+    </div>
+  )
+}
+
+function NotFoundJuez() {
+  return (
+    <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white p-10 text-center">
+      <p className="font-semibold text-gray-700">{t.notFound.titulo}</p>
+      <p className="text-sm text-gray-500 mt-2">{t.notFound.mensaje}</p>
+      <JuezLink
+        href="/juez/eventos"
+        className="mt-4 inline-block text-brand font-semibold text-sm hover:underline"
+      >
+        {t.notFound.volver}
+      </JuezLink>
+    </div>
+  )
+}
+
+function PatrullasList({
+  asignacionId,
+  ctx,
 }: {
-  params: Promise<{ asignacionId: string }>
+  asignacionId: string
+  ctx: PatrullaPostaContextOffline
 }) {
-  const { asignacionId } = await params
-  const org = await requireRole(["JUEZ", "ADMIN"])
-
-  let ctx
-  try {
-    ctx = await listPatrullasParaPosta(org.organizationId, asignacionId, org.userId, org.role === "ADMIN")
-  } catch (err) {
-    if (err instanceof BusinessError && (err.code === "ASIGNACION_NO_ENCONTRADA" || err.code === "FORBIDDEN_NO_ASIGNADO")) {
-      notFound()
-    }
-    throw err
-  }
-
   const { eventoId, eventoNombre, postaNombre, actividadNombre, patrullas } = ctx
 
   const enviadas = patrullas.filter((p) => p.scoreSheet?.estado === "ENVIADA").length
@@ -82,7 +97,7 @@ export default async function JuezPostaPage({
 
             return (
               <li key={row.patrullaId}>
-                <a
+                <JuezLink
                   href={`/juez/postas/${asignacionId}/${row.patrullaId}`}
                   className={`flex items-center gap-3 rounded-2xl border bg-white px-4 py-4 min-h-[64px] hover:shadow-sm active:scale-[0.99] transition-all ${estadoBadge.borderCls}`}
                 >
@@ -101,7 +116,7 @@ export default async function JuezPostaPage({
                     </span>
                     <span className="text-gray-300 text-xl">›</span>
                   </div>
-                </a>
+                </JuezLink>
               </li>
             )
           })}
@@ -109,4 +124,52 @@ export default async function JuezPostaPage({
       )}
     </div>
   )
+}
+
+export function PatrullasView({ asignacionId }: { asignacionId: string }) {
+  const { data: session } = useSession()
+  const userId = session?.user.id
+  const orgId = session?.user.activeOrganizationId ?? undefined
+
+  const state = useJuezData(
+    () => readPatrullasFromSnapshot(asignacionId),
+    () => false,
+    userId,
+    orgId,
+  )
+
+  if (state.status === "loading") {
+    return (
+      <div>
+        <Breadcrumb items={[{ label: t.eventos.title, href: "/juez/eventos" }]} />
+        <div className="h-7 bg-gray-200 rounded w-2/3 mb-1 mt-5 animate-pulse" />
+        <div className="h-4 bg-gray-100 rounded w-1/3 mb-6 animate-pulse" />
+        <div className="space-y-2">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </div>
+      </div>
+    )
+  }
+
+  if (state.status === "empty") {
+    return (
+      <div>
+        <Breadcrumb items={[{ label: t.eventos.title, href: "/juez/eventos" }]} />
+        {state.firstTimeOffline ? (
+          <div className="rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50 p-10 text-center mt-4">
+            <p className="font-semibold text-amber-800">{t.primeraVezOffline.titulo}</p>
+            <p className="text-sm text-amber-700 mt-2">{t.primeraVezOffline.mensaje}</p>
+          </div>
+        ) : (
+          <NotFoundJuez />
+        )}
+      </div>
+    )
+  }
+
+  return <PatrullasList asignacionId={asignacionId} ctx={state.data} />
 }

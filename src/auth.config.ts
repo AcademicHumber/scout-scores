@@ -24,6 +24,9 @@ export const authConfig = {
     signIn: "/login",
     error: "/login",
   },
+  session: {
+    maxAge: 7 * 24 * 60 * 60, // 7 días — cubre jornada scout sin red (Plan 7b)
+  },
   callbacks: {
     session({ session, token }) {
       return buildSession(session, token)
