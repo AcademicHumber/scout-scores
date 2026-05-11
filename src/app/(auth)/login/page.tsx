@@ -1,6 +1,10 @@
 import { auth, signIn } from "@/auth"
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
+import { CredentialsLoginForm } from "./CredentialsLoginForm"
 import messages from "@/messages/es.json"
+
+const m = messages.auth.login
 
 export default async function LoginPage() {
   const session = await auth()
@@ -15,12 +19,16 @@ export default async function LoginPage() {
     <div className="w-full max-w-sm">
       <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {messages.auth.login.title}
-          </h1>
-          <p className="text-sm text-gray-500">{messages.auth.login.subtitle}</p>
+          <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
+          <p className="text-sm text-gray-500">{m.subtitle}</p>
         </div>
 
+        {/* Form de credenciales — necesita Suspense por useSearchParams */}
+        <Suspense>
+          <CredentialsLoginForm />
+        </Suspense>
+
+        {/* Botón Google */}
         <form action={loginConGoogle}>
           <button
             type="submit"
@@ -32,7 +40,7 @@ export default async function LoginPage() {
                 fill="currentColor"
               />
             </svg>
-            {messages.auth.login.googleButton}
+            {m.googleButton}
           </button>
         </form>
       </div>

@@ -11,10 +11,52 @@
   "auth": {
     "login": {
       "title": "Iniciar sesión",
-      "subtitle": "Accedé con tu cuenta de Google",
+      "subtitle": "Accedé con email o con tu cuenta de Google",
+      "emailLabel": "Email",
+      "passwordLabel": "Contraseña",
+      "submitButton": "Entrar",
+      "orSeparator": "o",
       "googleButton": "Continuar con Google",
+      "noAccountPrompt": "¿No tenés cuenta?",
+      "registerLink": "Registrate",
       "errors": {
+        "credentialsSignin": "Email o contraseña incorrectos.",
+        "locked": "Demasiados intentos fallidos. Probá de nuevo en 15 minutos.",
         "generic": "No pudimos iniciar sesión. Probá de nuevo."
+      }
+    },
+    "signup": {
+      "title": "Crear cuenta",
+      "subtitle": "Registrate con email y contraseña",
+      "nameLabel": "Nombre",
+      "emailLabel": "Email",
+      "passwordLabel": "Contraseña",
+      "passwordHint": "Mínimo 8 caracteres",
+      "submitButton": "Crear cuenta",
+      "haveAccountPrompt": "¿Ya tenés cuenta?",
+      "loginLink": "Iniciar sesión",
+      "errors": {
+        "emailTaken": "Ya existe una cuenta con ese email.",
+        "emailWithGoogle": "Este email se registra con Google. Iniciá sesión con Google y luego agregá una contraseña desde tu perfil.",
+        "generic": "No pudimos crear la cuenta."
+      }
+    },
+    "perfil": {
+      "seguridad": {
+        "title": "Seguridad",
+        "subtitle": "Configurá tu contraseña para iniciar sesión sin Google",
+        "hasPassword": "Ya tenés una contraseña configurada. El cambio de contraseña llegará en una próxima iteración.",
+        "setPassword": {
+          "title": "Establecer contraseña",
+          "passwordLabel": "Nueva contraseña",
+          "submit": "Guardar contraseña",
+          "success": "Contraseña configurada correctamente.",
+          "errors": {
+            "already": "Ya tenés una contraseña configurada.",
+            "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+            "generic": "No pudimos guardar la contraseña."
+          }
+        }
       }
     },
     "onboarding": {
