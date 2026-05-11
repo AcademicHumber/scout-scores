@@ -112,7 +112,7 @@ export function EventoEstadoControls({ eventoId, estado, actividades, patrullasC
           <input type="hidden" name="target" value={nextTarget} />
           <button
             type="submit"
-            disabled={pending || (nextTarget === "ACTIVO" && !puedeActivar) || nextTarget === "PUBLICADO"}
+            disabled={pending || (nextTarget === "ACTIVO" && !puedeActivar)}
             title={
               nextTarget === "ACTIVO" && !puedeActivar
                 ? !pesosOk
@@ -128,9 +128,6 @@ export function EventoEstadoControls({ eventoId, estado, actividades, patrullasC
               nextTarget === "PUBLICADO" ? m.detail.transicion.publicar :
               ""}
           </button>
-          {nextTarget === "PUBLICADO" && (
-            <p className="mt-1 text-xs text-gray-500">Disponible en Plan 7</p>
-          )}
         </form>
       )}
     </div>

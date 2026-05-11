@@ -296,7 +296,7 @@
         "transicion": {
           "activar": "Activar evento",
           "cerrar": "Cerrar evento",
-          "publicar": "Publicar evento (Plan 7)"
+          "publicar": "Publicar evento"
         },
         "transicionDisabledTooltip": "Configurá actividades que sumen 100% antes de activar",
         "deleteButton": "Eliminar evento",
