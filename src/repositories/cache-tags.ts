@@ -7,4 +7,6 @@ export const cacheTags = {
   eventos:        (orgId: string) => `eventos:${orgId}`,
   postas:         (orgId: string) => `postas:${orgId}`,
   scoreSheets:    (orgId: string) => `scoreSheets:${orgId}`,
+  leaderboard:       (orgId: string) => `leaderboard:${orgId}`,
+  publicShareLinks:  (orgId: string) => `publicShareLinks:${orgId}`,
 } as const

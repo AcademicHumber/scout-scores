@@ -32,6 +32,14 @@ export async function AppHeader() {
                 {messages.auth.header.juez}
               </Link>
             )}
+            {user && (
+              <Link
+                href="/eventos"
+                className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+              >
+                Eventos
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

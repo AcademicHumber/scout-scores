@@ -5,6 +5,8 @@ import { BusinessError } from "@/lib/errors"
 import { slugify } from "@/lib/slug"
 import type { EventoEstado, ActividadTipo } from "@/generated/prisma/enums"
 import { Decimal } from "@prisma/client/runtime/client"
+import { generateLeaderboardSnapshot } from "./leaderboard.repo"
+import { createOrRotatePublicShareLink } from "./public-share-link.repo"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -386,6 +388,20 @@ export async function transicionarEstado(
     })
   })
   revalidateTag(cacheTags.eventos(organizationId))
+
+  // Al publicar: generar snapshot y crear link público activo si no existe.
+  // Se ejecuta fuera de la transacción (secuencial). Si falla, el evento queda
+  // PUBLICADO sin snapshot — la vista admin permite regenerar manualmente.
+  if (target === "PUBLICADO") {
+    await generateLeaderboardSnapshot(organizationId, id, actorUserId)
+
+    const existingLink = await prisma.publicShareLink.findFirst({
+      where: { eventoId: id, revokedAt: null },
+    })
+    if (!existingLink) {
+      await createOrRotatePublicShareLink(organizationId, id, actorUserId)
+    }
+  }
 }
 
 // ─── Actividades ──────────────────────────────────────────────────────────────

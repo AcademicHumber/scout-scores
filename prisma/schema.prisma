@@ -89,14 +89,16 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  gruposScouts   GrupoScout[]
-  memberships    Membership[]
-  invitations    Invitation[]
-  miembros       MiembroScout[]
-  auditLogs      AuditLog[]
-  scoreTemplates ScoreTemplate[]
-  eventos        Evento[]
-  postas         Posta[]
+  gruposScouts         GrupoScout[]
+  memberships          Membership[]
+  invitations          Invitation[]
+  miembros             MiembroScout[]
+  auditLogs            AuditLog[]
+  scoreTemplates       ScoreTemplate[]
+  eventos              Evento[]
+  postas               Posta[]
+  leaderboardSnapshots EventLeaderboardSnapshot[]
+  publicShareLinks     PublicShareLink[]
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -134,14 +136,17 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts              Account[]
-  sessions              Session[]
-  memberships           Membership[]
-  miembrosScout         MiembroScout[]
-  auditLogs             AuditLog[]        @relation("AuditLogActor")
-  asignacionesJuez      AsignacionPosta[] @relation("AsignacionPostaJuez")
-  scoreSheetsEnviadas   ScoreSheet[]      @relation("ScoreSheetEnviadaBy")
-  scoreSheetsReabiertas ScoreSheet[]      @relation("ScoreSheetReopenedBy")
+  accounts                      Account[]
+  sessions                      Session[]
+  memberships                   Membership[]
+  miembrosScout                 MiembroScout[]
+  auditLogs                     AuditLog[]        @relation("AuditLogActor")
+  asignacionesJuez              AsignacionPosta[] @relation("AsignacionPostaJuez")
+  scoreSheetsEnviadas           ScoreSheet[]      @relation("ScoreSheetEnviadaBy")
+  scoreSheetsReabiertas         ScoreSheet[]      @relation("ScoreSheetReopenedBy")
+  leaderboardSnapshotsGenerated EventLeaderboardSnapshot[] @relation("LeaderboardSnapshotGeneratedBy")
+  publicShareLinksCreated       PublicShareLink[]          @relation("PublicShareLinkCreatedBy")
+  publicShareLinksRevoked       PublicShareLink[]          @relation("PublicShareLinkRevokedBy")
 }
 
 model Account {
@@ -319,14 +324,60 @@ model Evento {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  actividades  Actividad[]
-  patrullas    Patrulla[]
+  organization        Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actividades         Actividad[]
+  patrullas           Patrulla[]
+  leaderboardSnapshot EventLeaderboardSnapshot?
+  publicShareLinks    PublicShareLink[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([organizationId, estado])
   @@index([organizationId, fechaInicio])
+}
+
+// ──────────────────────────────────────────────────────────────
+// EventLeaderboardSnapshot — ranking congelado al publicar
+// ──────────────────────────────────────────────────────────────
+
+model EventLeaderboardSnapshot {
+  id                String   @id @default(cuid(2))
+  eventoId          String   @unique
+  organizationId    String
+  data              Json
+  generatedAt       DateTime @default(now())
+  generatedByUserId String?
+
+  evento       Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  generatedBy  User?        @relation("LeaderboardSnapshotGeneratedBy", fields: [generatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([generatedAt])
+}
+
+// ──────────────────────────────────────────────────────────────
+// PublicShareLink — tokens compartibles para la vista pública
+// ──────────────────────────────────────────────────────────────
+
+model PublicShareLink {
+  id              String    @id @default(cuid(2))
+  organizationId  String
+  eventoId        String
+  token           String    @unique
+  createdAt       DateTime  @default(now())
+  createdByUserId String?
+  revokedAt       DateTime?
+  revokedByUserId String?
+
+  evento       Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("PublicShareLinkCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  revokedBy    User?        @relation("PublicShareLinkRevokedBy", fields: [revokedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([eventoId])
+  @@index([organizationId])
+  // Índice único parcial WHERE "revokedAt" IS NULL se agrega a mano en la migración SQL.
 }
 
 // ──────────────────────────────────────────────────────────────

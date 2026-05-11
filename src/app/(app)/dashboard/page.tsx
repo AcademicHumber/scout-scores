@@ -9,6 +9,10 @@ export default async function DashboardPage() {
     redirect("/juez/eventos")
   }
 
+  if (user?.activeRole === "JEFE_PATRULLA" || user?.activeRole === "ESPECTADOR") {
+    redirect("/eventos")
+  }
+
   const hasMemberships = (user?.memberships?.length ?? 0) > 0
 
   return (

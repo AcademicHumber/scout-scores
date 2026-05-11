@@ -465,5 +465,78 @@
       "mensaje": "Volvé a la lista de eventos. Si pensás que es un error, sincronizá manualmente.",
       "volver": "Volver a eventos"
     }
+  },
+  "leaderboard": {
+    "tituloAdmin": "Leaderboard",
+    "tituloPublico": "Resultados Oficiales",
+    "resultadosOficiales": "Resultados Oficiales",
+    "ultimaActualizacion": "Última actualización",
+    "generadoPor": "Generado por Puntajes Scout",
+    "posicion": "Pos.",
+    "patrulla": "Patrulla",
+    "grupo": "Grupo",
+    "puntaje": "Puntaje",
+    "desempate": "Desempate",
+    "podio": {
+      "titulo": "Podio",
+      "primero": "1°",
+      "segundo": "2°",
+      "tercero": "3°"
+    },
+    "tabs": {
+      "todos": "Todos",
+      "miGrupo": "Mi grupo"
+    },
+    "detalle": {
+      "actividad": "Actividad",
+      "posta": "Posta",
+      "peso": "Peso",
+      "subtotal": "Subtotal"
+    },
+    "vacio": {
+      "titulo": "Sin patrullas",
+      "mensaje": "No hay patrullas registradas en este evento."
+    },
+    "snapshot": {
+      "noGenerado": "No se generó ningún snapshot aún.",
+      "generadoEn": "Snapshot generado el",
+      "desactualizado": "El snapshot público está desactualizado respecto a las planillas actuales.",
+      "regenerar": "Regenerar snapshot",
+      "generar": "Generar snapshot"
+    },
+    "link": {
+      "noActivo": "No hay link público activo para este evento.",
+      "activo": "Link activo",
+      "url": "URL pública",
+      "copiar": "Copiar",
+      "copiado": "¡Copiado!",
+      "rotar": "Revocar y generar nuevo",
+      "revocar": "Revocar (sin reemplazar)"
+    },
+    "revoked": {
+      "titulo": "Este link ya no está disponible",
+      "mensaje": "El organizador revocó el acceso público. Contactá a los organizadores."
+    },
+    "notFound": {
+      "titulo": "No encontramos resultados con este link",
+      "mensaje": "El link puede ser incorrecto o el evento no está disponible públicamente."
+    }
+  },
+  "eventos": {
+    "publico": {
+      "lista": {
+        "titulo": "Eventos",
+        "descripcion": "Resultados publicados del distrito"
+      },
+      "empty": {
+        "titulo": "Aún no hay eventos publicados",
+        "mensaje": "Los resultados aparecerán aquí cuando el admin publique un evento."
+      },
+      "card": {
+        "fecha": "Fecha",
+        "lugar": "Lugar",
+        "verResultados": "Ver resultados"
+      }
+    }
   }
 }
