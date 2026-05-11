@@ -25,11 +25,13 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 
 ## Planes — Capa 2: Personas y progresión (post-MVP)
 
-- 12 — Padrón de miembros del grupo _(pendiente)_
-- 13 — Asociar miembros a patrullas _(pendiente)_
-- 14 — Inscripción anual digitalizada _(pendiente)_
-- 15 — Cartilla de progresión _(pendiente)_
-- 16 — Perfil del scout _(pendiente)_
+Números tentativos; se confirman al planificar cada uno.
+
+- 10 — Padrón de miembros del grupo _(pendiente)_
+- 11 — Asociar miembros a patrullas _(pendiente)_
+- 12 — Inscripción anual digitalizada _(pendiente)_
+- 13 — Cartilla de progresión _(pendiente)_
+- 14 — Perfil del scout _(pendiente)_
 
 ## ADRs
 

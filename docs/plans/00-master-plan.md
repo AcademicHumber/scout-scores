@@ -188,31 +188,39 @@ Esta regla se respeta para todo sub-plan posterior (0b, 1, 2, ...).
 
 ## Sub-planes (roadmap de ejecución)
 
-Cada item es un plan independiente que se ejecutará en una sesión separada para mantener el contexto manejable. El orden importa: las dependencias se indican en cada uno.
+Cada item es un plan independiente que se ejecutó en una sesión separada. La columna "Archivo" es el nombre real del plan en `docs/plans/`. Los planes marcados con ✓ están completados y commiteados.
 
-| # | Plan | Depende de | Entregable |
+> **Nota sobre divergencias respecto al plan original**: durante la ejecución surgieron 4 planes no previstos (03b, 03c, 07c, 07d) y los planes originales 6, 7 y 8 se colapsaron en un único plan (08) porque temáticamente eran inseparables. El número de plan en producción (deploy) se mantuvo como 9.
+
+### Capa 1 — Scoring (MVP)
+
+| Archivo | Plan original | Estado | Entregable real |
 |---|---|---|---|
-| **0a** | Bootstrap & infraestructura local | — | Next.js 15 + TS scaffolded, Tailwind, Prisma init (schema vacío), Docker Compose con Postgres local, Caddyfile, layout base en español, CI básico, **`docs/plans/00-master-plan.md` movido al repo + commit inicial**, `docs/README.md` con índice |
-| **0b** | Schema núcleo + seed | 0a | Migraciones de `Organization` (Distrito), `GrupoScout`, `User`, `Membership`, `Invitation`, `AuditLog`, tablas Auth.js. Script de seed con datos demo (1 distrito, 3 grupos, usuarios) |
-| **1** | Auth con Google + onboarding multi-tenant | 0b | Login con Google, crear-o-unirse a un Distrito en primer login, middleware con `organizationId` y `role` en sesión, guards de ruta por rol |
-| **2** | Gestión de miembros, invitaciones y grupos scouts | 1 | CRUD de Grupos Scouts del distrito. Invitar por email (con grupo opcional), aceptar invitación, cambiar roles, listar/quitar miembros, editar configuración del distrito |
-| **3** | Plantillas de puntaje (CRUD) | 1 (no requiere 2) | Editor de plantillas con modos `CRITERIOS` y `PUNTAJE_UNICO`. Soporte para criterios `PUNTUABLE` y `DESEMPATE`. Biblioteca scoping por distrito |
-| **4a** | Eventos y ciclo de vida | 1 | CRUD de eventos, máquina de estados (`BORRADOR → ACTIVO → CERRADO → PUBLICADO`), CRUD de **actividades** con peso porcentual (suma 100% al activar), validaciones de transición, listado/detalle. *[Jerarquía actualizada: Evento → Actividad → Posta — ver ADR-0003]* |
-| **4b** | Postas, patrullas, asignación de jueces | 2, 3, 4a | Agregar **postas** a actividad (con plantilla y peso, colgando de `Actividad` no de `Evento`), definir patrullas del evento (cada una asociada a un Grupo Scout existente del distrito + categoría opcional), asignar jefe de patrulla opcional, asignar juez único a cada posta. *[Ejecutado como Plan 6b. `PatrullaLead` diferido a Plan 6 — sin consumidor hasta que exista la vista del Jefe de Patrulla. Postas refactorizadas como entidad de biblioteca en Plan 6c.]* |
-| **4c** | Postas como biblioteca reutilizable | 4b | Posta standalone con `organizationId`, CRUD dedicado en `/admin/postas`, `AsignacionPosta` como join table con datos por uso (juez, encargado, ayudantes, weight), validación de unicidad por evento, historial de uso por posta. *[Ejecutado como Plan 6c.]* |
-| **5a** | Vista del juez — carga online (mobile-first) | 4b, 4c | UI mobile-first del juez, lista de sus postas asignadas en eventos activos, formulario de carga según modo de plantilla, guardado server-side |
-| **5b** | PWA + cola offline + sync | 5a | Service worker, manifest, IndexedDB para puntajes pendientes, motor de sincronización con `clientId`/`clientSubmittedAt`, manejo de auth offline |
-| **6** | Reportes, leaderboard y vistas públicas | 5a (5b no requerido) | Cálculo de leaderboard con desempates, snapshot al cierre, vista pública global (Espectador) vía link/QR, vista filtrada por Grupo Scout, vista del Jefe de Patrulla, exportar PDF/Excel |
-| **7** | Cierre de evento y publicación | 6 | Validaciones de cierre (todas las planillas cargadas), congelar puntajes, generar snapshot, generar `PublicShareLink`, transición a `PUBLICADO` |
-| **8** | Correcciones post-cierre | 7 | Reabrir una `ScoreSheet` específica sin reabrir el evento entero, regenerar snapshot, registro completo en `AuditLog` |
-| **9** | Despliegue a producción + hardening | 8 | Servidor VPS aprovisionado, dominio + DNS configurados, Docker Compose de producción con Caddy, Google OAuth en dominio real, backups automáticos a B2, monitoreo básico (Sentry o equivalente self-hostable), checklist de seguridad |
+| `01-bootstrap-infra.md` | 0a | ✓ | Next.js 15 + TS + Tailwind v4, Prisma init, Docker Compose (solo db), Caddyfile, layout base en español, master plan en repo |
+| `02-schema-nucleo-seed.md` | 0b | ✓ | Schema núcleo: Organization, GrupoScout, User, Membership, Invitation, AuditLog, tablas Auth.js; seed idempotente con datos demo |
+| `03-auth-onboarding.md` | 1 | ✓ | Auth.js v5 con Google OAuth, onboarding multi-tenant, split config Edge/Node, middleware con role guards |
+| `03b-react-best-practices.md` | _(emergente)_ | ✓ | `React.cache()` en `getCurrentUser`, `useTransition` en DistrictSwitcher, ref-guard en MembershipRefresher |
+| `03c-design-system.md` | _(emergente)_ | ✓ | Tokens brand #622599, fuente Barlow, fondo auth purple, header purple, touch targets 48px mobile-first |
+| `04-invitaciones-memberships.md` | 2 | ✓ | CRUD Grupos Scouts, invitaciones por email, cambio de rol, expulsión, regla del último ADMIN, deep link `/invite/[token]`, audit log |
+| `05-plantillas.md` | 3 | ✓ | ScoreTemplate + TemplateCriterion, modos CRITERIOS/PUNTAJE_UNICO, escalas discretas con escala de desempate opcional, archivado, duplicación |
+| `06a-eventos.md` | 4a | ✓ | Evento + Actividad con peso porcentual, máquina de estados BORRADOR→ACTIVO→CERRADO→PUBLICADO, CRUD inline con reordenamiento; ADR-0003 |
+| `06b-postas-patrullas-jueces.md` | 4b | ✓ | Posta en actividades con plantilla y juez, Patrulla por evento asociada a GrupoScout, gates de pre-activación acumulativos, isTemplateLocked |
+| `06c-postas-biblioteca.md` | 4c | ✓ | Posta standalone con organizationId, AsignacionPosta join table, CRUD `/admin/postas` con historial, dialog de asignación en eventos |
+| `07a-scoring-juez.md` | 5a | ✓ | ScoreSheet + ScoreEntry con totales cacheados, gate canTransitionToCerrado, rutas `/juez/*` mobile-first, vista admin de planillas con reapertura |
+| `07b-pwa-offline-sync.md` | 5b | ✓ | Serwist SW, IndexedDB con idb, cola offline, sync engine, API `/api/juez/snapshot` y `/api/juez/sync`, idempotencia con SyncOpLog, ConflictBanner |
+| `07c-juez-client-components.md` | _(emergente)_ | ✓ | Páginas del juez migradas a Client Components hidratadas desde IDB; hook useJuezData; bump IDB v1→v2; readers del snapshot |
+| `07d-catch-all-spa-y-fixes-sw.md` | _(emergente)_ | ✓ | Catch-all SPA `/juez/[[...slug]]` con router cliente custom, plugin stripRscParam en SW, reload en primera activación |
+| `08-leaderboard-cierre-publicacion.md` | 6 + 7 + 8 _(colapsados)_ | ✓ | EventLeaderboardSnapshot + PublicShareLink, algoritmo de ranking con empates, vista admin tiempo real, vista pública `/resultados/[token]` con switch claro/oscuro, vistas autenticadas `/eventos`, redirect por rol |
+| `09-deploy-produccion.md` | 9 | _(pendiente)_ | VPS + Docker Compose producción con Caddy, Dockerfile multi-stage standalone, migraciones en prod, backups pg_dump a B2, monitoreo básico |
 
 **— Capa 2: Personas y progresión (post-MVP, después de Plan 9) —**
 
-| # | Plan | Depende de | Entregable |
+Los números de la Capa 2 son tentativos y se confirmarán al planificar cada uno.
+
+| # tentativo | Plan | Depende de | Entregable |
 |---|---|---|---|
-| **10** | Padrón de miembros del grupo | 2 | CRUD de `MiembroScout`, importación CSV opcional, vista de miembros por grupo dentro del distrito |
-| **11** | Asociar miembros a patrullas | 4b, 10 | Vincular `MiembroScout` a patrullas de eventos. Eventos anteriores a Plan 11 quedan sin miembros vinculados, lo cual es aceptable por diseño |
+| **10** | Padrón de miembros del grupo | 04 | CRUD de `MiembroScout`, importación CSV opcional, vista de miembros por grupo dentro del distrito |
+| **11** | Asociar miembros a patrullas | 06b, 10 | Vincular `MiembroScout` a patrullas de eventos. Eventos anteriores a Plan 11 quedan sin miembros vinculados, lo cual es aceptable por diseño |
 | **12** | Inscripción anual digitalizada | 10 | Datos extendidos (médicos, autorizaciones parentales, archivos), ciclo anual de re-inscripción |
 | **13** | Cartilla de progresión | 10 | Etapas, especialidades, promesas. Modelo a validar con el distrito antes de codear |
 | **14** | Perfil del scout | 11, 13 | Vista del recorrido completo (eventos, scores, progresión). Reusa `cuid2` y `PublicShareLink` |
