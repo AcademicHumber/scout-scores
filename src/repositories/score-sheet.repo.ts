@@ -580,6 +580,7 @@ export async function submitScoreSheet(
   revalidateTag(cacheTags.scoreSheets(organizationId))
   // Invalidar eventos porque isEventoLocked cambia cuando se envía la primera planilla
   revalidateTag(cacheTags.eventos(organizationId))
+  revalidateTag(cacheTags.leaderboard(organizationId))
 
   return { id: sheet.id, version: sheet.version, totalPuntuable, totalDesempate }
 }
@@ -623,4 +624,5 @@ export async function reopenScoreSheet(
 
   revalidateTag(cacheTags.scoreSheets(organizationId))
   revalidateTag(cacheTags.eventos(organizationId))
+  revalidateTag(cacheTags.leaderboard(organizationId))
 }
