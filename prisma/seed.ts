@@ -10,6 +10,7 @@ import {
 } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createId } from "@paralleldrive/cuid2";
+import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
@@ -45,39 +46,50 @@ async function main() {
   const [jpii, donBosco, sanJorge] = grupos;
 
   // ── 3. Users demo + Memberships ─────────────────────────────────────────────
+  // admin@demo.local tiene password "demo1234" para poder loguear sin Google en dev.
+  const adminPasswordHash = await hash("demo1234", 10);
+
   const usersData = [
     {
       email: "admin@demo.local",
       name: "Admin Demo",
       role: Role.ADMIN,
       grupoScoutId: undefined as string | undefined,
+      passwordHash: adminPasswordHash,
+      emailVerified: new Date(),
     },
     {
       email: "juez1@demo.local",
       name: "Juez Uno",
       role: Role.JUEZ,
       grupoScoutId: undefined as string | undefined,
+      passwordHash: undefined as string | undefined,
+      emailVerified: undefined as Date | undefined,
     },
     {
       email: "juez2@demo.local",
       name: "Juez Dos",
       role: Role.JUEZ,
       grupoScoutId: undefined as string | undefined,
+      passwordHash: undefined as string | undefined,
+      emailVerified: undefined as Date | undefined,
     },
     {
       email: "jefe-jpii@demo.local",
       name: "Jefe Juan Pablo II",
       role: Role.JEFE_PATRULLA,
       grupoScoutId: jpii.id,
+      passwordHash: undefined as string | undefined,
+      emailVerified: undefined as Date | undefined,
     },
   ];
 
   const users = await Promise.all(
-    usersData.map(async ({ email, name, role, grupoScoutId }) => {
+    usersData.map(async ({ email, name, role, grupoScoutId, passwordHash, emailVerified }) => {
       const user = await prisma.user.upsert({
         where: { email },
-        update: { name },
-        create: { email, name },
+        update: { name, ...(passwordHash ? { passwordHash, emailVerified } : {}) },
+        create: { email, name, ...(passwordHash ? { passwordHash, emailVerified } : {}) },
       });
       await prisma.membership.upsert({
         where: { userId_organizationId: { userId: user.id, organizationId: distrito.id } },
@@ -665,6 +677,8 @@ async function main() {
   Postas         : ${counts[7]}
   Eventos        : ${counts[8]}
   ScoreSheets    : ${counts[9]}
+
+  Credenciales demo: admin@demo.local / demo1234
 `);
 }
 

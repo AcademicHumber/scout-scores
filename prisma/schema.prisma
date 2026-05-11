@@ -133,6 +133,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  passwordHash  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -563,6 +564,22 @@ model SyncOpLog {
 
   @@index([scoreSheetId])
   @@index([processedAt])
+}
+
+// ──────────────────────────────────────────────────────────────
+// AuthAttempt — lockout por intentos fallidos (Plan 9)
+// ──────────────────────────────────────────────────────────────
+
+model AuthAttempt {
+  id          String    @id @default(cuid(2))
+  email       String    @unique
+  failCount   Int       @default(0)
+  lockedUntil DateTime?
+  lastTryAt   DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
 }
 
 // ──────────────────────────────────────────────────────────────
