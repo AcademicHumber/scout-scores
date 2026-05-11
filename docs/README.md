@@ -20,10 +20,8 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [07b — PWA + cola offline + sync](plans/07b-pwa-offline-sync.md) ✓
 - [07c — Vista del juez como Client Components hidratados desde IDB](plans/07c-juez-client-components.md) ✓
 - [07d — Catch-all SPA para `/juez/**` + fixes de SW caching offline](plans/07d-catch-all-spa-y-fixes-sw.md) ✓
-- 08 — Reportes, leaderboard y vistas públicas _(pendiente)_
-- 09 — Cierre de evento y publicación _(pendiente)_
-- 10 — Correcciones post-cierre _(pendiente)_
-- 11 — Despliegue a producción + hardening _(pendiente)_
+- [08 — Leaderboard, cierre de evento y vistas públicas](plans/08-leaderboard-cierre-publicacion.md) ✓
+- 09 — Despliegue a producción + hardening _(pendiente)_
 
 ## Planes — Capa 2: Personas y progresión (post-MVP)
 

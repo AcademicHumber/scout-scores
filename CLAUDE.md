@@ -135,6 +135,12 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 38. **`pnpm typecheck` falla tras eliminar páginas hasta limpiar `.next/types/`**: TypeScript cachea los tipos generados en `.next/types/app/**/page.ts`. Al eliminar un `page.tsx`, ese archivo de tipos queda y hace fallar `tsc --noEmit` con `Cannot find module`. Solución: `rm -rf .next/types` antes de correr typecheck tras cualquier eliminación de rutas. `pnpm build` regenera el directorio automáticamente. (Ver Plan 7d lección #2).
 
+39. **Rutas públicas (sin auth) deben estar en `PUBLIC_PATHS` del middleware**: el middleware Auth.js en `src/auth.config.ts` define `PUBLIC_PATHS` — cualquier ruta nueva que no requiera autenticación debe agregarse explícitamente. No hay detección automática. Si falta, usuarios sin sesión son redirigidos a `/login` incluso en rutas pensadas para el público general. (Ver Plan 8 lección #6).
+
+40. **Route group layouts no pueden ser root layouts cuando existe `app/layout.tsx`**: en Next.js App Router, `app/layout.tsx` es siempre el root absoluto. Un layout dentro de un route group (ej: `(public)/layout.tsx`) queda anidado dentro — nunca lo reemplaza. Poner `<html><body>` en ambos genera HTML inválido y hydration mismatch. El layout del route group debe ser un passthrough (`<>{children}</>`) o un wrapper sin etiquetas de documento. (Ver Plan 8 lección #3).
+
+41. **Al agregar un `unstable_cache` con tag nuevo, auditar todas las mutaciones relacionadas**: el compilador no detecta que una mutación omitió un `revalidateTag`. Al crear un nuevo cache con un tag (ej: `leaderboard:orgId`), revisar todos los repos que escriben los datos que ese cache lee y agregar el `revalidateTag` correspondiente. Una mutación que solo invalida `scoreSheets:orgId` pero no `leaderboard:orgId` deja el leaderboard stale aunque la DB cambió. (Ver Plan 8 lección #8).
+
 ## Documentación
 
 Toda la planificación vive en `docs/` versionada con git:
@@ -152,6 +158,7 @@ Toda la planificación vive en `docs/` versionada con git:
 - `docs/plans/07b-pwa-offline-sync.md` — Plan 7b, ya ejecutado (PWA, IndexedDB, cola offline, sync engine, API routes, ConflictBanner)
 - `docs/plans/07c-juez-client-components.md` — Plan 7c, ya ejecutado (páginas del juez como Client Components hidratadas desde IDB, bump IDB v1→v2, readers del snapshot, hook useJuezData, sesión inicial al SessionProvider)
 - `docs/plans/07d-catch-all-spa-y-fixes-sw.md` — Plan 7d, ya ejecutado (catch-all SPA `/juez/[[...slug]]/page.tsx` con router cliente custom + fix `_rsc` cache buster + fix primer-navegación reload + skip `/dashboard` para jueces)
+- `docs/plans/08-leaderboard-cierre-publicacion.md` — Plan 8, ya ejecutado (leaderboard, snapshot, PublicShareLink, vista pública `/resultados/[token]`, vistas autenticadas `/eventos`, switch claro/oscuro)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
 - `docs/adr/0002-repository-layer.md` — decisión de capa de repositorios con `unstable_cache` y `revalidateTag`
 - `docs/adr/0003-jerarquia-evento-actividad-posta.md` — cambio de jerarquía respecto al master plan original
@@ -190,4 +197,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 7d completado** (Catch-all SPA y fixes de SW — `/juez/[[...slug]]/page.tsx` con `JuezRouterProvider`/`useJuezRouter`/`JuezLink`, 4 vistas extraídas a `src/components/juez/views/`, plugin `stripRscParam` en el SW, fallback flexible del cache `juez-navigate`, reload en primera activación con `controllerchange` + `sessionStorage`, skip de `/dashboard` para jueces. Resuelve el escenario "ruta nunca visitada offline".)
 
-**Próximo: Plan 8** — pendiente de redacción.
+**Plan 8 completado** (Leaderboard, cierre de evento y vistas públicas — `EventLeaderboardSnapshot` + `PublicShareLink` con índice parcial, repos `leaderboard.repo.ts` y `public-share-link.repo.ts`, algoritmo de ranking con empates compartidos y breakdown por actividad/posta, hook al publicar (`generateLeaderboardSnapshot` + `createOrRotatePublicShareLink`), vista admin `/admin/eventos/[id]/leaderboard` con ranking en tiempo real + `SnapshotControls` + `PublicShareLinkControls`, vista pública `/resultados/[token]` estética "Scout Field Report" con switch claro/oscuro, vistas autenticadas `/eventos` y `/eventos/[id]/resultados` con highlight JEFE_PATRULLA, redirect JEFE_PATRULLA/ESPECTADOR a `/eventos`. 22 tests nuevos, 97 en total.)
+
+**Próximo: Plan 9** — Despliegue a producción + hardening (VPS, Docker Compose producción, Caddy, backups B2, monitoreo).

@@ -901,11 +901,15 @@ La función `requireRole` en `auth-helpers.ts` devuelve `{ ...org, userId: user.
 
 **Patrón establecido**: en server actions, siempre `const org = await requireRole([...])` → `org.organizationId`, `org.userId`, `org.role`.
 
-### 3. `(public)/layout.tsx` como root layout independiente funciona en Next.js 15
+### 3. Route group layout NO puede ser root layout cuando existe `app/layout.tsx`
 
-Next.js 15 App Router soporta múltiples root layouts mediante route groups: `app/(public)/layout.tsx` con su propio `<html>` y `<body>` coexiste con el root `app/layout.tsx`. Las rutas bajo `(public)` usan el layout público (dark, sin AppHeader), las rutas bajo `(app)` usan el layout principal (auth, brand). La build lo confirma: ambas aparecen como roots independientes en el output de `next build`.
+El plan asumía que `app/(public)/layout.tsx` con `<html>` y `<body>` sería un root layout independiente. **Esto es incorrecto.** En Next.js App Router, `app/layout.tsx` es siempre el root absoluto — cualquier layout dentro de un route group queda anidado dentro de él, nunca lo reemplaza. Tener `<html><body>` en ambos genera HTML inválido y un hydration mismatch que Next.js reporta en consola (servidor vs cliente difieren en className del body).
 
-**Font en el layout público**: el `(public)/layout.tsx` importa `globals.css`, que define `--font-sans: var(--font-barlow), sans-serif` via `@theme`. Por lo tanto, `font-sans` en el body del layout público ya activa Barlow. No hace falta `font-[family-name:var(--font-barlow)]`.
+**Fix**: `(public)/layout.tsx` debe ser un passthrough (`return <>{children}</>`) sin `<html>` ni `<body>`. El dark/light theme va en el componente raíz de cada página (en nuestro caso `PublicLeaderboardView` envuelve todo con el `div` temático).
+
+**Para tener roots verdaderamente independientes** (con `<html>` separado por route group), habría que eliminar `app/layout.tsx` y crear un layout raíz por cada route group. En este proyecto eso implicaría mover todas las rutas existentes — trade-off no vale la pena.
+
+**Font en el layout público**: `app/layout.tsx` ya aplica `${barlow.variable}` al body, y `globals.css` define `--font-sans: var(--font-barlow), sans-serif`. El layout público hereda Barlow automáticamente sin necesidad de redeclararlo.
 
 ### 4. SW ya maneja `/resultados/**` correctamente sin cambios
 
@@ -914,3 +918,35 @@ El Service Worker del Plan 7d ya tiene una regla `navigate → NetworkOnly` que 
 ### 5. Snapshot con `data.generadoEn` actualizado al momento del upsert
 
 La función `_computeLeaderboardInner` calcula `generadoEn: new Date().toISOString()` al inicio. En `generateLeaderboardSnapshot`, se sobreescribe `data.generadoEn = new Date().toISOString()` después de que la función interna termina, para que el timestamp en el JSON coincida con el `generatedAt` que va al campo de la tabla. Sin este ajuste, el JSON podría tener un `generadoEn` unos milisegundos anterior al `generatedAt` real del upsert, causando inconsistencia visual en la vista pública ("Última actualización" podría mostrar un timestamp distinto al real).
+
+### 6. Rutas públicas deben estar en `PUBLIC_PATHS` del middleware
+
+El middleware de Auth.js en `auth.config.ts` define `PUBLIC_PATHS` con las rutas que no requieren autenticación. `/resultados` no estaba listada, por lo que el middleware redirigía a `/login` a usuarios no autenticados que accedían a la vista pública del leaderboard (incluyendo incógnito). El fix es agregar `"/resultados"` al array.
+
+**Regla**: toda ruta nueva sin requisito de auth debe agregarse explícitamente a `PUBLIC_PATHS`. No hay detección automática.
+
+### 7. Botón "Publicar evento" tenía guard hardcodeado como placeholder
+
+`EventoEstadoControls.tsx` tenía `disabled={... || nextTarget === "PUBLICADO"}` con una nota "Disponible en Plan 7" — un placeholder de cuando la transición a PUBLICADO no estaba implementada. Al completar Plan 8, el guard no se eliminó y el botón quedó permanentemente desactivado para eventos CERRADOS. Fix: eliminar el guard y actualizar el label.
+
+**Lección**: los placeholders con `disabled` hardcodeado son deuda técnica visible. Al completar la feature que los hace posibles, buscar y limpiar todos los puntos de bloqueo artificial.
+
+### 8. `revalidateTag` debe cubrir todos los caches que lee una pantalla
+
+La vista admin del leaderboard en tiempo real usa `computeLeaderboard`, cacheada con el tag `leaderboard:orgId`. Cuando el admin reabre una planilla (`reopenScoreSheet`) o el juez envía (`submitScoreSheet`), esas funciones invalidaban `scoreSheets:orgId` y `eventos:orgId`, pero **no** `leaderboard:orgId`. El leaderboard admin quedaba stale hasta que su cache expiraba o el admin borraba la caché del browser.
+
+Fix: agregar `revalidateTag(cacheTags.leaderboard(organizationId))` en `reopenScoreSheet` y `submitScoreSheet`.
+
+**Regla**: al agregar un nuevo `unstable_cache` con un tag nuevo, auditar todas las mutaciones que afectan los datos que cachea y agregar el `revalidateTag` correspondiente. El compilador no ayuda con esto — es responsabilidad del desarrollador al crear el nuevo cache.
+
+## Commits asociados
+
+| Hash | Descripción |
+|---|---|
+| `e35545a` | feat(leaderboard): cierre y publicación de eventos con vista pública (Plan 8) — commit principal |
+| `b8a187a` | fix(eventos): habilitar botón Publicar evento en estado CERRADO |
+| `76654a0` | fix(auth): agregar /resultados a PUBLIC_PATHS del middleware |
+| `0bcba9b` | fix(public): eliminar html/body de (public)/layout para evitar hydration mismatch |
+| `467ac21` | fix(admin/eventos): planillas y leaderboard al tope + planillas visible en PUBLICADO |
+| `8ae56c6` | fix(leaderboard): invalidar cache leaderboard al mutar planillas |
+| `3e91500` | style(leaderboard): tema claro de default con switch claro/oscuro persistente |
