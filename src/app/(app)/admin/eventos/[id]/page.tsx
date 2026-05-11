@@ -81,6 +81,42 @@ export default async function EventoDetailPage({
         {evento.lugar && <p className="text-sm text-gray-400">{evento.lugar}</p>}
       </div>
 
+      {/* Planillas — visible desde ACTIVO */}
+      {(evento.estado === "ACTIVO" || evento.estado === "CERRADO" || evento.estado === "PUBLICADO") && (
+        <section className="rounded-xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Planillas</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Estado de carga de puntajes por posta y patrulla</p>
+            </div>
+            <Link
+              href={`/admin/eventos/${id}/planillas`}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              Ver planillas
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Leaderboard — visible desde CERRADO */}
+      {(evento.estado === "CERRADO" || evento.estado === "PUBLICADO") && (
+        <section className="rounded-xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Leaderboard</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Ranking, snapshot público y link compartible</p>
+            </div>
+            <Link
+              href={`/admin/eventos/${id}/leaderboard`}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              Ver leaderboard
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Información general */}
       <section className="rounded-xl border bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">{m.detail.metadataTitle}</h2>
@@ -187,42 +223,6 @@ export default async function EventoDetailPage({
           grupos={grupos.map((g) => ({ id: g.id, nombre: g.nombre }))}
         />
       </section>
-
-      {/* Link a planillas (visible cuando el evento está ACTIVO o CERRADO) */}
-      {(evento.estado === "ACTIVO" || evento.estado === "CERRADO") && (
-        <section className="rounded-xl border bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Planillas</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Estado de carga de puntajes por posta y patrulla</p>
-            </div>
-            <Link
-              href={`/admin/eventos/${id}/planillas`}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
-            >
-              Ver planillas
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {/* Link al leaderboard (visible cuando el evento está CERRADO o PUBLICADO) */}
-      {(evento.estado === "CERRADO" || evento.estado === "PUBLICADO") && (
-        <section className="rounded-xl border bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Leaderboard</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Ranking, snapshot público y link compartible</p>
-            </div>
-            <Link
-              href={`/admin/eventos/${id}/leaderboard`}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
-            >
-              Ver leaderboard
-            </Link>
-          </div>
-        </section>
-      )}
 
       {/* Acciones peligrosas (solo en BORRADOR) */}
       {evento.estado === "BORRADOR" && (
