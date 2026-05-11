@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/db"
 import { BusinessError } from "@/lib/errors"
 import { LOCKOUT_THRESHOLD, LOCKOUT_DURATION_MS } from "@/lib/auth-credentials"
-import type { Account } from "@/generated/prisma/client"
 
 export async function findUserByEmailRaw(email: string) {
   return prisma.user.findUnique({ where: { email } })
@@ -65,21 +64,19 @@ export async function isLocked(email: string): Promise<boolean> {
   return attempt.lockedUntil > new Date()
 }
 
-export async function linkGoogleAccount(
-  userId: string,
-  account: Pick<
-    Account,
-    | "type"
-    | "provider"
-    | "providerAccountId"
-    | "access_token"
-    | "refresh_token"
-    | "expires_at"
-    | "token_type"
-    | "scope"
-    | "id_token"
-  >,
-) {
+type GoogleAccountInput = {
+  type: string
+  provider: string
+  providerAccountId: string
+  access_token?: string | null
+  refresh_token?: string | null
+  expires_at?: number | null
+  token_type?: string | null
+  scope?: string | null
+  id_token?: string | null
+}
+
+export async function linkGoogleAccount(userId: string, account: GoogleAccountInput) {
   return prisma.account.create({
     data: {
       userId,
