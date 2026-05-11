@@ -2,7 +2,7 @@ import type { NextAuthConfig, Session } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import Google from "next-auth/providers/google"
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/invite"]
+const PUBLIC_PATHS = ["/login", "/api/auth", "/invite", "/resultados"]
 const ONBOARDING_PATH = "/onboarding"
 
 export function buildSession(session: Session, token: JWT): Session {
