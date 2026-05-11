@@ -6,22 +6,30 @@ type Props = {
   grupos: Grupo[]
   selected: string | null
   onChange: (grupoId: string | null) => void
+  isDark?: boolean
 }
 
-export function GrupoTabs({ grupos, selected, onChange }: Props) {
+export function GrupoTabs({ grupos, selected, onChange, isDark = false }: Props) {
   if (grupos.length <= 1) return null
 
+  const stickyBg = isDark
+    ? "bg-zinc-950/95 border-zinc-800"
+    : "bg-gray-50/95 border-gray-200"
+
+  const activeClass = "bg-brand text-white"
+  const inactiveClass = isDark
+    ? "text-zinc-400 hover:text-white hover:bg-white/10"
+    : "text-gray-500 hover:text-brand hover:bg-brand-light"
+
   return (
-    <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur border-b border-zinc-800">
+    <div className={`sticky top-0 z-10 backdrop-blur border-b ${stickyBg}`}>
       <div className="mx-auto max-w-4xl px-4">
         <div className="flex gap-1 overflow-x-auto py-3 scrollbar-none">
           <button
             onClick={() => onChange(null)}
             className={[
               "flex-shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-              selected === null
-                ? "bg-amber-400 text-zinc-950"
-                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800",
+              selected === null ? activeClass : inactiveClass,
             ].join(" ")}
           >
             Todos
@@ -32,9 +40,7 @@ export function GrupoTabs({ grupos, selected, onChange }: Props) {
               onClick={() => onChange(g.id)}
               className={[
                 "flex-shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                selected === g.id
-                  ? "bg-amber-400 text-zinc-950"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800",
+                selected === g.id ? activeClass : inactiveClass,
               ].join(" ")}
             >
               {g.nombre}

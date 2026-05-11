@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { LeaderboardSnapshotData } from "@/repositories/leaderboard.repo"
 import { GrupoTabs } from "./GrupoTabs"
 import { Podium } from "./Podium"
@@ -36,6 +36,8 @@ function formatGeneradoEn(iso: string): string {
   })
 }
 
+const STORAGE_KEY = "lb-theme"
+
 export function PublicLeaderboardView({
   snapshot,
   highlightGrupoId,
@@ -45,44 +47,65 @@ export function PublicLeaderboardView({
 
   const initialTab = highlightGrupoId ?? null
   const [selectedGrupo, setSelectedGrupo] = useState<string | null>(initialTab)
+  const [isDark, setIsDark] = useState(false)
+
+  // Leer preferencia guardada (después de hidratación para evitar mismatch)
+  useEffect(() => {
+    if (localStorage.getItem(STORAGE_KEY) === "dark") setIsDark(true)
+  }, [])
+
+  function toggleTheme() {
+    const next = !isDark
+    setIsDark(next)
+    localStorage.setItem(STORAGE_KEY, next ? "dark" : "light")
+  }
 
   const filtered = selectedGrupo
     ? ranking.filter((r) => r.grupoScoutId === selectedGrupo)
     : ranking
 
-  // Top 3 solo cuando se muestra "Todos" y hay ≥ 3 patrullas
   const showPodium = !selectedGrupo && ranking.length >= 3
   const top3 = showPodium ? ranking.slice(0, 3) : []
   const tableRows = showPodium ? filtered.slice(3) : filtered
 
   const fechaStr = formatFechaEvento(eventoFechaInicio, eventoFechaFin)
 
+  // Theme tokens
+  const t = {
+    wrapper:      isDark ? "bg-zinc-950 text-zinc-50"   : "bg-gray-50 text-gray-900",
+    sectionBg:    isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200",
+    headerText:   isDark ? "text-zinc-500"               : "text-gray-500",
+    footerBorder: isDark ? "border-zinc-800"             : "border-gray-200",
+    footerText:   isDark ? "text-zinc-600"               : "text-gray-400",
+    footerSub:    isDark ? "text-zinc-700"               : "text-gray-300",
+    empty:        isDark ? "text-zinc-500"               : "text-gray-400",
+  }
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50">
-      {/* Hero */}
-      <header className="relative overflow-hidden px-4 pt-12 pb-10 sm:pt-16 sm:pb-14">
-        {/* Decorative grid lines */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: "linear-gradient(90deg, #fff 1px, transparent 1px), linear-gradient(180deg, #fff 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-        <div className="relative mx-auto max-w-4xl">
-          <p className="mb-3 inline-block rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-400">
+    <div className={`min-h-screen ${t.wrapper}`}>
+      {/* Hero — siempre brand purple */}
+      <header className="bg-brand px-4 pt-12 pb-10 sm:pt-16 sm:pb-14 relative">
+        <div className="mx-auto max-w-4xl">
+          <p className="mb-3 inline-block rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white">
             Resultados Oficiales
           </p>
-          <h1 className="text-5xl font-black leading-none tracking-tight text-zinc-50 sm:text-6xl lg:text-7xl">
+          <h1 className="text-5xl font-black leading-none tracking-tight text-white sm:text-6xl lg:text-7xl">
             {eventoNombre}
           </h1>
-          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-zinc-400">
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-white/70">
             <span>{organizationNombre}</span>
             {eventoLugar && <span>· {eventoLugar}</span>}
             <span>· {fechaStr}</span>
           </div>
         </div>
+        {/* Toggle tema */}
+        <button
+          onClick={toggleTheme}
+          aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-colors"
+        >
+          {isDark ? "☀ Claro" : "◑ Oscuro"}
+        </button>
       </header>
 
       {/* Tabs de grupo (sticky) */}
@@ -90,33 +113,34 @@ export function PublicLeaderboardView({
         grupos={grupos}
         selected={selectedGrupo}
         onChange={setSelectedGrupo}
+        isDark={isDark}
       />
 
       <main className="mx-auto max-w-4xl px-4 pb-16">
         {ranking.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-xl font-semibold text-zinc-500">Sin patrullas en este evento.</p>
+            <p className={`text-xl font-semibold ${t.empty}`}>Sin patrullas en este evento.</p>
           </div>
         ) : (
           <>
-            {/* Podio — solo cuando se muestra "Todos" y hay ≥ 3 */}
+            {/* Podio */}
             {showPodium && (
               <section className="pt-8 pb-4">
-                <Podium top3={top3} />
+                <Podium top3={top3} isDark={isDark} />
               </section>
             )}
 
-            {/* Tabla del resto (o todo si filtro activo) */}
+            {/* Tabla */}
             {(tableRows.length > 0 || (showPodium && filtered.length > 0)) && (
-              <section className="mt-2 rounded-xl border border-zinc-800 overflow-hidden">
+              <section className={`mt-2 rounded-xl border overflow-hidden ${t.sectionBg}`}>
                 {showPodium && tableRows.length > 0 && (
-                  <div className="px-4 py-3 border-b border-zinc-800">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Ranking completo</p>
+                  <div className={`px-4 py-3 border-b ${isDark ? "border-zinc-800" : "border-gray-100"}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-wider ${t.headerText}`}>Ranking completo</p>
                   </div>
                 )}
                 {!showPodium && (
-                  <div className="px-4 py-3 border-b border-zinc-800">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className={`px-4 py-3 border-b ${isDark ? "border-zinc-800" : "border-gray-100"}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-wider ${t.headerText}`}>
                       {grupos.find((g) => g.id === selectedGrupo)?.nombre ?? "Resultados"}
                     </p>
                   </div>
@@ -124,26 +148,26 @@ export function PublicLeaderboardView({
                 <LeaderboardTable
                   rows={showPodium ? tableRows : filtered}
                   highlightGrupoId={highlightGrupoId}
+                  isDark={isDark}
                 />
               </section>
             )}
 
-            {/* Si hay filtro activo y el podio estaba visible pero para el filtro no hay nadie */}
             {selectedGrupo && filtered.length === 0 && (
               <div className="py-20 text-center">
-                <p className="text-zinc-500">No hay patrullas de este grupo en el ranking.</p>
+                <p className={t.empty}>No hay patrullas de este grupo en el ranking.</p>
               </div>
             )}
           </>
         )}
 
         {/* Footer */}
-        <footer className="mt-12 pt-8 border-t border-zinc-800 text-center">
-          <p className="text-xs text-zinc-600">
+        <footer className={`mt-12 pt-8 border-t ${t.footerBorder} text-center`}>
+          <p className={`text-xs ${t.footerText}`}>
             Última actualización: {formatGeneradoEn(generadoEn)}
           </p>
           {isPublic && (
-            <p className="mt-1 text-xs text-zinc-700">Generado por Puntajes Scout</p>
+            <p className={`mt-1 text-xs ${t.footerSub}`}>Generado por Puntajes Scout</p>
           )}
         </footer>
       </main>
