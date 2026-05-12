@@ -1345,8 +1345,17 @@ Items pendientes (Plan 10b o posterior):
 
 **Regla permanente**: cada variable `{$VAR}` usada en Caddyfile debe estar listada en el `environment` del servicio `caddy` en el compose.
 
+### #5 — Colisión de volumen entre compose de dev y compose de prod
+
+**Qué pasó**: al probar el escenario 2 (compose prod local), `migrate` falló con "database does not exist" y luego "password authentication failed". El compose de dev (`docker-compose.yml`) y el de prod (`docker-compose.prod.yml`) ambos usaban el project name `puntajes-scout` y el mismo nombre de volumen `postgres-data`. Docker crea el volumen como `puntajes-scout_postgres-data` en ambos casos — el mismo volumen físico. El dev lo había inicializado con `POSTGRES_DB=puntajes_scout_dev` y `POSTGRES_PASSWORD=scout_dev_password`. Postgres ignora las env vars si el directorio de datos ya existe, así que nunca creó la base `puntajes_scout` ni el usuario con la password de prod.
+
+**Fix**: renombrar el volumen en `docker-compose.prod.yml` a `postgres-data-prod`. Resulta en `puntajes-scout_postgres-data-prod`, sin colisión.
+
+**Regla permanente**: cuando existen múltiples compose files para el mismo proyecto (dev/prod/test), los volúmenes de datos deben tener nombres distintos. Postgres en particular ignora las vars de inicialización si el directorio ya tiene datos — el error es silencioso y confuso.
+
 ## Commits asociados
 
 | Hash | Descripción |
 |---|---|
 | `55f8a93` | feat(infra): deploy a VPS con Docker Compose, Caddy y CI (Plan 10) |
+| `323888d` | fix(infra): renombrar volumen postgres-data → postgres-data-prod |
