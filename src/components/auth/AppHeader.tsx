@@ -43,15 +43,20 @@ export async function AppHeader() {
           </div>
 
           <div className="flex items-center gap-3">
-            {user?.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.image}
-                alt={user.name ?? ""}
-                className="h-8 w-8 rounded-full ring-2 ring-white/30"
-              />
-            )}
-            <span className="text-sm text-white/80">{user?.name}</span>
+            <Link
+              href="/perfil/seguridad"
+              className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-white/10 transition-colors"
+            >
+              {user?.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.image}
+                  alt={user.name ?? ""}
+                  className="h-8 w-8 rounded-full ring-2 ring-white/30"
+                />
+              )}
+              <span className="text-sm text-white/80">{user?.name}</span>
+            </Link>
             <SignOutButton
               label={messages.auth.header.logout}
               className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
