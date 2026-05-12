@@ -23,6 +23,7 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [08 — Leaderboard, cierre de evento y vistas públicas](plans/08-leaderboard-cierre-publicacion.md) ✓
 - [09 — Login con email y contraseña (alternativa a Google)](plans/09-auth-credentials.md) ✓
 - [10 — Despliegue a producción + hardening](plans/10-deploy-produccion.md) ✓
+- [11 — Documentación pública para administradores y participantes](plans/11-docs-publica.md) _(pendiente)_
 
 > **Renumeración**: el deploy estaba previsto inicialmente como Plan 9. Tras intercalar el Plan 9 (login propio), el deploy pasó a Plan 10. Las referencias a "Plan 9" en los planes históricos 01–08 reflejan el estado del proyecto en el momento en que se escribieron y se mantienen como artefacto educativo.
 
