@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useActionState } from "react"
 import Link from "next/link"
 import { PasswordInput } from "@/components/auth/PasswordInput"
 import { signupAction } from "./actions"
