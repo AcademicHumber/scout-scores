@@ -158,6 +158,18 @@ curl -I https://tu-dominio.org/api/health
 # Debe devolver HTTP/2 200 con header Strict-Transport-Security
 ```
 
+## 8b. Seed opcional (solo para demo)
+
+La DB arranca vacía — solo el schema aplicado por `migrate`. El primer usuario que entra con Google completa el onboarding y crea su distrito desde cero. **No correr el seed en producción por defecto.**
+
+Si necesitás un dataset de demo (ej: mostrarle el sistema a alguien antes de tener datos reales), ejecutar una vez después del arranque:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec app pnpm prisma db seed
+```
+
+Esto carga 1 distrito demo, grupos, usuarios y eventos. El seed es idempotente (puede correrse varias veces sin duplicar datos). Credenciales demo: `admin@demo.local / demo1234`.
+
 ## 9. Verificar HTTPS y login
 
 Abrir `https://tu-dominio.org` en el navegador:
