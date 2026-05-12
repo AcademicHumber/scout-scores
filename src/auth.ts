@@ -1,9 +1,10 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db"
 import { aceptarInvitacionEnSignIn } from "@/lib/auth-onboarding"
-import { authConfig, buildSession } from "@/auth.config"
+import { buildSession } from "@/auth.config"
 import {
   signinSchema,
   verifyPassword,
@@ -14,7 +15,6 @@ import {
   recordFailedAttempt,
   clearFailedAttempts,
   isLocked,
-  linkGoogleAccount,
 } from "@/repositories/auth.repo"
 
 const credentialsProvider = Credentials({
@@ -49,32 +49,23 @@ const credentialsProvider = Credentials({
   },
 })
 
+// Google con allowDangerousEmailAccountLinking permite vincular automáticamente
+// si ya hay un User con ese email (registrado via credentials). Es seguro porque
+// Google verifica el email del lado de Google.
+const googleProvider = Google({ allowDangerousEmailAccountLinking: true })
+
 export const { auth, handlers, signIn, signOut, unstable_update } = NextAuth({
-  ...authConfig,
-  providers: [...authConfig.providers, credentialsProvider],
+  providers: [googleProvider, credentialsProvider],
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 7 * 24 * 60 * 60,
+  },
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider !== "google") return true
-      if (!user.email) return true
-
-      // Si ya existe un User con este email sin Account de Google, vincular ambos.
-      // Auth.js bloquea linkeo automático (OAuthAccountNotLinked); aquí lo permitimos
-      // porque Google verifica el email del lado de Google.
-      const existing = await prisma.user.findUnique({
-        where: { email: user.email },
-        include: { accounts: { where: { provider: "google" } } },
-      })
-
-      if (existing && existing.accounts.length === 0 && account.providerAccountId) {
-        await linkGoogleAccount(existing.id, account)
-        // Redirigir el flujo de Auth.js al User existente
-        user.id = existing.id
-      }
-
-      return true
-    },
 
     async jwt({ token, user, trigger, session }) {
       if (user) {

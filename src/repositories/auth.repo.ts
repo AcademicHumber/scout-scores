@@ -63,32 +63,3 @@ export async function isLocked(email: string): Promise<boolean> {
   if (!attempt?.lockedUntil) return false
   return attempt.lockedUntil > new Date()
 }
-
-type GoogleAccountInput = {
-  type: string
-  provider: string
-  providerAccountId: string
-  access_token?: string | null
-  refresh_token?: string | null
-  expires_at?: number | null
-  token_type?: string | null
-  scope?: string | null
-  id_token?: string | null
-}
-
-export async function linkGoogleAccount(userId: string, account: GoogleAccountInput) {
-  return prisma.account.create({
-    data: {
-      userId,
-      type: account.type,
-      provider: account.provider,
-      providerAccountId: account.providerAccountId,
-      access_token: account.access_token ?? null,
-      refresh_token: account.refresh_token ?? null,
-      expires_at: account.expires_at ?? null,
-      token_type: account.token_type ?? null,
-      scope: account.scope ?? null,
-      id_token: account.id_token ?? null,
-    },
-  })
-}
