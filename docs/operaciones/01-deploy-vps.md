@@ -100,11 +100,11 @@ Editar `.env.prod` con los valores reales (sección 7).
 ## 7. Generar secretos
 
 ```bash
-# AUTH_SECRET (mínimo 32 bytes)
+# AUTH_SECRET (mínimo 32 bytes — base64 está bien porque no va en una URL)
 openssl rand -base64 32
 
-# POSTGRES_PASSWORD
-openssl rand -base64 24
+# POSTGRES_PASSWORD — usar hex para evitar '/', '+', '=' que rompen DATABASE_URL
+openssl rand -hex 24
 ```
 
 Pegar los valores en `.env.prod`. Construir el `DATABASE_URL` con el password generado:
