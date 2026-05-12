@@ -48,6 +48,7 @@ export async function updateMembership(_prev: unknown, formData: FormData) {
     throw e
   }
 
+  revalidateTag(cacheTags.memberships(org.organizationId))
   return {
     success: true,
     membership: {

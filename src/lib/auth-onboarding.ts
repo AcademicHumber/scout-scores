@@ -1,5 +1,7 @@
 import { z } from "zod"
+import { revalidateTag } from "next/cache"
 import { prisma } from "@/lib/db"
+import { cacheTags } from "@/repositories/cache-tags"
 
 const emailSchema = z.string().email()
 
@@ -49,5 +51,7 @@ export async function aceptarInvitacionEnSignIn(userId: string, email: string) {
         },
       })
     })
+
+    revalidateTag(cacheTags.memberships(inv.organizationId))
   }
 }
