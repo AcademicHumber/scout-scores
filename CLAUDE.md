@@ -203,4 +203,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 10 completado** (Despliegue a producción — `Dockerfile` multi-stage standalone con `NEXT_STANDALONE=true` env var, `docker-compose.prod.yml` con servicios `db/migrate/app/caddy`, `Caddyfile` con security headers + HTTPS automático Let's Encrypt, endpoint `/api/health` público, `scripts/backup.sh` y `restore.sh` con `pg_dump --format=custom`, `.github/workflows/ci.yml` con service container Postgres, guía operativa `docs/operaciones/01-deploy-vps.md`.)
 
-**Próximo: Capa 2 — Plan 10+ (padrón de miembros, inscripción, cartilla de progresión).**
+**Plan 11 completado** (Documentación pública — ruta `/docs` estática pública, 6 páginas (home + administrador + juez + jefe-patrulla + espectador + resultados-públicos), estética "Scout Field Manual", route group `(docs)` con `DocsShell` + `DocsSidebar` off-canvas mobile, componentes `StepList`/`Callout`/`RoleCard`.)
+
+**Próximo: Capa 2 — Padrón de miembros, inscripción, cartilla de progresión.**

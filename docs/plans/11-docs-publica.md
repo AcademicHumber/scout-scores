@@ -259,12 +259,32 @@ Recorrer todos los escenarios de verificación del plan antes del commit de cier
 
 ## Lecciones aprendidas
 
-_(A completar durante la ejecución.)_
+### #1 — `react/no-unescaped-entities` con comillas en JSX text de contenido
+
+**Qué pasó**: todas las páginas de contenido usaban `"NombreDeBoton"` directamente en JSX text (entre tags `<p>`, `<strong>`, etc.). ESLint lanza `react/no-unescaped-entities` para el carácter `"` en JSX — hay que escaparlo como `&ldquo;` / `&rdquo;`.
+
+**Fix**: reemplazar todas las comillas de etiquetas de UI en JSX text con entidades HTML `&ldquo;` (apertura) y `&rdquo;` (cierre). Las comillas dentro de strings JS (props o arrays) no tienen este problema.
+
+**Regla permanente**: en páginas de documentación con muchos nombres de botones entre comillas, usar `&ldquo;` / `&rdquo;` desde el primer draft. Alternativa más legible: crear un componente `<ButtonLabel>Nombre</ButtonLabel>` que incluya las entidades internamente.
+
+### #2 — Import no usado (`StepList`) de un refactor en página admin
+
+**Qué pasó**: la página del administrador importaba `StepList` pero al escribir el contenido se optó por listas/tablas propias en lugar del componente. El import quedó sin usar y ESLint lo marcó como warning.
+
+**Fix**: eliminar el import.
+
+**Regla permanente**: al escribir páginas con contenido estático, importar los componentes solo cuando se van a usar efectivamente. No dejar imports "por si acaso".
+
+### #3 — Páginas de docs compiladas como `○ (Static)` — comportamiento deseable
+
+**Qué pasó** (positivo): las 6 rutas `/docs/*` aparecen como `○ (Static)` en el build output. Esto significa que Next.js las pre-renderiza en build time como HTML estático — la respuesta más rápida posible, sin pasar por el servidor en runtime.
+
+**Por qué ocurre**: los componentes de docs no usan `cookies()`, `headers()`, `unstable_cache` ni ninguna API dinámica. Son componentes puramente estáticos.
+
+**Implicación**: si en el futuro se agrega contenido condicional basado en sesión (ej: "ya estás logueado, ir al dashboard"), hay que asegurarse de que el componente siga siendo estático o marcarlo como `dynamic = "force-dynamic"`.
 
 ## Commits asociados
 
-_(A completar al cerrar el plan.)_
-
 | Hash | Descripción |
 |---|---|
-| _(pendiente)_ | _(pendiente)_ |
+| `19c07b2` | feat(docs): página pública de documentación /docs (Plan 11) |
