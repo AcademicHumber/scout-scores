@@ -123,6 +123,7 @@ POSTGRES_PASSWORD=GENERAR_CON_OPENSSL
 POSTGRES_DB=puntajes_scout
 DATABASE_URL=postgresql://scout:GENERAR_CON_OPENSSL@db:5432/puntajes_scout
 AUTH_SECRET=GENERAR_CON_OPENSSL_32BYTES
+AUTH_URL=https://tu-dominio.org
 AUTH_TRUST_HOST=true
 AUTH_GOOGLE_ID=DESDE_GOOGLE_CONSOLE
 AUTH_GOOGLE_SECRET=DESDE_GOOGLE_CONSOLE
@@ -223,6 +224,7 @@ sudo /srv/puntajes-scout/scripts/backup.sh --no-rotate
 | `app` se reinicia en loop | Falla healthcheck | `docker compose logs app` — buscar el error real. Verificar que `/api/health` esté en `PUBLIC_PATHS`. |
 | `migrate` falla con "Migration failed" | Schema drift entre repo y DB | `docker compose exec migrate pnpm prisma migrate status`. Resolver según el output. |
 | Login con Google da "Configuration error" | `AUTH_SECRET` faltante o muy corto | Regenerar con `openssl rand -base64 32`. Restart `app`. |
+| Sign-out o callback redirige a `0.0.0.0:3000` | `AUTH_URL` no definida en `.env.prod` | Agregar `AUTH_URL=https://tu-dominio.org` y hacer restart de `app`. |
 | `/resultados/[token]` redirige a /login | Token revocado o `/resultados` no en `PUBLIC_PATHS` | Verificar `auth.config.ts`. |
 | Disco lleno | Logs de Docker / dumps acumulados | `docker system prune -a`; revisar `RETENTION_COUNT` del backup. |
 | Build OOM en VPS pequeño | Memoria insuficiente para `next build` | Crear swapfile: `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile` |
