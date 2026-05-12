@@ -201,4 +201,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 9 completado** (Login con email y contraseña — `User.passwordHash`, `AuthAttempt` con lockout (5 intentos / 15 min), `bcryptjs` cost=10, `Credentials` provider en `auth.ts` (Edge-safe), `allowDangerousEmailAccountLinking` en Google para linkeo automático, `/registro` con auto-signIn, `/login` con form credenciales + Google en stack, `/perfil/seguridad` para establecer password, audit log `auth.password.set`. Seed: `admin@demo.local / demo1234`. 20 tests nuevos, 115 en total.)
 
-**Próximo: Plan 10** — Despliegue a producción (VPS, Docker Compose, Dockerfile multi-stage standalone, Caddy, migraciones en prod, backups pg_dump, monitoreo básico).
+**Plan 10 completado** (Despliegue a producción — `Dockerfile` multi-stage standalone con `NEXT_STANDALONE=true` env var, `docker-compose.prod.yml` con servicios `db/migrate/app/caddy`, `Caddyfile` con security headers + HTTPS automático Let's Encrypt, endpoint `/api/health` público, `scripts/backup.sh` y `restore.sh` con `pg_dump --format=custom`, `.github/workflows/ci.yml` con service container Postgres, guía operativa `docs/operaciones/01-deploy-vps.md`.)
+
+**Próximo: Capa 2 — Plan 10+ (padrón de miembros, inscripción, cartilla de progresión).**
