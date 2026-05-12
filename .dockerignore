@@ -1,7 +1,43 @@
-node_modules
+# Build artifacts
 .next
-.git
-.env*
-docs
+out
+build
+dist
+.turbo
+
+# Deps (se reinstalan en el container)
+node_modules
+.pnpm-store
+
+# Env y secretos (NUNCA en imagen)
+.env
+.env.*
+!.env.example
+
+# Generado por Prisma (se regenera en el container)
+src/generated
+
+# Local DB y volumenes
 postgres-data
-README.md
+.docker
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Git y CI
+.git
+.github
+.claude
+
+# Tests / coverage
+coverage
+.vitest
+
+# Documentación (no aporta a imagen)
+docs
+
+# Scripts de operación (corren en el host, no en el container)
+scripts

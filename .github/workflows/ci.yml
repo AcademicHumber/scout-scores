@@ -7,14 +7,38 @@ on:
     branches: [main]
 
 jobs:
-  verify:
+  validate:
+    name: typecheck + lint + test + build
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: scout
+          POSTGRES_PASSWORD: scout_ci_password
+          POSTGRES_DB: puntajes_scout_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scout -d puntajes_scout_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://scout:scout_ci_password@localhost:5432/puntajes_scout_ci
+      AUTH_SECRET: ci-secret-not-used-but-required-for-build
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      NEXT_STANDALONE: "true"
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 10.33.0
 
       - uses: actions/setup-node@v4
         with:
@@ -23,8 +47,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm lint
+      - name: Generate Prisma client
+        run: pnpm prisma generate
+
+      - name: Apply migrations to CI database
+        run: pnpm prisma migrate deploy
+
       - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
       - run: pnpm build
-        env:
-          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder

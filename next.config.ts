@@ -1,8 +1,24 @@
 import type { NextConfig } from "next"
 import withSerwist from "@serwist/next"
 
+// NEXT_STANDALONE=true se setea en Dockerfile y CI. En Windows, crear
+// symlinks para el standalone output requiere Developer Mode o Admin — omitir
+// en builds locales donde solo queremos verificar que compila.
+const standaloneConfig =
+  process.env.NEXT_STANDALONE === "true"
+    ? {
+        output: "standalone" as const,
+        // El cliente Prisma generado vive en src/generated/prisma. Next trace lo
+        // detecta como código de la app, pero sus archivos auxiliares (engine
+        // schema, runtime helpers) pueden no entrar en el trace. Forzar inclusión.
+        outputFileTracingIncludes: {
+          "/*": ["./src/generated/prisma/**/*"],
+        },
+      }
+    : {}
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  ...standaloneConfig,
 }
 
 // withSerwist injects webpack config even when disable:true, which triggers
