@@ -4,6 +4,10 @@ import withSerwist from "@serwist/next"
 // NEXT_STANDALONE=true se setea en Dockerfile y CI. En Windows, crear
 // symlinks para el standalone output requiere Developer Mode o Admin — omitir
 // en builds locales donde solo queremos verificar que compila.
+//
+// En el Docker build también se omiten typecheck y lint: el CI los corre por
+// separado. El VPS tiene poca RAM y el proceso TypeScript puede OOM durante
+// `next build` si se deja correr — el kernel lo mata sin mensaje de error claro.
 const standaloneConfig =
   process.env.NEXT_STANDALONE === "true"
     ? {
@@ -14,6 +18,9 @@ const standaloneConfig =
         outputFileTracingIncludes: {
           "/*": ["./src/generated/prisma/**/*"],
         },
+        // Typecheck y lint los corre el CI. Acá solo nos importa el bundle.
+        typescript: { ignoreBuildErrors: true },
+        eslint: { ignoreDuringBuilds: true },
       }
     : {}
 
