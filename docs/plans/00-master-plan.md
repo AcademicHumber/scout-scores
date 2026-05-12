@@ -89,7 +89,7 @@ Esta regla se respeta para todo sub-plan posterior (0b, 1, 2, ...).
 |---|---|
 | Lenguaje / Framework | Next.js 15 (App Router) + TypeScript — versión estable, evitamos el 16 recién salido |
 | ORM / DB | Prisma + PostgreSQL 16 |
-| Auth | Auth.js v5 con Google OAuth (único método) |
+| Auth | Auth.js v5 con Google OAuth + login con email/contraseña (Plan 9). Ambos métodos coexisten; el usuario puede vincular ambos a una misma cuenta. |
 | Hosting | VPS cloud económico (Hetzner / DigitalOcean / Oracle) |
 | Dominio | Propio (~$10/año) |
 | Empaquetado | Docker + Docker Compose |
@@ -211,9 +211,10 @@ Cada item es un plan independiente que se ejecutó en una sesión separada. La c
 | `07c-juez-client-components.md` | _(emergente)_ | ✓ | Páginas del juez migradas a Client Components hidratadas desde IDB; hook useJuezData; bump IDB v1→v2; readers del snapshot |
 | `07d-catch-all-spa-y-fixes-sw.md` | _(emergente)_ | ✓ | Catch-all SPA `/juez/[[...slug]]` con router cliente custom, plugin stripRscParam en SW, reload en primera activación |
 | `08-leaderboard-cierre-publicacion.md` | 6 + 7 + 8 _(colapsados)_ | ✓ | EventLeaderboardSnapshot + PublicShareLink, algoritmo de ranking con empates, vista admin tiempo real, vista pública `/resultados/[token]` con switch claro/oscuro, vistas autenticadas `/eventos`, redirect por rol |
-| `09-deploy-produccion.md` | 9 | _(pendiente)_ | VPS + Docker Compose producción con Caddy, Dockerfile multi-stage standalone, migraciones en prod, backups pg_dump a B2, monitoreo básico |
+| `09-auth-credentials.md` | _(emergente)_ | ✓ | Login con email + contraseña como alternativa a Google OAuth. `User.passwordHash`, `AuthAttempt` con lockout, páginas `/registro`, `/login` actualizado, `/perfil/seguridad` mínima. Sin verificación email ni reset (diferidos a Plan 10). |
+| `10-deploy-produccion.md` | 9 _(renumerado)_ | _(pendiente)_ | VPS + Docker Compose producción con Caddy, Dockerfile multi-stage standalone, migraciones en prod, backups pg_dump local, monitoreo básico. Originalmente Plan 9; pasó a 10 al intercalarse el plan de credentials. |
 
-**— Capa 2: Personas y progresión (post-MVP, después de Plan 9) —**
+**— Capa 2: Personas y progresión (post-MVP, después de Plan 10) —**
 
 Los números de la Capa 2 son tentativos y se confirmarán al planificar cada uno.
 
@@ -277,7 +278,7 @@ Estas convenciones se establecen en planes tempranos y deben respetarse en todos
 3. **Auth offline del juez**: la sesión debe sobrevivir sin red durante una jornada de evento. Documentar y probar en Plan 5b: el juez se loguea en casa con WiFi, llega a la posta sin red, y puede cargar puntajes durante varias horas.
 4. **Empate persistente**: si después de aplicar criterios `DESEMPATE` siguen empatados, el sistema muestra empate compartido (no inventa un orden). Confirmar UX en Plan 6.
 5. **Public links son perpetuos** salvo revocación explícita. Implementar revocación desde el inicio en Plan 7.
-6. **Backup remoto**: nunca dejar el VPS como única copia. Plan 9 incluye backup diario a Backblaze B2 (~$0.005/GB/mes).
+6. **Backup remoto**: nunca dejar el VPS como única copia. Plan 10 incluye backup diario al filesystem del VPS; off-VPS (Backblaze B2 ~$0.005/GB/mes) queda como Plan 10b.
 7. **Expansión a Capa 2 sin perder velocidad en Capa 1**: la tentación de modelar inscripción/progresión antes de tener scoring en producción es un anti-patrón. `MiembroScout` se introduce como stub mínimo en 0b para mantener opciones abiertas. Los planes 12–13 (inscripción, progresión) requieren validación con un distrito real antes de codear — diseñarlos sin usuarios reales produce modelos erróneos.
 8. **Decisiones diferidas explícitas** (no se incluyen en este roadmap, abrirán nuevos planes si se piden):
    - Evidencia fotográfica en planillas (requiere storage de blobs)

@@ -21,7 +21,10 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [07c — Vista del juez como Client Components hidratados desde IDB](plans/07c-juez-client-components.md) ✓
 - [07d — Catch-all SPA para `/juez/**` + fixes de SW caching offline](plans/07d-catch-all-spa-y-fixes-sw.md) ✓
 - [08 — Leaderboard, cierre de evento y vistas públicas](plans/08-leaderboard-cierre-publicacion.md) ✓
-- 09 — Despliegue a producción + hardening _(pendiente)_
+- [09 — Login con email y contraseña (alternativa a Google)](plans/09-auth-credentials.md) ✓
+- [10 — Despliegue a producción + hardening](plans/10-deploy-produccion.md) _(pendiente)_
+
+> **Renumeración**: el deploy estaba previsto inicialmente como Plan 9. Tras intercalar el Plan 9 (login propio), el deploy pasó a Plan 10. Las referencias a "Plan 9" en los planes históricos 01–08 reflejan el estado del proyecto en el momento en que se escribieron y se mantienen como artefacto educativo.
 
 ## Planes — Capa 2: Personas y progresión (post-MVP)
 

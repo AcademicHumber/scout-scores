@@ -4,7 +4,7 @@ Sistema web multi-tenant para registrar y publicar puntajes de eventos competiti
 
 ## Stack
 
-Next.js 15 (App Router) + TypeScript strict + Tailwind v4 + Prisma 7 + PostgreSQL 16. Self-hosted con Docker. Auth.js v5 con Google OAuth. Despliegue en VPS con Caddy (Plan 9, pendiente).
+Next.js 15 (App Router) + TypeScript strict + Tailwind v4 + Prisma 7 + PostgreSQL 16. Self-hosted con Docker. Auth.js v5 con Google OAuth + login con email/contraseña. Despliegue en VPS con Caddy (Plan 10, pendiente).
 
 ## Cómo levantar el entorno de desarrollo
 
@@ -56,13 +56,13 @@ pnpm db:reset      # reiniciar DB y volver a aplicar migraciones + seed
 ## Qué funciona hoy
 
 - **Multi-tenant**: cada Distrito Scout es un tenant aislado. Roles: `ADMIN | JUEZ | ESPECTADOR | JEFE_PATRULLA`.
-- **Auth**: login con Google OAuth, onboarding de nuevo distrito, invitaciones por email con deep link.
+- **Auth**: login con Google OAuth o email/contraseña propios, onboarding de nuevo distrito, invitaciones por email con deep link. Seed demo: `admin@demo.local / demo1234`.
 - **Grupos scouts y miembros**: CRUD de grupos, gestión de memberships, perfil del distrito.
 - **Plantillas de puntaje**: biblioteca de plantillas con modos `CRITERIOS` y `PUNTAJE_UNICO`, criterios `PUNTUABLE` y `DESEMPATE`, escalas discretas.
 - **Eventos**: ciclo de vida `BORRADOR → ACTIVO → CERRADO → PUBLICADO`, actividades con peso porcentual (suma 100%), patrullas por evento.
 - **Postas**: biblioteca reutilizable del distrito (`/admin/postas`) con descripción, duración, materiales y plantilla fija. Se asignan a actividades de eventos vía dialog; cada asignación tiene su propio juez, encargado y ayudantes. Historial de eventos por posta. Validación de unicidad por evento.
 
-**Próximo:** scoring real — carga de planillas por el juez (Plan 7a).
+**Próximo:** despliegue a producción (Plan 10) — VPS, Docker Compose, Dockerfile multi-stage, Caddy, backups.
 
 ## Documentación
 
