@@ -1,4 +1,4 @@
-import NextAuth from "next-auth"
+import NextAuth, { AuthError } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
@@ -17,6 +17,14 @@ import {
   isLocked,
 } from "@/repositories/auth.repo"
 
+// Usado para señalar lockout: Auth.js redirige a /login?error=AccessDenied,
+// que el cliente mapea al mensaje "Demasiados intentos fallidos...".
+// Extiende AuthError para que isClientError() lo reconozca como safe-to-expose.
+class AccountLocked extends AuthError {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static type = "AccessDenied" as any
+}
+
 const credentialsProvider = Credentials({
   name: "Credenciales",
   credentials: {
@@ -30,17 +38,19 @@ const credentialsProvider = Credentials({
     const email = normalizeEmail(parsed.data.email)
     const password = parsed.data.password
 
-    if (await isLocked(email)) return null
+    if (await isLocked(email)) throw new AccountLocked()
 
     const user = await findUserByEmailRaw(email)
     if (!user?.passwordHash) {
-      await recordFailedAttempt(email)
+      const { locked } = await recordFailedAttempt(email)
+      if (locked) throw new AccountLocked()
       return null
     }
 
     const ok = await verifyPassword(password, user.passwordHash)
     if (!ok) {
-      await recordFailedAttempt(email)
+      const { locked } = await recordFailedAttempt(email)
+      if (locked) throw new AccountLocked()
       return null
     }
 
@@ -65,8 +75,17 @@ export const { auth, handlers, signIn, signOut, unstable_update } = NextAuth({
     maxAge: 7 * 24 * 60 * 60,
   },
   adapter: PrismaAdapter(prisma),
+  // Suprimir logs de errores esperados de auth (fallos de usuario, no bugs de la app).
+  // CredentialsSignin = password incorrecto; AccessDenied = cuenta bloqueada.
+  logger: {
+    error(error) {
+      const isExpectedAuthFailure =
+        error instanceof AuthError &&
+        (error.type === "CredentialsSignin" || error.type === "AccessDenied")
+      if (!isExpectedAuthFailure) console.error("[auth][error]", error)
+    },
+  },
   callbacks: {
-
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id!
