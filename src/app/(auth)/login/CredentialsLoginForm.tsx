@@ -39,6 +39,7 @@ export function CredentialsLoginForm() {
     })
   }
 
+  const isLocked = errorCode === "AccessDenied"
   const errorMsg = getErrorMessage(errorCode)
 
   return (
@@ -54,7 +55,8 @@ export function CredentialsLoginForm() {
             type="email"
             autoComplete="email"
             required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+            disabled={isLocked}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -64,6 +66,7 @@ export function CredentialsLoginForm() {
           label={m.passwordLabel}
           autoComplete="current-password"
           required
+          disabled={isLocked}
         />
 
         {errorMsg && (
@@ -74,8 +77,8 @@ export function CredentialsLoginForm() {
 
         <button
           type="submit"
-          disabled={isPending}
-          className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand/90 disabled:opacity-60 transition-colors"
+          disabled={isPending || isLocked}
+          className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
         >
           {isPending ? "Ingresando..." : m.submitButton}
         </button>
