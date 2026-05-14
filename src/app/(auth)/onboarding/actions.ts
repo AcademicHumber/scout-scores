@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/db"
 import { unstable_update } from "@/auth"
 import { redirect } from "next/navigation"
+import { revalidateTag } from "next/cache"
+import { cacheTags } from "@/repositories/cache-tags"
 
 export type ActionState = { error: string } | null
 
@@ -63,6 +65,55 @@ export async function createDistrito(
     throw err
   }
 
+  await unstable_update({ refreshMemberships: true })
+  redirect("/dashboard")
+}
+
+const unirseSchema = z.object({ organizationId: z.string().min(1) })
+
+export async function unirseComoEspectador(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser()
+  const parsed = unirseSchema.safeParse({ organizationId: formData.get("organizationId") })
+  if (!parsed.success) return { error: "ORG_REQUERIDA" }
+
+  const { organizationId } = parsed.data
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const org = await tx.organization.findUnique({ where: { id: organizationId } })
+      if (!org) throw new Error("ORG_NO_ENCONTRADA")
+
+      const existing = await tx.membership.findUnique({
+        where: { userId_organizationId: { userId: user.id, organizationId } },
+      })
+      if (existing) return
+
+      const membership = await tx.membership.create({
+        data: { userId: user.id, organizationId, role: "ESPECTADOR" },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          organizationId,
+          actorUserId: user.id,
+          action: "membership.created",
+          targetType: "Membership",
+          targetId: membership.id,
+          metadata: { role: "ESPECTADOR", via: "onboarding.espectador" },
+        },
+      })
+    })
+  } catch (err) {
+    if (err instanceof Error && err.message === "ORG_NO_ENCONTRADA") {
+      return { error: "ORG_NO_ENCONTRADA" }
+    }
+    throw err
+  }
+
+  revalidateTag(cacheTags.memberships(organizationId))
   await unstable_update({ refreshMemberships: true })
   redirect("/dashboard")
 }
