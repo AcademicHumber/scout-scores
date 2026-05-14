@@ -4,13 +4,13 @@ import { usePathname } from "next/navigation"
 import messages from "@/messages/es.json"
 
 const nav = [
-  { href: "/admin/distrito", label: messages.admin.nav.distrito },
-  { href: "/admin/grupos", label: messages.admin.nav.grupos },
-  { href: "/admin/invitaciones", label: messages.admin.nav.invitaciones },
-  { href: "/admin/miembros", label: messages.admin.nav.miembros },
-  { href: "/admin/plantillas", label: messages.admin.nav.plantillas },
-  { href: "/admin/postas", label: messages.admin.nav.postas },
   { href: "/admin/eventos", label: messages.admin.nav.eventos },
+  { href: "/admin/postas", label: messages.admin.nav.postas },
+  { href: "/admin/plantillas", label: messages.admin.nav.plantillas },
+  { href: "/admin/miembros", label: messages.admin.nav.miembros },
+  { href: "/admin/invitaciones", label: messages.admin.nav.invitaciones },
+  { href: "/admin/grupos", label: messages.admin.nav.grupos },
+  { href: "/admin/distrito", label: messages.admin.nav.distrito },
 ]
 
 export function AdminNav() {
