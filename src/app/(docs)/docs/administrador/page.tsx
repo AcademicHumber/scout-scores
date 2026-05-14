@@ -42,9 +42,14 @@ export default function AdminPage() {
         Este paso es único — una vez creado, el distrito es tu espacio de trabajo.
       </p>
       <Callout type="tip">
-        El nombre del distrito aparece en el header de la app y en la vista pública de resultados.
-        Usá el nombre oficial del distrito scout.
+        El nombre del distrito aparece en la vista pública de resultados. Usá el nombre oficial del distrito scout.
       </Callout>
+      <p className="mt-3 text-sm text-gray-600">
+        Para navegar entre las secciones del panel, usá la barra de pestañas que aparece debajo del encabezado
+        (Distrito, Grupos, Invitaciones, Miembros, Plantillas, Postas, Eventos).
+        En celular, si no ves el encabezado del panel, tocá el ícono <strong>≡</strong> en la esquina
+        superior derecha para abrir el menú y seleccionar <strong>Administración</strong>.
+      </p>
 
       {/* Section 2 */}
       <SectionHeader number={2} title="Invitar al equipo" />

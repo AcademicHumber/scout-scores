@@ -108,7 +108,7 @@ export default function JuezPage() {
       <ul className="mb-4 space-y-2 text-sm text-gray-600">
         {[
           "Tus cambios se guardan automáticamente en el dispositivo.",
-          "Un badge (⇅) en la esquina de la pantalla muestra cuántas operaciones están pendientes de enviar.",
+          "Un indicador en el encabezado muestra cuántas operaciones están pendientes de enviar.",
           "Cuando volvés a tener señal, los puntajes se sincronizan solos en segundos.",
         ].map((item) => (
           <li key={item} className="flex gap-2">
