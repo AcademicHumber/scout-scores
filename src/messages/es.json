@@ -62,6 +62,15 @@
     "onboarding": {
       "title": "Bienvenido a Puntajes Scout",
       "subtitle": "Para empezar, elegí una opción:",
+      "selectDistrito": {
+        "title": "Elegí tu distrito",
+        "subtitle": "Uníte como espectador para ver los resultados de los eventos de tu grupo scout.",
+        "joinButton": "Unirme como espectador",
+        "joining": "Uniéndome...",
+        "empty": "No hay distritos registrados todavía.",
+        "emptyHint": "Si sos administrador de un grupo scout, el equipo técnico te dará acceso para configurar el sistema.",
+        "hasCode": "¿Tenés un código de invitación del administrador?"
+      },
       "createDistrito": {
         "title": "Crear nuevo Distrito",
         "description": "Si sos admin de un distrito que aún no está en el sistema",
@@ -78,7 +87,9 @@
       "errors": {
         "slugTaken": "Ese identificador ya está en uso",
         "invitacionInvalida": "El código no es válido o expiró",
-        "emailNoCoincide": "Esa invitación es para otro email"
+        "emailNoCoincide": "Esa invitación es para otro email",
+        "orgNoEncontrada": "El distrito seleccionado ya no existe.",
+        "orgRequerida": "Seleccioná un distrito."
       }
     },
     "header": {
@@ -483,6 +494,7 @@
       "pendientesPlural": "{{count}} pendientes",
       "sincronizando": "Sincronizando…",
       "conflicto": "Conflicto",
+      "ver": "Ver",
       "reintentar": "Sincronizar",
       "toastGuardadoOffline": "Guardado en este dispositivo. Se enviará al volver online.",
       "toastEnviado": "Enviado y sincronizado."

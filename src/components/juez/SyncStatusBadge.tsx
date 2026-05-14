@@ -3,10 +3,16 @@
 import { useSyncEngine } from "@/lib/offline/sync-engine"
 import messages from "@/messages/es.json"
 
-const t = messages.juez.sync
+const t = messages.juez.sync as typeof messages.juez.sync & { ver: string }
 
 function pluralize(count: number, singular: string, plural: string) {
   return count === 1 ? singular : plural
+}
+
+// Full navigation requerida: SyncStatusBadge está fuera de JuezRouterProvider.
+// El SW sirve la shell cacheada y CatchAllRouter inicializa desde window.location.pathname.
+function goToPendientes() {
+  window.location.href = "/juez/pendientes"
 }
 
 type Props = {
@@ -53,23 +59,40 @@ export function SyncStatusBadge({ userId, organizationId }: Props) {
 
   if (status === "conflict") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-200">
+      <button
+        type="button"
+        onClick={goToPendientes}
+        className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-200 hover:bg-red-500/30 transition-colors"
+      >
         <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
         {t.conflicto}
-      </span>
+        <span className="ml-1 opacity-70">· {t.ver}</span>
+      </button>
     )
   }
 
   // online con pendientes
   return (
-    <button
-      type="button"
-      onClick={() => syncNow()}
-      className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-200 hover:bg-amber-500/30 transition-colors"
-    >
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-      {pluralize(pendingCount, t.pendientes.replace("{{count}}", "1"), t.pendientesPlural.replace("{{count}}", String(pendingCount)))}
-      <span className="ml-1 opacity-70">· {t.reintentar}</span>
-    </button>
+    <div className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => syncNow()}
+        className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-200 hover:bg-amber-500/30 transition-colors"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+        {pluralize(pendingCount, t.pendientes.replace("{{count}}", "1"), t.pendientesPlural.replace("{{count}}", String(pendingCount)))}
+        <span className="ml-1 opacity-70">· {t.reintentar}</span>
+      </button>
+      <button
+        type="button"
+        onClick={goToPendientes}
+        title="Ver operaciones pendientes"
+        className="inline-flex items-center justify-center rounded-full bg-white/10 p-1.5 text-white/60 hover:bg-white/20 hover:text-white/80 transition-colors"
+      >
+        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+      </button>
+    </div>
   )
 }

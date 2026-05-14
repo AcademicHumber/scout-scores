@@ -114,4 +114,21 @@ export async function discardConflict(clientOpId: string): Promise<void> {
   await deletePendingOp(clientOpId)
 }
 
+// Descarta cualquier op pendiente sin importar su estado.
+export async function discardPendingOp(clientOpId: string): Promise<void> {
+  await deletePendingOp(clientOpId)
+}
+
+// Devuelve todas las ops activas (pending, syncing, conflict) ordenadas por createdAt.
+export async function getAllActivePendingOps(): Promise<PendingOp[]> {
+  const [pending, syncing, conflict] = await Promise.all([
+    getPendingOpsByStatus("pending"),
+    getPendingOpsByStatus("syncing"),
+    getPendingOpsByStatus("conflict"),
+  ])
+  return [...pending, ...syncing, ...conflict].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  )
+}
+
 export { getPendingOpsByStatus, deletePendingOp, updatePendingOp }

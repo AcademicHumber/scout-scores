@@ -6,6 +6,7 @@ import { EventosListView } from "@/components/juez/views/EventosListView"
 import { PostasView } from "@/components/juez/views/PostasView"
 import { PatrullasView } from "@/components/juez/views/PatrullasView"
 import { ScoringView } from "@/components/juez/views/ScoringView"
+import { PendingOpsView } from "@/components/juez/views/PendingOpsView"
 
 function RootSkeleton() {
   return (
@@ -60,6 +61,8 @@ function CatchAllRouter() {
   if (scoringMatch) {
     return <ScoringView asignacionId={scoringMatch[1]} patrullaId={scoringMatch[2]} />
   }
+
+  if (pathname === "/juez/pendientes") return <PendingOpsView />
 
   return <NotFoundView />
 }

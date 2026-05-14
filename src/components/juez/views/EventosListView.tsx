@@ -102,6 +102,15 @@ export function EventosListView() {
       )}
 
       {state.status === "ready" && <EventosList eventos={state.data} />}
+
+      <div className="mt-8 text-center">
+        <JuezLink
+          href="/juez/pendientes"
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          Ver operaciones pendientes
+        </JuezLink>
+      </div>
     </div>
   )
 }
