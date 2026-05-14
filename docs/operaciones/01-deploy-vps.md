@@ -228,6 +228,7 @@ sudo /srv/puntajes-scout/scripts/backup.sh --no-rotate
 | `/resultados/[token]` redirige a /login | Token revocado o `/resultados` no en `PUBLIC_PATHS` | Verificar `auth.config.ts`. |
 | Disco lleno | Logs de Docker / dumps acumulados | `docker system prune -a`; revisar `RETENTION_COUNT` del backup. |
 | Build OOM en VPS pequeño | Memoria insuficiente para `next build` | Crear swapfile: `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile` |
+| CD falla con `cannot open '.git/FETCH_HEAD': Permission denied` | El `git clone` inicial se hizo como `root` u otro usuario distinto al `VPS_USER` del secret | En el VPS: `sudo chown -R <VPS_USER>:<VPS_USER> /srv/puntajes-scout`. La sección 6 ya evita esto con `sudo chown $USER:$USER` antes del clone. |
 | `app` unhealthy en startup | `start_period` muy corto | Ampliar a `start_period: 60s` en `docker-compose.prod.yml`. |
 
 ### Verificar estado del sistema
