@@ -120,7 +120,7 @@ export function PostaDetailForm({ posta, templates }: Props) {
             onChange={(e) => setDuracionMinutos(e.target.value)}
             min={1}
             max={480}
-            className="w-32 rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full sm:w-32 rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
 
@@ -147,7 +147,7 @@ export function PostaDetailForm({ posta, templates }: Props) {
           <label className="mb-2 block text-sm font-medium text-gray-700">{m.fields.materiales}</label>
           <div className="space-y-2">
             {materiales.map((mat, idx) => (
-              <div key={idx} className="flex gap-2">
+              <div key={idx} className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
                 <input
                   value={mat.nombre}
                   onChange={(e) => updateMaterial(idx, "nombre", e.target.value)}
@@ -155,15 +155,17 @@ export function PostaDetailForm({ posta, templates }: Props) {
                   maxLength={100}
                   className="flex-1 rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
                 />
-                <input
-                  value={mat.cantidad ?? ""}
-                  onChange={(e) => updateMaterial(idx, "cantidad", e.target.value)}
-                  placeholder={m.fields.materialCantidad}
-                  maxLength={50}
-                  className="w-40 rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                />
-                <button type="button" onClick={() => removeMaterial(idx)}
-                  className="rounded px-2 text-red-400 hover:bg-red-50">✕</button>
+                <div className="flex gap-2">
+                  <input
+                    value={mat.cantidad ?? ""}
+                    onChange={(e) => updateMaterial(idx, "cantidad", e.target.value)}
+                    placeholder={m.fields.materialCantidad}
+                    maxLength={50}
+                    className="flex-1 sm:w-40 rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+                  />
+                  <button type="button" onClick={() => removeMaterial(idx)}
+                    className="shrink-0 rounded px-2 text-red-400 hover:bg-red-50">✕</button>
+                </div>
               </div>
             ))}
             <button type="button" onClick={addMaterial} className="text-sm text-brand hover:underline">

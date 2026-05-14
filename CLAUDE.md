@@ -141,6 +141,12 @@ El scoring: criterios `PUNTUABLE` suman al total; criterios `DESEMPATE` (ej: esp
 
 41. **Al agregar un `unstable_cache` con tag nuevo, auditar todas las mutaciones relacionadas**: el compilador no detecta que una mutación omitió un `revalidateTag`. Al crear un nuevo cache con un tag (ej: `leaderboard:orgId`), revisar todos los repos que escriben los datos que ese cache lee y agregar el `revalidateTag` correspondiente. Una mutación que solo invalida `scoreSheets:orgId` pero no `leaderboard:orgId` deja el leaderboard stale aunque la DB cambió. (Ver Plan 8 lección #8).
 
+42. **En layouts de card con dos acciones, usar dos `<form>` hermanas, no anidadas**: cuando una row/card tiene una action de "guardar" y otra de "quitar" en el mismo bloque visual, nunca anidar un `<form>` dentro de otro — es HTML inválido (browsers ignoran la form interna). El patrón correcto: los selects/inputs son controlados puros (sin `name`); la update form lleva hidden inputs con los valores del state; la remove form es una `<form>` hermana. Ambas forms pueden estar side-by-side en un div flex. (Ver Plan 12 lección #1).
+
+43. **Menú hamburger: Server Component pasa datos de usuario a Client Component `MobileMenu`**: el `AppHeader` (Server Component async) fetcha el usuario y pasa `name`, `email`, `image`, `isAdmin`, `isJuez` como props al Client Component `MobileMenu`. El drawer usa `translate-x-full` / `translate-x-0` siempre renderizado para que la animación de salida funcione. La prop `alwaysVisible` elimina `sm:hidden` del botón para contextos donde el drawer debe mostrarse en cualquier tamaño (ej: layout del juez).
+
+44. **`<select>` deshabilitado en Server Component → Client Component con `useSearchParams`**: cuando un filtro `<select>` vive en una página `async` (Server Component), no puede tener `onChange`. La solución es un pequeño Client Component que recibe `value` y `options` como props, y en `onChange` llama `router.push` con `new URLSearchParams(searchParams.toString())` — preservando los demás filtros activos en la URL. No usar `disabled` como placeholder: o se implementa o se elimina el control.
+
 ## Documentación
 
 Toda la planificación vive en `docs/` versionada con git:
@@ -159,6 +165,7 @@ Toda la planificación vive en `docs/` versionada con git:
 - `docs/plans/07c-juez-client-components.md` — Plan 7c, ya ejecutado (páginas del juez como Client Components hidratadas desde IDB, bump IDB v1→v2, readers del snapshot, hook useJuezData, sesión inicial al SessionProvider)
 - `docs/plans/07d-catch-all-spa-y-fixes-sw.md` — Plan 7d, ya ejecutado (catch-all SPA `/juez/[[...slug]]/page.tsx` con router cliente custom + fix `_rsc` cache buster + fix primer-navegación reload + skip `/dashboard` para jueces)
 - `docs/plans/08-leaderboard-cierre-publicacion.md` — Plan 8, ya ejecutado (leaderboard, snapshot, PublicShareLink, vista pública `/resultados/[token]`, vistas autenticadas `/eventos`, switch claro/oscuro)
+- `docs/plans/12-mobile-admin-ui.md` — Plan 12, ya ejecutado (correcciones mobile admin: AppHeader colapsa en mobile, MembershipRow → cards, InvitationTable → cards, overflow-x-auto en grupos, postas forms responsive)
 - `docs/adr/0001-arquitectura-en-capas.md` — decisión de arquitectura en dos capas y separación `MiembroScout` / `User`
 - `docs/adr/0002-repository-layer.md` — decisión de capa de repositorios con `unstable_cache` y `revalidateTag`
 - `docs/adr/0003-jerarquia-evento-actividad-posta.md` — cambio de jerarquía respecto al master plan original
@@ -204,5 +211,7 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 **Plan 10 completado** (Despliegue a producción — `Dockerfile` multi-stage standalone con `NEXT_STANDALONE=true` env var, `docker-compose.prod.yml` con servicios `db/migrate/app/caddy`, `Caddyfile` con security headers + HTTPS automático Let's Encrypt, endpoint `/api/health` público, `scripts/backup.sh` y `restore.sh` con `pg_dump --format=custom`, `.github/workflows/ci.yml` con service container Postgres, guía operativa `docs/operaciones/01-deploy-vps.md`.)
 
 **Plan 11 completado** (Documentación pública — ruta `/docs` estática pública, 6 páginas (home + administrador + juez + jefe-patrulla + espectador + resultados-públicos), estética "Scout Field Manual", route group `(docs)` con `DocsShell` + `DocsSidebar` off-canvas mobile, componentes `StepList`/`Callout`/`RoleCard`.)
+
+**Plan 12 completado** (Mobile UI admin — `MobileMenu.tsx` Client Component con drawer lateral animado reemplaza la navegación mobile del `AppHeader`; prop `alwaysVisible` para el layout del juez (solo admins); `AdminNav` pills con borde y degradado de scroll; `MembershipRow` tabla → cards con dos `<form>` hermanas; `InvitationTable` → cards; `overflow-x-auto` en grupos; formularios de postas responsive; dashboard con cards de navegación para admins; `← Plantillas` en página nueva; `CategoriaSelect` Client Component activa el filtro que estaba `disabled`.)
 
 **Próximo: Capa 2 — Padrón de miembros, inscripción, cartilla de progresión.**

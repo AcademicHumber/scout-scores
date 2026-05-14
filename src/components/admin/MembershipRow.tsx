@@ -65,60 +65,71 @@ export function MembershipRow({ membership, grupos, currentUserId }: Props) {
   }
 
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          {membership.user.image && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={membership.user.image}
-              alt=""
-              className="h-8 w-8 rounded-full"
-            />
-          )}
-          <div>
-            <p className="font-medium text-gray-900">
-              {membership.user.name ?? "—"}
-              {isCurrentUser && (
-                <span className="ml-2 rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand">
-                  Vos
-                </span>
-              )}
-            </p>
-            <p className="text-xs text-gray-500">{membership.user.email}</p>
-          </div>
+    <div className={`p-4${isCurrentUser ? " border-l-4 border-brand" : ""}`}>
+      {/* Avatar + nombre */}
+      <div className="flex items-center gap-3 mb-4">
+        {membership.user.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={membership.user.image}
+            alt=""
+            className="h-10 w-10 shrink-0 rounded-full"
+          />
+        )}
+        <div className="min-w-0">
+          <p className="font-medium text-gray-900 truncate">
+            {membership.user.name ?? "—"}
+            {isCurrentUser && (
+              <span className="ml-2 rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand">
+                Vos
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-gray-500 truncate">{membership.user.email}</p>
         </div>
-      </td>
+      </div>
 
-      <td className="px-4 py-3">
-        <form action={updateAction} className="flex items-center gap-2">
-          <input type="hidden" name="membershipId" value={membership.id} />
+      {/* Selects — controlled inputs that drive state; not inside any form */}
+      <div className="space-y-3 mb-4">
+        <div>
+          <p className="mb-1 text-xs font-medium text-gray-500">{messages.admin.miembros.columns.role}</p>
           <select
-            name="role"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1 text-sm focus:border-brand focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand focus:outline-none"
           >
             {ROLES.map((r) => (
               <option key={r.value} value={r.value}>{r.label}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs font-medium text-gray-500">{messages.admin.miembros.columns.grupo}</p>
           <select
-            name="grupoScoutId"
             value={grupoScoutId}
             onChange={(e) => setGrupoScoutId(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1 text-sm focus:border-brand focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand focus:outline-none"
           >
             <option value="">Sin grupo</option>
             {grupos.map((g) => (
               <option key={g.id} value={g.id}>{g.nombre}</option>
             ))}
           </select>
+        </div>
+      </div>
+
+      {/* Action row: two sibling forms side by side */}
+      <div className="flex items-center justify-between gap-2">
+        <form action={updateAction} className="flex items-center gap-2">
+          <input type="hidden" name="membershipId" value={membership.id} />
+          <input type="hidden" name="role" value={role} />
+          <input type="hidden" name="grupoScoutId" value={grupoScoutId} />
           {isDirty && (
             <button
               type="submit"
               disabled={updatePending}
-              className="rounded bg-brand px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
             >
               {updatePending ? "..." : messages.admin.miembros.save}
             </button>
@@ -130,13 +141,11 @@ export function MembershipRow({ membership, grupos, currentUserId }: Props) {
             <span className="text-xs text-green-600">{messages.admin.miembros.saved}</span>
           )}
         </form>
-      </td>
 
-      <td className="px-4 py-3 text-right">
-        <form action={removeAction} onSubmit={handleRemove} className="inline">
+        <form action={removeAction} onSubmit={handleRemove} className="flex items-center gap-2">
           <input type="hidden" name="id" value={membership.id} />
           {removeState?.error && (
-            <span className="mr-2 text-xs text-red-600">{removeState.error}</span>
+            <span className="text-xs text-red-600">{removeState.error}</span>
           )}
           <button
             type="submit"
@@ -146,7 +155,7 @@ export function MembershipRow({ membership, grupos, currentUserId }: Props) {
             {removePending ? "..." : messages.admin.miembros.remove}
           </button>
         </form>
-      </td>
-    </tr>
+      </div>
+    </div>
   )
 }

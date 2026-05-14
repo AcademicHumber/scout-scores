@@ -18,20 +18,24 @@ export function AdminNav() {
   return (
     <nav className="border-b bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-6 overflow-x-auto py-3">
-          {nav.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`whitespace-nowrap text-sm font-medium transition-colors ${
-                pathname.startsWith(href)
-                  ? "border-b-2 border-brand pb-1 text-brand"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
+        <div className="relative">
+          <div className="flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {nav.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                  pathname.startsWith(href)
+                    ? "bg-brand text-white"
+                    : "border border-gray-200 text-gray-600 hover:border-brand/40 hover:bg-brand/5 hover:text-brand"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+          {/* Fade hint that content scrolls */}
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-white" />
         </div>
       </div>
     </nav>

@@ -51,15 +51,15 @@ export default async function InvitacionesPage() {
       <NewInvitationForm grupos={grupos} appUrl={appUrl} />
 
       <Section title={messages.admin.invitaciones.sections.pending} count={pending.length}>
-        <InvitationTable invitations={pending} showRevoke />
+        <InvitationList invitations={pending} showRevoke />
       </Section>
 
       <Section title={messages.admin.invitaciones.sections.accepted} count={accepted.length}>
-        <InvitationTable invitations={accepted} />
+        <InvitationList invitations={accepted} />
       </Section>
 
       <Section title={messages.admin.invitaciones.sections.expired} count={rest.length}>
-        <InvitationTable invitations={rest} />
+        <InvitationList invitations={rest} />
       </Section>
     </div>
   )
@@ -88,7 +88,7 @@ function Section({
   )
 }
 
-function InvitationTable({
+function InvitationList({
   invitations,
   showRevoke,
 }: {
@@ -96,49 +96,35 @@ function InvitationTable({
   showRevoke?: boolean
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-left">
-          <tr>
-            <th className="px-4 py-3 font-medium text-gray-700">Email</th>
-            <th className="px-4 py-3 font-medium text-gray-700">Rol</th>
-            <th className="px-4 py-3 font-medium text-gray-700">Grupo</th>
-            <th className="px-4 py-3 font-medium text-gray-700">Estado</th>
-            <th className="px-4 py-3 font-medium text-gray-700">Expira</th>
-            {showRevoke && <th className="px-4 py-3"></th>}
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {invitations.map((inv) => (
-            <tr key={inv.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-gray-900">{inv.email}</td>
-              <td className="px-4 py-3 text-gray-600">{ROLE_LABELS[inv.role] ?? inv.role}</td>
-              <td className="px-4 py-3 text-gray-500">{inv.grupoScout?.nombre ?? "—"}</td>
-              <td className="px-4 py-3">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    inv.status === "PENDING"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : inv.status === "ACCEPTED"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {STATUS_LABELS[inv.status] ?? inv.status}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-xs text-gray-500">
-                {inv.expiresAt.toLocaleDateString("es-AR")}
-              </td>
-              {showRevoke && (
-                <td className="px-4 py-3 text-right">
-                  <RevokeButton id={inv.id} email={inv.email} />
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="divide-y overflow-hidden rounded-xl border bg-white shadow-sm">
+      {invitations.map((inv) => (
+        <div key={inv.id} className="px-4 py-3">
+          <div className="flex items-start justify-between gap-2">
+            <span className="truncate text-sm font-medium text-gray-900">{inv.email}</span>
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                inv.status === "PENDING"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : inv.status === "ACCEPTED"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {STATUS_LABELS[inv.status] ?? inv.status}
+            </span>
+          </div>
+          <p className="mt-0.5 text-sm text-gray-500">
+            {ROLE_LABELS[inv.role] ?? inv.role}
+            {inv.grupoScout ? ` · ${inv.grupoScout.nombre}` : ""}
+          </p>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-gray-400">
+              Expira {inv.expiresAt.toLocaleDateString("es-AR")}
+            </span>
+            {showRevoke && <RevokeButton id={inv.id} email={inv.email} />}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

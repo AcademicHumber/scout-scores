@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth-helpers"
 import { DistrictSwitcher } from "./DistrictSwitcher"
 import { SignOutButton } from "./SignOutButton"
+import { MobileMenu } from "./MobileMenu"
 import Link from "next/link"
 import messages from "@/messages/es.json"
 
@@ -13,13 +14,15 @@ export async function AppHeader() {
     <header className="bg-brand">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
+
+          {/* Left: brand + district switcher + desktop nav links */}
+          <div className="flex items-center gap-3">
             <span className="font-semibold text-white">Puntajes Scout</span>
             {user && <DistrictSwitcher />}
             {isAdmin && (
               <Link
                 href="/admin"
-                className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+                className="hidden sm:block rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
               >
                 {messages.auth.header.admin}
               </Link>
@@ -27,7 +30,7 @@ export async function AppHeader() {
             {isJuez && (
               <Link
                 href="/juez/eventos"
-                className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+                className="hidden sm:block rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
               >
                 {messages.auth.header.juez}
               </Link>
@@ -35,17 +38,18 @@ export async function AppHeader() {
             {user && (
               <Link
                 href="/eventos"
-                className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+                className="hidden sm:block rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
               >
                 Eventos
               </Link>
             )}
           </div>
 
+          {/* Right: desktop profile + logout / mobile hamburger */}
           <div className="flex items-center gap-3">
             <Link
               href="/perfil/seguridad"
-              className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-white/10 transition-colors"
+              className="hidden sm:flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-white/10 transition-colors"
             >
               {user?.image && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -59,9 +63,19 @@ export async function AppHeader() {
             </Link>
             <SignOutButton
               label={messages.auth.header.logout}
-              className="rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
+              className="hidden sm:block rounded-lg border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition-colors"
             />
+            {user && (
+              <MobileMenu
+                name={user.name ?? null}
+                email={user.email}
+                image={user.image ?? null}
+                isAdmin={isAdmin}
+                isJuez={isJuez}
+              />
+            )}
           </div>
+
         </div>
       </div>
     </header>

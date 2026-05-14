@@ -35,9 +35,32 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 text-gray-500 text-sm">
-        El dashboard de eventos llegará en el Plan 2.
-      </div>
+      {user?.activeRole === "ADMIN" && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/admin"
+            className="rounded-xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <p className="text-sm font-medium text-gray-500">Panel</p>
+            <p className="mt-1 text-xl font-bold text-brand">Administración</p>
+            <p className="mt-1 text-sm text-gray-500">Gestionar distrito, grupos, eventos y miembros</p>
+          </Link>
+          <Link
+            href="/eventos"
+            className="rounded-xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <p className="text-sm font-medium text-gray-500">Ver</p>
+            <p className="mt-1 text-xl font-bold text-brand">Eventos publicados</p>
+            <p className="mt-1 text-sm text-gray-500">Resultados y rankings disponibles al público</p>
+          </Link>
+        </div>
+      )}
+
+      {!user?.activeRole && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+          Tu cuenta aún no tiene un rol asignado en este distrito. Pedile al administrador que te invite.
+        </div>
+      )}
 
       <Link
         href="/docs"

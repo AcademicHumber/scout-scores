@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth-helpers"
 import { listScoreTemplates } from "@/repositories/score-template.repo"
 import Link from "next/link"
+import { CategoriaSelect } from "@/components/admin/plantillas/CategoriaSelect"
 import messages from "@/messages/es.json"
 import type { ScoreTemplateModo, ScoreTemplateCategoria } from "@/generated/prisma/enums"
 
@@ -85,17 +86,7 @@ export default async function PlantillasPage({
           ))}
         </div>
 
-        <select
-          disabled
-          className="rounded-lg border bg-white px-3 py-2 text-sm text-gray-600"
-          defaultValue={sp.categoria ?? ""}
-        >
-          {categorias.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+        <CategoriaSelect value={sp.categoria ?? ""} options={categorias} />
 
         <Link
           href={buildUrl({ archivadas: includeArchived ? undefined : "1" })}

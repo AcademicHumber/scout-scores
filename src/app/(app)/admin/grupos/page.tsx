@@ -16,7 +16,8 @@ export default async function GruposPage() {
         <p className="text-gray-500">{messages.admin.grupos.empty}</p>
       ) : (
         <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[360px] text-sm">
             <thead className="bg-gray-50 text-left">
               <tr>
                 <th className="px-4 py-3 font-medium text-gray-700">Nombre</th>
@@ -40,7 +41,8 @@ export default async function GruposPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
 
