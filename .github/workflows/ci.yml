@@ -57,3 +57,24 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+
+  deploy:
+    name: deploy to VPS
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /srv/puntajes-scout
+            git pull origin main
+            docker compose --env-file .env.prod -f docker-compose.prod.yml build
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+            docker compose --env-file .env.prod -f docker-compose.prod.yml ps
