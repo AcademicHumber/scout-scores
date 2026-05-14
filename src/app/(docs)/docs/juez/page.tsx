@@ -127,34 +127,17 @@ export default function JuezPage() {
       {/* Section: Instalar */}
       <h2 className="mb-3 mt-8 text-xl font-bold text-gray-900">Instalar como app en el celular</h2>
       <p className="mb-3 text-sm text-gray-600">
-        Instalala en la pantalla de inicio para acceder más rápido y que funcione como una app nativa:
+        Instalala en la pantalla de inicio para acceder más rápido y que funcione como una app nativa.
       </p>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2">
-        {[
-          {
-            title: "Android (Chrome)",
-            steps: ['Tocá el menú (⋮)', '"Agregar a pantalla de inicio"'],
-          },
-          {
-            title: "iPhone (Safari)",
-            steps: ['Tocá el botón Compartir (□↑)', '"Agregar a pantalla de inicio"'],
-          },
-        ].map((device) => (
-          <div key={device.title} className="rounded-xl border border-gray-200 p-4">
-            <p className="mb-2 font-medium text-gray-800">{device.title}</p>
-            <ol className="space-y-1 text-sm text-gray-600">
-              {device.steps.map((s, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
-                    {i + 1}
-                  </span>
-                  {s}
-                </li>
-              ))}
-            </ol>
-          </div>
-        ))}
-      </div>
+      <a
+        href="/docs/instalar-app"
+        className="mb-4 flex items-center justify-between rounded-xl border border-[#622599]/20 bg-[#f3edf7] px-4 py-3 text-sm font-medium text-[#622599] transition-colors hover:bg-[#ede0f5]"
+      >
+        Ver instrucciones de instalación para iOS y Android
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
 
       {/* Section: Conflictos */}
       <h2 className="mb-3 mt-8 text-xl font-bold text-gray-900">Situaciones comunes</h2>

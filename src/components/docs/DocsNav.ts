@@ -16,6 +16,19 @@ export const HOME_HREF = "/docs"
 
 export const docRoles: DocRole[] = [
   {
+    title: "Instalar la app",
+    href: "/docs/instalar-app",
+    description: "Cómo instalar Puntajes Scout como app en iOS y Android desde el navegador.",
+    classes: {
+      border: "border-t-[#622599]",
+      bg: "bg-[#f3edf7]",
+      text: "text-[#622599]",
+      iconBg: "bg-[#622599]",
+      dot: "bg-[#622599]",
+    },
+    iconPath: "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z",
+  },
+  {
     title: "Administrador",
     href: "/docs/administrador",
     description: "Gestiona el distrito, crea eventos, configura postas y publica resultados.",
