@@ -113,6 +113,21 @@ export function MobileMenu({ name, email, image, isAdmin, isJuez, alwaysVisible 
           >
             Seguridad / Perfil
           </Link>
+
+          <div className="my-2 border-t border-gray-100" />
+
+          <Link
+            href="/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+          >
+            Documentación
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
+              <path d="M2 11L11 2M11 2H6M11 2v5" />
+            </svg>
+          </Link>
         </nav>
 
         {/* Sign out */}

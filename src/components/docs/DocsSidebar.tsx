@@ -34,31 +34,48 @@ export function DocsSidebar({ open, onClose }: Props) {
           open ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
-        <nav className="p-4">
-          <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-            Guías por rol
-          </p>
-          <ul className="space-y-0.5">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onClose}
-                    className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors ${
-                      isActive
-                        ? "border-l-[3px] border-l-[#622599] bg-[#f3edf7] font-medium text-[#622599] pl-[7px]"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    }`}
-                  >
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} />
-                    {item.title}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+        <nav className="flex h-full flex-col p-4">
+          <div className="flex-1">
+            <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+              Guías por rol
+            </p>
+            <ul className="space-y-0.5">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors ${
+                        isActive
+                          ? "border-l-[3px] border-l-[#622599] bg-[#f3edf7] font-medium text-[#622599] pl-[7px]"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      }`}
+                    >
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} />
+                      {item.title}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+
+          <div className="border-t border-gray-200 pt-3">
+            <Link
+              href="/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            >
+              Ir a la app
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
+                <path d="M2 11L11 2M11 2H6M11 2v5" />
+              </svg>
+            </Link>
+          </div>
         </nav>
       </aside>
     </>
