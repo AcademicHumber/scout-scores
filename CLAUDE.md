@@ -214,4 +214,6 @@ Antes de trabajar en cualquier plan, leer el plan correspondiente en `docs/plans
 
 **Plan 12 completado** (Mobile UI admin — `MobileMenu.tsx` Client Component con drawer lateral animado reemplaza la navegación mobile del `AppHeader`; prop `alwaysVisible` para el layout del juez (solo admins); `AdminNav` pills con borde y degradado de scroll; `MembershipRow` tabla → cards con dos `<form>` hermanas; `InvitationTable` → cards; `overflow-x-auto` en grupos; formularios de postas responsive; dashboard con cards de navegación para admins; `← Plantillas` en página nueva; `CategoriaSelect` Client Component activa el filtro que estaba `disabled`.)
 
+**Plan 13 completado** (Refactor del onboarding — flujo principal cambia a lista de distritos con "Unirme como espectador" (rol ESPECTADOR, solo lectura); formulario de token de invitación colapsable como opción secundaria; creación de distritos movida a URL oculta `/onboarding/crear-distrito` sin enlace en la UI; íconos de la PWA actualizados con logo scout (`logo-scouts.png` → `icon-192.png` / `icon-512.png`); guía de instalación PWA en `/docs/instalar-app` con instrucciones para iOS y Android; vista `/juez/pendientes` para revisar y descartar operaciones offline con errores, accesible desde `SyncStatusBadge` y desde `EventosListView`.)
+
 **Próximo: Capa 2 — Padrón de miembros, inscripción, cartilla de progresión.**

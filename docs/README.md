@@ -23,7 +23,9 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [08 — Leaderboard, cierre de evento y vistas públicas](plans/08-leaderboard-cierre-publicacion.md) ✓
 - [09 — Login con email y contraseña (alternativa a Google)](plans/09-auth-credentials.md) ✓
 - [10 — Despliegue a producción + hardening](plans/10-deploy-produccion.md) ✓
-- [11 — Documentación pública para administradores y participantes](plans/11-docs-publica.md) _(pendiente)_
+- [11 — Documentación pública para administradores y participantes](plans/11-docs-publica.md) ✓
+- [12 — Mobile UI admin: correcciones de overflow y formularios](plans/12-mobile-admin-ui.md) ✓
+- [13 — Refactor del onboarding: unirse como Espectador](plans/13-onboarding-refactor.md) ✓
 
 > **Renumeración**: el deploy estaba previsto inicialmente como Plan 9. Tras intercalar el Plan 9 (login propio), el deploy pasó a Plan 10. Las referencias a "Plan 9" en los planes históricos 01–08 reflejan el estado del proyecto en el momento en que se escribieron y se mantienen como artefacto educativo.
 
@@ -31,11 +33,11 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 
 Números tentativos; se confirman al planificar cada uno.
 
-- 10 — Padrón de miembros del grupo _(pendiente)_
-- 11 — Asociar miembros a patrullas _(pendiente)_
-- 12 — Inscripción anual digitalizada _(pendiente)_
-- 13 — Cartilla de progresión _(pendiente)_
-- 14 — Perfil del scout _(pendiente)_
+- 14 — Padrón de miembros del grupo _(pendiente)_
+- 15 — Asociar miembros a patrullas _(pendiente)_
+- 16 — Inscripción anual digitalizada _(pendiente)_
+- 17 — Cartilla de progresión _(pendiente)_
+- 18 — Perfil del scout _(pendiente)_
 
 ## ADRs
 
