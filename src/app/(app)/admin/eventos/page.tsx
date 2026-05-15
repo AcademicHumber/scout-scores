@@ -52,13 +52,13 @@ export default async function EventosPage({
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
-          <p className="text-gray-600">{m.subtitle}</p>
+          <p className="text-gray-600 pr-2">{m.subtitle}</p>
         </div>
         <Link
           href="/admin/eventos/nuevo"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
+          className="shrink-0 whitespace-nowrap rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
         >
-          {m.newButton}
+          {m.nuevoCTA}
         </Link>
       </div>
 
@@ -88,9 +88,9 @@ export default async function EventosPage({
           <p className="mb-4 text-gray-500">{m.empty}</p>
           <Link
             href="/admin/eventos/nuevo"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
+            className="shrink-0 whitespace-nowrap rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
           >
-            {m.newButton}
+            {m.nuevoCTA}
           </Link>
         </div>
       ) : (

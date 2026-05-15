@@ -79,19 +79,19 @@ export function AsignacionRow({ asignacion, isFirst, isLast, isLocked, onEdit }:
           <input type="hidden" name="asignacionId" value={asignacion.id} />
           <input type="hidden" name="direction" value="up" />
           <button type="submit" disabled={isFirst || upPending || isLocked}
-            className="rounded p-0.5 text-gray-400 hover:bg-gray-200 disabled:opacity-30 text-xs">▲</button>
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded text-sm text-gray-400 hover:bg-gray-200 disabled:opacity-30">▲</button>
         </form>
         <form action={downAction}>
           <input type="hidden" name="asignacionId" value={asignacion.id} />
           <input type="hidden" name="direction" value="down" />
           <button type="submit" disabled={isLast || downPending || isLocked}
-            className="rounded p-0.5 text-gray-400 hover:bg-gray-200 disabled:opacity-30 text-xs">▼</button>
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded text-sm text-gray-400 hover:bg-gray-200 disabled:opacity-30">▼</button>
         </form>
 
         {/* Editar */}
         {!isLocked && (
           <button type="button" onClick={onEdit}
-            className="rounded p-0.5 text-xs text-gray-500 hover:bg-gray-200" title="Editar asignación">
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded text-sm text-gray-500 hover:bg-gray-200" title="Editar asignación">
             ✎
           </button>
         )}
@@ -102,15 +102,16 @@ export function AsignacionRow({ asignacion, isFirst, isLast, isLocked, onEdit }:
             <form action={deleteAction} className="flex items-center gap-1">
               <input type="hidden" name="asignacionId" value={asignacion.id} />
               <button type="submit" disabled={deletePending}
-                className="rounded bg-red-600 px-1.5 py-0.5 text-xs text-white hover:bg-red-700 disabled:opacity-50">
+                className="rounded bg-red-600 px-2 py-1.5 text-xs text-white hover:bg-red-700 disabled:opacity-50 min-h-[36px]">
                 {deletePending ? "..." : "Confirmar"}
               </button>
               <button type="button" onClick={() => setShowDeleteConfirm(false)}
-                className="rounded px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-100">Cancelar</button>
+                className="rounded px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 min-h-[36px]">Cancelar</button>
             </form>
           ) : (
             <button type="button" onClick={() => setShowDeleteConfirm(true)}
-              title="Desasignar posta" className="rounded p-0.5 text-xs text-red-400 hover:bg-red-50">✕</button>
+              title="Desasignar posta"
+              className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded text-sm text-red-400 hover:bg-red-50">✕</button>
           )
         )}
       </div>

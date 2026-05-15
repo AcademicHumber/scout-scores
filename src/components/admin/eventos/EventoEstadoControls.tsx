@@ -34,28 +34,30 @@ export function EventoEstadoControls({ eventoId, estado, actividades, patrullasC
   return (
     <div className="space-y-4">
       {/* Línea del tiempo */}
-      <div className="flex items-center gap-2">
-        {ESTADOS.map((s, idx) => {
-          const done = ESTADOS.indexOf(estado) > idx
-          const active = s === estado
-          return (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                done    ? "bg-green-500 text-white" :
-                active  ? "bg-brand text-white" :
-                          "bg-gray-200 text-gray-500"
-              }`}>
-                {done ? "✓" : idx + 1}
+      <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
+        <div className="flex items-center gap-1.5 min-w-max">
+          {ESTADOS.map((s, idx) => {
+            const done = ESTADOS.indexOf(estado) > idx
+            const active = s === estado
+            return (
+              <div key={s} className="flex items-center gap-1.5">
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  done    ? "bg-green-500 text-white" :
+                  active  ? "bg-brand text-white" :
+                            "bg-gray-200 text-gray-500"
+                }`}>
+                  {done ? "✓" : idx + 1}
+                </div>
+                <span className={`text-xs whitespace-nowrap ${active ? "font-semibold text-brand" : "text-gray-500"}`}>
+                  {m.estadoBadge[s]}
+                </span>
+                {idx < ESTADOS.length - 1 && (
+                  <div className={`h-px w-4 shrink-0 ${done ? "bg-green-500" : "bg-gray-200"}`} />
+                )}
               </div>
-              <span className={`text-xs ${active ? "font-semibold text-brand" : "text-gray-500"}`}>
-                {m.estadoBadge[s]}
-              </span>
-              {idx < ESTADOS.length - 1 && (
-                <div className={`h-px w-6 ${done ? "bg-green-500" : "bg-gray-200"}`} />
-              )}
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
       {/* Indicador de pesos (solo en BORRADOR) */}

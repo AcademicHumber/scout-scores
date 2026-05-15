@@ -62,9 +62,9 @@ export default async function PlantillasPage({
         </div>
         <Link
           href="/admin/plantillas/nueva"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          className="shrink-0 whitespace-nowrap rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90"
         >
-          {m.newButton}
+          {m.nuevoCTA}
         </Link>
       </div>
 

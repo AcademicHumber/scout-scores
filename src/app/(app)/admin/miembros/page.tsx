@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/auth-helpers"
 import { listMembershipsWithUsers } from "@/repositories/membership.repo"
 import { listGrupos } from "@/repositories/grupo.repo"
-import { MembershipRow } from "@/components/admin/MembershipRow"
+import { MiembrosFilterPanel } from "@/components/admin/MiembrosFilterPanel"
 import messages from "@/messages/es.json"
 
 export default async function MiembrosPage() {
@@ -16,16 +16,11 @@ export default async function MiembrosPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-gray-900">{messages.admin.miembros.title}</h1>
 
-      <div className="divide-y overflow-hidden rounded-xl border bg-white shadow-sm">
-        {memberships.map((m) => (
-          <MembershipRow
-            key={m.id}
-            membership={m}
-            grupos={grupos}
-            currentUserId={org.userId}
-          />
-        ))}
-      </div>
+      <MiembrosFilterPanel
+        memberships={memberships}
+        grupos={grupos}
+        currentUserId={org.userId}
+      />
     </div>
   )
 }

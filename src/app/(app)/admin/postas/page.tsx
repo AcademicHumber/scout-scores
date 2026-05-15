@@ -14,13 +14,13 @@ export default async function PostasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
-          <p className="mt-1 text-sm text-gray-500">{m.subtitle}</p>
+          <p className="mt-1 text-sm text-gray-500 pr-2">{m.subtitle}</p>
         </div>
         <Link
           href="/admin/postas/nueva"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
+          className="shrink-0 whitespace-nowrap rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
         >
-          {m.nueva}
+          {m.nuevoCTA}
         </Link>
       </div>
 

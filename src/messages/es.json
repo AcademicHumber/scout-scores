@@ -193,6 +193,7 @@
       "subtitle": "Biblioteca de plantillas del distrito. Reutilizables por evento.",
       "empty": "Aún no hay plantillas. Creá la primera para empezar.",
       "newButton": "Nueva plantilla",
+      "nuevoCTA": "+ Nuevo",
       "count": "{{count}} plantilla",
       "countPlural": "{{count}} plantillas",
       "filters": {
@@ -288,6 +289,7 @@
       "subtitle": "Biblioteca de postas del distrito. Asignables a actividades de eventos.",
       "empty": "Aún no hay postas registradas. Creá la primera.",
       "nueva": "Nueva posta",
+      "nuevoCTA": "+ Nuevo",
       "fields": {
         "nombre": "Nombre",
         "descripcion": "Descripción / funcionamiento",
@@ -314,6 +316,7 @@
       "subtitle": "Gestioná los eventos del distrito y sus actividades",
       "empty": "Aún no hay eventos. Creá el primero para empezar.",
       "newButton": "Nuevo evento",
+      "nuevoCTA": "+ Nuevo",
       "filters": {
         "all": "Todos",
         "BORRADOR": "Borradores",
