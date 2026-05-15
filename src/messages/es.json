@@ -290,6 +290,14 @@
       "empty": "Aún no hay postas registradas. Creá la primera.",
       "nueva": "Nueva posta",
       "nuevoCTA": "+ Nuevo",
+      "buscar": "Buscar por nombre…",
+      "filtros": {
+        "todas": "Todas",
+        "conPlantilla": "Con plantilla",
+        "sinPlantilla": "Sin plantilla"
+      },
+      "sinResultados": "No hay postas que coincidan.",
+      "sinResultadosHint": "Intentá con otro nombre o cambiá el filtro.",
       "fields": {
         "nombre": "Nombre",
         "descripcion": "Descripción / funcionamiento",
@@ -390,6 +398,8 @@
         "dialogTitleEditar": "Editar asignación de posta",
         "sinPlantilla": "Sin plantilla",
         "sinJuez": "Sin juez",
+        "confirmar": "Confirmar",
+        "cancelar": "Cancelar",
         "errors": {
           "yaAsignadaEnEvento": "Esta posta ya está asignada a otra actividad de este evento"
         }
