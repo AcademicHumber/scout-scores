@@ -1,6 +1,6 @@
-# CD con GitHub Actions
+# CD con GitHub Actions + Coolify
 
-Guía para activar el deploy automático al VPS cada vez que un push a `main` pasa el CI. Asume que el VPS ya está corriendo (ver `01-deploy-vps.md`).
+Guía para activar el deploy automático al VPS cada vez que un push a `main` pasa el CI. Asume que Coolify ya está instalado y la app configurada (ver `01-deploy-vps.md`).
 
 ## Cómo funciona
 
@@ -9,116 +9,67 @@ push a main
     ↓
 [validate] typecheck + lint + test + build
     ↓ solo si pasa
-[deploy] SSH → git pull → docker build → docker up -d
+[deploy] curl al webhook de Coolify
+    ↓
+Coolify clona el repo, hace docker build y docker compose up
 ```
 
 El job `deploy` está definido en `.github/workflows/ci.yml` con `needs: validate`, por lo que nunca corre si los tests fallan. Los PRs solo corren `validate`; el deploy se activa únicamente en push directo a `main`.
 
-Si el deploy falla en cualquier punto (`set -e` en el script), los containers con la versión anterior siguen corriendo y el CI queda en rojo.
+Si el deploy falla en Coolify, la versión anterior sigue corriendo y el job de CI queda en rojo (el curl devuelve error).
 
-## Paso 1 — Generar la clave SSH de deploy
+## Paso 1 — Obtener el webhook de Coolify
 
-En el VPS, logueado con el usuario que corre los containers (ej: `scout`):
+En la UI de Coolify:
 
-```bash
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_deploy -N ""
-cat ~/.ssh/github_deploy.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-```
+1. Ir a la app → **Settings → Deployments**
+2. Copiar la **"Deploy Webhook URL"** (algo como `https://coolify.tu-vps.org/api/v1/deploy?uuid=...&token=...`)
 
-Verificar que el archivo de claves autorizadas quedó bien:
-
-```bash
-cat ~/.ssh/authorized_keys   # debe incluir la línea "ssh-ed25519 ... github-actions-deploy"
-```
-
-Copiar el contenido de la clave privada (se usará en el paso 2):
-
-```bash
-cat ~/.ssh/github_deploy
-```
-
-## Paso 2 — Cargar los secrets en GitHub
+## Paso 2 — Cargar el secret en GitHub
 
 Ir al repositorio en GitHub → **Settings → Secrets and variables → Actions → New repository secret**.
 
-Crear estos tres secrets:
-
 | Secret | Valor |
 |---|---|
-| `VPS_HOST` | IP pública o dominio del VPS (ej: `123.45.67.89`) |
-| `VPS_USER` | Usuario SSH (ej: `scout`) |
-| `VPS_SSH_KEY` | Contenido completo de `~/.ssh/github_deploy` (incluye `-----BEGIN...` y `-----END...`) |
+| `COOLIFY_WEBHOOK_URL` | La URL copiada del paso anterior (incluye el token) |
 
-> Los secrets nunca aparecen en los logs de GitHub Actions. Si se comprometen, rotar: generar un nuevo par de claves, reemplazar la entrada en `authorized_keys` y actualizar `VPS_SSH_KEY`.
+> El token está embebido en la URL. Si se compromete, regenerarlo en Coolify UI → App → Settings → Deployments → "Regenerate token". Actualizar el secret en GitHub.
 
-## Paso 3 — Verificar que el repo es accesible desde el VPS
+## Paso 3 — Verificar el primer deploy automático
 
-El deploy corre `git pull origin main` en el VPS. El repo debe poder clonarse sin credenciales interactivas. Opciones:
+Hacer un push a `main` (puede ser cualquier cambio). En GitHub → **Actions** se verán dos jobs: `typecheck + lint + test + build` y `deploy via Coolify`. El deploy solo arranca cuando el primero termina en verde.
 
-**Opción A — Repo público (más simple):** nada que hacer.
+En Coolify UI → App → **Deployments** aparecerá el nuevo deploy en curso con sus logs de build y runtime.
 
-**Opción B — Repo privado vía HTTPS con token:**
+## Secrets anteriores ya no necesarios
 
-```bash
-# En el VPS — guardar credenciales en el store de git
-git config --global credential.helper store
-# Luego hacer un git pull manual la primera vez e ingresar usuario + personal access token
-git pull origin main
-```
+Si el proyecto usaba el deploy por SSH anterior, estos secrets pueden eliminarse de GitHub:
 
-**Opción C — Repo privado vía SSH (más robusto):**
+| Secret | Motivo para eliminar |
+|---|---|
+| `VPS_HOST` | Ya no se usa SSH |
+| `VPS_USER` | Ya no se usa SSH |
+| `VPS_SSH_KEY` | Ya no se usa SSH |
 
-```bash
-# En el VPS — generar una deploy key separada para el repo
-ssh-keygen -t ed25519 -C "vps-deploy-key" -f ~/.ssh/gh_repo -N ""
-cat ~/.ssh/gh_repo.pub
-```
+## Variables de entorno de la app
 
-Ir al repo en GitHub → **Settings → Deploy keys → Add deploy key** (solo lectura). Pegar el contenido de `gh_repo.pub`. Luego en el VPS:
+Las variables de entorno ya no viven en un `.env.prod` en el VPS — se gestionan en Coolify UI → App → **Environment Variables**. Si necesitás actualizar una (ej: nuevo `AUTH_GOOGLE_SECRET`):
 
-```bash
-# Configurar el remote para usar esa key
-git remote set-url origin git@github.com:<org>/<repo>.git
-# Agregar al ~/.ssh/config:
-echo "Host github.com
-  IdentityFile ~/.ssh/gh_repo
-  StrictHostKeyChecking accept-new" >> ~/.ssh/config
-```
-
-## Paso 4 — Activar el CD
-
-Hacer un push a `main` (puede ser el commit del workflow mismo). En GitHub → **Actions** se verá el workflow con dos jobs: `validate` y `deploy`. El deploy solo arranca cuando `validate` termina en verde.
-
-Los logs del step `SSH deploy` muestran el output de cada comando en el VPS, incluyendo el `docker compose ps` final con el estado de los containers.
-
-## Secretos adicionales en el VPS (`.env.prod`)
-
-El workflow no transfiere `.env.prod` — ese archivo vive solo en el VPS y no está en el repo. Si necesitás actualizar una variable de entorno (ej: nuevo `AUTH_GOOGLE_SECRET`):
-
-```bash
-ssh scout@IP_DEL_VPS
-nano /srv/puntajes-scout/.env.prod   # editar el valor
-docker compose --env-file /srv/puntajes-scout/.env.prod \
-  -f /srv/puntajes-scout/docker-compose.prod.yml \
-  up -d app                          # reiniciar solo la app para que tome el nuevo valor
-```
+1. Coolify UI → App → Environment Variables → editar el valor
+2. Click **"Restart"** (sin rebuild) o **"Deploy"** (con rebuild, necesario para vars `NEXT_PUBLIC_*`)
 
 ## Troubleshooting
 
 | Síntoma | Causa probable | Fix |
 |---|---|---|
 | Job `deploy` no aparece en el workflow | El push fue en una rama distinta de `main` o fue un PR | Solo pushes directos a `main` disparan el deploy |
-| `Permission denied (publickey)` | `VPS_SSH_KEY` incorrecto o clave pública no en `authorized_keys` | Verificar con `ssh -i ~/.ssh/github_deploy VPS_USER@VPS_HOST` desde otra máquina |
-| `Host key verification failed` | Primera conexión: el fingerprint del VPS no está en `known_hosts` | `appleboy/ssh-action` usa `StrictHostKeyChecking=no` por defecto — si falla, verificar que el host responde en el puerto 22 |
-| `git pull` falla con auth error | Credenciales del repo no configuradas en el VPS | Ver Paso 3 según el tipo de repo (público / privado HTTPS / privado SSH) |
-| `docker build` falla con OOM | VPS con poca RAM | Crear swapfile: `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile` |
-| Deploy verde pero app sin cambios | `git pull` no trajo nada (push a rama distinta) | Verificar que el commit está en `main`: `git log --oneline -1` en el VPS |
-| Deploy roto: usuarios afectados | Fallo después de `up -d` | Ver `02-actualizar-app.md § Rollback` para revertir mientras se investiga |
+| `curl: (22) The requested URL returned error: 4xx` | Webhook URL incorrecta o token inválido | Verificar `COOLIFY_WEBHOOK_URL` en GitHub Secrets; regenerar token en Coolify si hace falta |
+| El curl devuelve 200 pero Coolify no despliega | Coolify recibió el webhook pero la build falló | Ver logs en Coolify UI → App → Deployments |
+| Build falla con OOM en Coolify | VPS con poca RAM durante `next build` | Crear swapfile en el VPS (ver `01-deploy-vps.md § 13`) |
+| Deploy verde pero app sin cambios | El webhook disparó pero Coolify usó el código cacheado | Forzar redeploy manual desde Coolify UI |
 
 ## Consideraciones de seguridad
 
-- La clave `github_deploy` da acceso SSH al VPS. Limitarla en `authorized_keys` con `command=` y `no-pty` si se quiere restringir a solo los comandos del script de deploy (hardening avanzado).
-- Rotar la clave periódicamente o ante cualquier sospecha de compromiso.
-- No agregar `VPS_SSH_KEY` a los secrets de entornos que no sean el repo principal (evitar que forks accedan al VPS).
-- El usuario `scout` en el VPS no debe tener `sudo` sin password. Si el deploy necesita `sudo` (ej: para el cron de backup), usar `sudoers` con comandos específicos permitidos.
+- El token de Coolify está embebido en la URL del webhook. Tratar `COOLIFY_WEBHOOK_URL` con el mismo cuidado que cualquier secret.
+- Rotar el token en Coolify UI periódicamente o ante cualquier sospecha de compromiso. Actualizar el secret en GitHub después de rotar.
+- No compartir la webhook URL fuera del repositorio. No loggearla en CI.

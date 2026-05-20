@@ -7,8 +7,9 @@
 #   ./scripts/backup.sh                   # backup nuevo + rotación
 #   ./scripts/backup.sh --no-rotate       # backup sin tocar viejos
 #
-# Requiere: docker, docker compose v2, .env.prod con DATABASE_URL en el
-# directorio del proyecto (donde vive docker-compose.prod.yml).
+# Requiere: docker, .env.prod con POSTGRES_USER/PASSWORD/DB en PROJECT_DIR.
+# El container de Postgres debe llamarse `puntajes-scout-db` (container_name
+# fijo en docker-compose.prod.yml).
 # ----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -16,7 +17,6 @@ PROJECT_DIR="${PROJECT_DIR:-/srv/puntajes-scout}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/puntajes-scout}"
 LOG_FILE="${LOG_FILE:-/var/log/puntajes-scout/backup.log}"
 RETENTION_COUNT="${RETENTION_COUNT:-30}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 
 mkdir -p "$BACKUP_DIR"
 mkdir -p "$(dirname "$LOG_FILE")"
@@ -29,7 +29,7 @@ log() {
 
 cd "$PROJECT_DIR"
 
-# Cargar POSTGRES_USER y POSTGRES_DB del .env.prod (resto se ignora).
+# Cargar POSTGRES_USER, POSTGRES_PASSWORD y POSTGRES_DB del .env.prod.
 set -a
 # shellcheck disable=SC1091
 source ./.env.prod
@@ -40,9 +40,9 @@ DUMP_FILE="$BACKUP_DIR/puntajes_scout_${TIMESTAMP}.dump"
 
 log "INICIO backup → $DUMP_FILE"
 
-# pg_dump corre dentro del container `db`. --format=custom es comprimido y
-# compatible con pg_restore. --jobs requiere directorio (lo evitamos).
-if docker compose -f "$COMPOSE_FILE" exec -T db \
+# pg_dump corre dentro del container `puntajes-scout-db` via docker exec.
+# --format=custom es comprimido y compatible con pg_restore.
+if docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" puntajes-scout-db \
     pg_dump \
         --username="$POSTGRES_USER" \
         --dbname="$POSTGRES_DB" \
