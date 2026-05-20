@@ -76,6 +76,8 @@ services:
 
 volumes:
   postgres-data-prod:
+    external: true
+    name: puntajes-scout_postgres-data-prod
 
 networks:
   internal:
