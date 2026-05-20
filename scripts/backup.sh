@@ -8,8 +8,8 @@
 #   ./scripts/backup.sh --no-rotate       # backup sin tocar viejos
 #
 # Requiere: docker, .env.prod con POSTGRES_USER/PASSWORD/DB en PROJECT_DIR.
-# El container de Postgres debe llamarse `puntajes-scout-db` (container_name
-# fijo en docker-compose.prod.yml).
+# Coolify no respeta container_name — el container se busca por labels de
+# Docker Compose. Se puede sobreescribir con: DB_CONTAINER=<id> ./backup.sh
 # ----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -35,14 +35,35 @@ set -a
 source ./.env.prod
 set +a
 
+# Resolver el container de Postgres. Coolify ignora container_name y usa su
+# propio esquema de nombres — buscar por labels de Docker Compose en su lugar.
+# Se puede sobreescribir manualmente: DB_CONTAINER=<id> ./scripts/backup.sh
+if [[ -z "${DB_CONTAINER:-}" ]]; then
+    DB_CONTAINER=$(docker ps -qf "label=com.docker.compose.service=db" \
+                              -f "label=coolify.managed=true")
+fi
+
+if [[ -z "$DB_CONTAINER" ]]; then
+    log "FALLO: no se encontró el container de Postgres"
+    log "  Verificar: docker ps --filter 'label=com.docker.compose.service=db'"
+    log "  O sobreescribir: DB_CONTAINER=<id> $0"
+    exit 1
+fi
+
+DB_COUNT=$(echo "$DB_CONTAINER" | wc -w)
+if [[ "$DB_COUNT" -gt 1 ]]; then
+    log "ADVERTENCIA: $DB_COUNT containers coinciden — usando el primero. Sobreescribir con DB_CONTAINER=<id>."
+    DB_CONTAINER=$(echo "$DB_CONTAINER" | awk '{print $1}')
+fi
+
 TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 DUMP_FILE="$BACKUP_DIR/puntajes_scout_${TIMESTAMP}.dump"
 
-log "INICIO backup → $DUMP_FILE"
+log "INICIO backup → $DUMP_FILE (container: $DB_CONTAINER)"
 
-# pg_dump corre dentro del container `puntajes-scout-db` via docker exec.
+# pg_dump corre dentro del container de Postgres via docker exec.
 # --format=custom es comprimido y compatible con pg_restore.
-if docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" puntajes-scout-db \
+if docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$DB_CONTAINER" \
     pg_dump \
         --username="$POSTGRES_USER" \
         --dbname="$POSTGRES_DB" \

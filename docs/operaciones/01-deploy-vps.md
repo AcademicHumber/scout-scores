@@ -82,10 +82,8 @@ openssl rand -hex 24
 Construir el `DATABASE_URL` con el password generado:
 
 ```
-DATABASE_URL=postgresql://scout:<PASSWORD>@puntajes-scout-db:5432/puntajes_scout
+DATABASE_URL=postgresql://scout:<PASSWORD>@db:5432/puntajes_scout
 ```
-
-> Nota: el host en `DATABASE_URL` es `puntajes-scout-db` (el `container_name` del servicio `db`), no `db` ni `localhost`.
 
 ## 7. Configurar la app en Coolify
 
@@ -103,7 +101,7 @@ Variables de entorno a cargar en Coolify:
 POSTGRES_USER=scout
 POSTGRES_PASSWORD=GENERAR_CON_OPENSSL
 POSTGRES_DB=puntajes_scout
-DATABASE_URL=postgresql://scout:GENERAR_CON_OPENSSL@puntajes-scout-db:5432/puntajes_scout
+DATABASE_URL=postgresql://scout:GENERAR_CON_OPENSSL@db:5432/puntajes_scout
 AUTH_SECRET=GENERAR_CON_OPENSSL_32BYTES
 AUTH_URL=https://tu-dominio.org
 AUTH_TRUST_HOST=true
@@ -111,6 +109,8 @@ AUTH_GOOGLE_ID=DESDE_GOOGLE_CONSOLE
 AUTH_GOOGLE_SECRET=DESDE_GOOGLE_CONSOLE
 NEXT_PUBLIC_BASE_URL=https://tu-dominio.org
 ```
+
+> El host en `DATABASE_URL` es `db` (nombre del servicio en el compose), no `localhost` ni ningún container_name — Coolify ignora `container_name` y usa el nombre de servicio para la resolución DNS interna.
 
 ## 8. Verificar el primer deploy
 
@@ -246,7 +246,7 @@ docker ps --filter "name=puntajes-scout"
 docker logs --tail=100 puntajes-scout-app
 
 # Logs de la DB
-docker logs --tail=50 puntajes-scout-db
+docker logs --tail=50 $(docker ps -qf "label=com.docker.compose.service=db" -f "label=coolify.managed=true")
 ```
 
 ### Rollback de versión

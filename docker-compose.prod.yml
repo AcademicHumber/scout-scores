@@ -3,7 +3,6 @@ name: puntajes-scout
 services:
   db:
     image: postgres:16-alpine
-    container_name: puntajes-scout-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -44,7 +43,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
-    container_name: puntajes-scout-app
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -76,8 +74,6 @@ services:
 
 volumes:
   postgres-data-prod:
-    external: true
-    name: puntajes-scout_postgres-data-prod
 
 networks:
   internal:
