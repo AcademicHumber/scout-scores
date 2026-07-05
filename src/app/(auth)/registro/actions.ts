@@ -31,6 +31,10 @@ export async function signupAction(
 
   // Auto-signIn: aceptarInvitacionEnSignIn corre en el jwt callback.
   // signIn lanza NEXT_REDIRECT internamente — nunca retorna aquí.
-  await signIn("credentials", { email, password: parsed.data.password, redirectTo: "/dashboard" })
+  // redirectTo va directo a /onboarding (no /dashboard): una cuenta recién creada por
+  // credenciales siempre tiene cero memberships, así que /dashboard solo rebotaría a
+  // /onboarding de todos modos — ese rebote anidado dejaba el router del cliente
+  // desincronizado y rompía la siguiente Server Action (ver Plan 13c).
+  await signIn("credentials", { email, password: parsed.data.password, redirectTo: "/onboarding" })
   return null
 }
