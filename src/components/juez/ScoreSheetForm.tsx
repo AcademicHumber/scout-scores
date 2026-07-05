@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { useJuezRouter } from "@/lib/offline/juez-router"
 import { enqueueOp } from "@/lib/offline/queue"
 import { getPendingOp } from "@/lib/offline/db"
 import { getOrCreateClientId } from "@/lib/offline/clientId"
@@ -94,6 +95,7 @@ export function ScoreSheetForm({
   totalDesempate,
 }: Props) {
   const router = useRouter()
+  const { navigate } = useJuezRouter()
   const { syncNow } = useSyncEngine()
 
   const initMap = new Map<string, number>(
@@ -162,7 +164,11 @@ export function ScoreSheetForm({
         if (!remaining) {
           // Op procesada con éxito
           if (type === "submit") {
-            router.push(backHref)
+            // navigate() del SPA de /juez, no router.push(): este catch-all no re-renderiza
+            // en base a los params de Next.js, sino al pathname que mantiene
+            // JuezRouterProvider. router.push() cambia la URL pero no ese estado, dejando
+            // al usuario viendo la misma planilla con la URL de la lista de equipos.
+            navigate(backHref)
             return
           }
           showToast(t.toastBorrador)

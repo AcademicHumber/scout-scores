@@ -112,7 +112,7 @@ Estas reglas deben respetarse en todos los planes futuros que toquen el área de
 
 4. **Los handlers del Service Worker usan instancias de clase**, nunca strings. `new NetworkOnly()`, `new NetworkFirst({...})`, `new CacheFirst({...})`. Los strings no se resuelven en runtime y fallan silenciosamente.
 
-5. **Navegación interna en `/juez/**` usa `<JuezLink>`**, no `<Link>` de Next.js ni `<a>`. `<Link>` dispara RSC fetches y rompe la navegación offline.
+5. **Navegación interna en `/juez/**` usa `<JuezLink>` o `useJuezRouter().navigate()`**, nunca `<Link>`/`router.push()`/`router.replace()` de Next.js ni `<a>` plano. `<Link>` dispara RSC fetches y rompe la navegación offline; `router.push()` cambia la URL pero no el `pathname` que lee `CatchAllRouter`, dejando al usuario en la vista vieja con la URL nueva (bug real detectado en `ScoreSheetForm`, ver Negativas/Limitaciones más abajo).
 
 6. **`Breadcrumb` solo se usa dentro del proveedor `JuezRouterProvider`**. Fuera de ese árbol, `JuezLink` lanzaría una excepción de contexto.
 
@@ -132,7 +132,7 @@ Estas reglas deben respetarse en todos los planes futuros que toquen el área de
 
 - **El modo offline requiere una visita previa online al área `/juez/**`**. El Service Worker no puede interceptar la primera navegación antes de instalarse. La solución del `controllerchange`+reload garantiza que la segunda carga (post-login) ya pasa por el SW, pero si el juez nunca abrió `/juez/eventos` en red, no hay HTML cacheado como shell.
 - **Solo funciona en sesiones normales del browser**, no en incognito con storage bloqueado ni en contextos donde el SW esté deshabilitado.
-- **`ScoreSheetForm` usa `useRouter().push()` de Next.js** para navegar al volver (post-submit). Esta navegación sí pasa por el Next.js router y puede disparar un RSC fetch, aunque el catch-all la absorbe correctamente. El `stripRscParam` normaliza el cache entry. En un plan futuro podría migrarse a `useJuezRouter().navigate()` para consistencia total.
+- ~~`ScoreSheetForm` usa `useRouter().push()` de Next.js para navegar al volver (post-submit)~~ — **corregido**: no era un caso aceptable, era un bug real. `router.push()` cambia la URL vía `history.pushState` pero no dispara `popstate`, así que el `pathname` de `JuezRouterProvider` (que decide qué vista renderiza `CatchAllRouter`) nunca se actualizaba — el juez quedaba viendo la misma planilla enviada con la URL de la lista de equipos en la barra de direcciones, sin forma visible de volver salvo recargar. Ahora usa `useJuezRouter().navigate(backHref)`, igual que `JuezLink`. (Ver regla #5 arriba: cualquier navegación interna en `/juez/**` debe pasar por el router del SPA, nunca por el de Next.js.)
 - **`ConflictBanner` usa `router.refresh()`** de Next.js tras descartar un conflicto. En el contexto del catch-all SPA, este refresh re-monta el `JuezRouterProvider` y produce un flash de skeleton antes de restaurar la vista. Es aceptable para un caso de uso poco frecuente.
 - **No hay persistencia de la "última ruta" entre sesiones**. Si el juez cierra el browser y lo vuelve a abrir, aterriza en `/juez/eventos` (el default del catch-all), no en la ruta donde estaba.
 - **Animaciones de transición entre vistas**: no implementadas. El cambio de vista es instantáneo.
