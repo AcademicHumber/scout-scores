@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import Link from "next/link"
 import { PasswordInput } from "@/components/auth/PasswordInput"
 import { signupAction } from "./actions"
@@ -9,15 +9,45 @@ import messages from "@/messages/es.json"
 const m = messages.auth.signup
 const errors = m.errors as Record<string, string>
 
+// Duplica las condiciones de signupSchema (src/lib/auth-credentials.ts) para dar feedback
+// inmediato sin ir al servidor. Los mismos códigos de error (nameRequired/emailInvalid/
+// passwordTooShort) se usan del lado del servidor, así el mensaje es idéntico sin importar
+// quién frena el submit — la validación real y autoritativa sigue siendo la del servidor.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MIN_PASSWORD_LENGTH = 8
+
+function validateClientSide(name: string, email: string, password: string): string | null {
+  if (name.trim().length === 0) return "nameRequired"
+  if (!EMAIL_RE.test(email)) return "emailInvalid"
+  if (password.length < MIN_PASSWORD_LENGTH) return "passwordTooShort"
+  return null
+}
+
 export function CredentialsSignupForm() {
   const [state, dispatch, isPending] = useActionState(signupAction, null)
+  // Inputs controlados: React resetea los campos no controlados de un <form action>
+  // apenas la action termina, incluso cuando devuelve un error de validación en vez de
+  // lanzar — sin este estado, un error obliga a reescribir todo el formulario.
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [clientError, setClientError] = useState<string | null>(null)
 
-  const errorMsg = state?.error
-    ? (errors[state.error] ?? errors.generic)
-    : null
+  const errorCode = clientError ?? state?.error
+  const errorMsg = errorCode ? (errors[errorCode] ?? errors.generic) : null
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    const code = validateClientSide(name, email, password)
+    if (code) {
+      e.preventDefault()
+      setClientError(code)
+    } else {
+      setClientError(null)
+    }
+  }
 
   return (
-    <form action={dispatch} className="space-y-4">
+    <form action={dispatch} onSubmit={handleSubmit} noValidate className="space-y-4">
       <div className="space-y-1">
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
           {m.nameLabel}
@@ -28,6 +58,11 @@ export function CredentialsSignupForm() {
           type="text"
           autoComplete="name"
           required
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value)
+            setClientError(null)
+          }}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
         />
       </div>
@@ -42,6 +77,11 @@ export function CredentialsSignupForm() {
           type="email"
           autoComplete="email"
           required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            setClientError(null)
+          }}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
         />
       </div>
@@ -53,6 +93,11 @@ export function CredentialsSignupForm() {
         hint={m.passwordHint}
         autoComplete="new-password"
         required
+        value={password}
+        onChange={(e) => {
+          setPassword(e.target.value)
+          setClientError(null)
+        }}
       />
 
       {errorMsg && (

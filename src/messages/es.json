@@ -38,6 +38,9 @@
       "errors": {
         "emailTaken": "Ya existe una cuenta con ese email.",
         "emailWithGoogle": "Este email se registra con Google. Iniciá sesión con Google y luego agregá una contraseña desde tu perfil.",
+        "nameRequired": "El nombre es requerido.",
+        "emailInvalid": "Ingresá un email válido.",
+        "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
         "generic": "No pudimos crear la cuenta."
       }
     },

@@ -15,7 +15,11 @@ export async function signupAction(
   })
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message }
+    const field = parsed.error.issues[0]?.path[0]
+    if (field === "name") return { error: "nameRequired" }
+    if (field === "email") return { error: "emailInvalid" }
+    if (field === "password") return { error: "passwordTooShort" }
+    return { error: "generic" }
   }
 
   const email = normalizeEmail(parsed.data.email)
