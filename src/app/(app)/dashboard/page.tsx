@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth-helpers"
-import { MembershipRefresher } from "./MembershipRefresher"
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
@@ -14,13 +13,8 @@ export default async function DashboardPage() {
     redirect("/eventos")
   }
 
-  const hasMemberships = (user?.memberships?.length ?? 0) > 0
-
   return (
     <div className="space-y-6">
-      {/* Si el JWT aún no tiene memberships (caso post-onboarding), forzar refresh */}
-      {!hasMemberships && <MembershipRefresher />}
-
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
           Bienvenido, {user?.name ?? "usuario"}

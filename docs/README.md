@@ -26,6 +26,7 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [11 — Documentación pública para administradores y participantes](plans/11-docs-publica.md) ✓
 - [12 — Mobile UI admin: correcciones de overflow y formularios](plans/12-mobile-admin-ui.md) ✓
 - [13 — Refactor del onboarding: unirse como Espectador](plans/13-onboarding-refactor.md) ✓
+- [13b — Refresh de sesión tras cambio de rol hecho por otro usuario](plans/13b-refresh-sesion-post-cambio-rol.md) ✓
 
 > **Renumeración**: el deploy estaba previsto inicialmente como Plan 9. Tras intercalar el Plan 9 (login propio), el deploy pasó a Plan 10. Las referencias a "Plan 9" en los planes históricos 01–08 reflejan el estado del proyecto en el momento en que se escribieron y se mantienen como artefacto educativo.
 
