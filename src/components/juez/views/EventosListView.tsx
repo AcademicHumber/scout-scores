@@ -1,6 +1,7 @@
 "use client"
 
 import { useSession } from "next-auth/react"
+import Link from "next/link"
 import { JuezLink } from "@/lib/offline/juez-router"
 import { useJuezData } from "@/lib/offline/use-juez-data"
 import { readEventosFromSnapshot, type EventoSummary } from "@/lib/offline/snapshot"
@@ -103,10 +104,19 @@ export function EventosListView() {
 
       {state.status === "ready" && <EventosList eventos={state.data} />}
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center space-y-3">
+        {/* Navegación real de Next.js (no JuezLink): sale del SPA de /juez hacia /eventos,
+            una sección distinta de la app con permisos "inferiores" (visible para
+            cualquier miembro, no solo jueces). */}
+        <Link
+          href="/eventos"
+          className="block text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          {t.eventos.verPublicados}
+        </Link>
         <JuezLink
           href="/juez/pendientes"
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          className="block text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
           Ver operaciones pendientes
         </JuezLink>
