@@ -118,6 +118,14 @@ Estas reglas deben respetarse en todos los planes futuros que toquen el área de
 
 ---
 
+## Nota de alcance (Plan 16)
+
+El flujo de planificación de postas por jueces (Plan 16, `docs/plans/16-postas-por-juez.md`) vive completamente fuera de este árbol: rutas Server-rendered normales bajo `/eventos/[id]/postas`, Server Actions directas, sin IndexedDB ni cola de sync. Los eventos en `BORRADOR` no tienen el requisito de conectividad intermitente que motiva este ADR — el juez planifica antes del evento, típicamente con red disponible. Este ADR y sus reglas permanentes no aplican a ese flujo.
+
+El único punto de contacto entre ambos mundos es el enlace de salida "Ver eventos publicados" en `EventosListView.tsx`, que ahora usa `useOnlineStatus()` (`src/lib/offline/use-online-status.ts`) para deshabilitarse sin conexión — evita mostrar como clickeable un destino que fallaría por falta de red, sin alterar ninguna de las reglas permanentes de arriba.
+
+---
+
 ## Consecuencias
 
 ### Positivas

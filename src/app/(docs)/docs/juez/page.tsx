@@ -42,6 +42,42 @@ export default function JuezPage() {
         las postas que te corresponden. Tocá una posta para empezar a cargar puntajes.
       </p>
 
+      {/* Section: Cargar tu posta */}
+      <h2 className="mb-4 mt-8 text-xl font-bold text-gray-900">Cargar tu posta antes del evento</h2>
+      <p className="mb-4 text-sm text-gray-600">
+        Mientras un evento está en planificación (todavía no arrancó), podés cargar vos mismo la posta
+        que vas a dirigir, sin esperar a que el administrador la transcriba.
+      </p>
+      <StepList
+        steps={[
+          {
+            title: "Entrá a la sección de eventos",
+            children: 'En el menú, tocá "Eventos" y buscá la sección "Eventos en planificación".',
+          },
+          {
+            title: "Elegí la actividad",
+            children: "Entrá al evento y tocá \"Cargar mi posta\" en la actividad donde vas a estar.",
+          },
+          {
+            title: "Completá los datos",
+            children: (
+              <>
+                Nombre, descripción, materiales necesarios y quién ayuda. Si escribís el nombre de una
+                posta que ya existe en el distrito, el sistema te va a ofrecer reusarla en vez de crear una duplicada.
+              </>
+            ),
+          },
+          {
+            title: "Agregá la leyenda de puntajes (opcional)",
+            children: 'Si tenés a mano qué significa cada puntaje (ej. "10 = llegó primero"), cargala ahí mismo — es la misma que vas a ver después al puntuar.',
+          },
+        ]}
+      />
+      <Callout type="tip">
+        Una vez guardada, tu posta queda asignada automáticamente a vos. Podés seguir editándola
+        mientras el evento siga en planificación.
+      </Callout>
+
       {/* Section: CRITERIOS */}
       <h2 className="mb-3 mt-8 text-xl font-bold text-gray-900">Cargar puntaje — modo CRITERIOS</h2>
       <p className="mb-4 text-sm text-gray-600">
