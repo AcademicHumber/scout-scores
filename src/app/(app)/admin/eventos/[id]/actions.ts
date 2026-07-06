@@ -124,13 +124,13 @@ function buildPreActivacionMessage(errores: PreActivacionError[]): string {
       lines.push(count === 1
         ? `• 1 actividad sin postas: ${nombres}`
         : `• ${count} actividades sin postas: ${nombres}`)
-    } else if (e.code === "POSTA_SIN_PLANTILLA") {
-      const meta = e.meta as { postas: Array<{ nombre: string; actividadNombre: string }> }
-      const count = meta.postas.length
-      const nombres = meta.postas.map((p) => `"${p.nombre}" (en ${p.actividadNombre})`).join(", ")
+    } else if (e.code === "ACTIVIDAD_SIN_PLANTILLA") {
+      const meta = e.meta as { actividades: Array<{ nombre: string }> }
+      const nombres = meta.actividades.map((a) => `"${a.nombre}"`).join(", ")
+      const count = meta.actividades.length
       lines.push(count === 1
-        ? `• 1 posta sin plantilla: ${nombres}`
-        : `• ${count} postas sin plantilla: ${nombres}`)
+        ? `• 1 actividad sin plantilla: ${nombres}`
+        : `• ${count} actividades sin plantilla: ${nombres}`)
     } else if (e.code === "EVENTO_SIN_PATRULLAS") {
       lines.push("• El evento no tiene patrullas inscritas")
     }
@@ -199,9 +199,10 @@ const ActividadSchema = z.object({
     const n = parseFloat(v)
     return !isNaN(n) && n >= 0.01 && n <= 100
   }, "El peso debe ser entre 0.01 y 100"),
+  templateId: z.string().optional().nullable(),
 })
 
-export type ActividadState = { error?: string; fieldErrors?: Record<string, string[]>; actividad?: { id: string; nombre: string; descripcion: string | null; tipo: ActividadTipo; pesoRelativo: string; orden: number } }
+export type ActividadState = { error?: string; fieldErrors?: Record<string, string[]>; actividad?: { id: string; nombre: string; descripcion: string | null; tipo: ActividadTipo; pesoRelativo: string; orden: number; templateId: string | null } }
 
 export async function addActividadAction(
   _prev: ActividadState,
@@ -215,6 +216,7 @@ export async function addActividadAction(
     descripcion: formData.get("descripcion") as string || undefined,
     tipo: formData.get("tipo") as string,
     pesoRelativo: formData.get("pesoRelativo") as string,
+    templateId: (formData.get("templateId") as string) || null,
   }
 
   const result = ActividadSchema.safeParse(raw)
@@ -231,6 +233,7 @@ export async function addActividadAction(
         descripcion: result.data.descripcion,
         tipo: result.data.tipo as ActividadTipo,
         pesoRelativo: new Decimal(result.data.pesoRelativo),
+        templateId: result.data.templateId,
       },
       org.userId,
     )
@@ -239,6 +242,7 @@ export async function addActividadAction(
     if (err instanceof BusinessError) {
       if (err.code === "EVENTO_LOCKED") return { error: "El evento ya tiene puntajes cargados; no se pueden modificar las actividades" }
       if (err.code === "NOT_FOUND") return { error: "Evento no encontrado" }
+      if (err.code === "PLANTILLA_INVALIDA") return { error: "La plantilla seleccionada no es válida o está archivada" }
     }
     throw err
   }
@@ -257,6 +261,7 @@ export async function updateActividadAction(
     descripcion: formData.get("descripcion") as string || undefined,
     tipo: formData.get("tipo") as string,
     pesoRelativo: formData.get("pesoRelativo") as string,
+    templateId: (formData.get("templateId") as string) || null,
   }
 
   const result = ActividadSchema.safeParse(raw)
@@ -274,6 +279,7 @@ export async function updateActividadAction(
         descripcion: result.data.descripcion,
         tipo: result.data.tipo as ActividadTipo,
         pesoRelativo: new Decimal(result.data.pesoRelativo),
+        templateId: result.data.templateId,
       },
       org.userId,
     )
@@ -285,6 +291,7 @@ export async function updateActividadAction(
         tipo: updated.tipo,
         pesoRelativo: updated.pesoRelativo.toString(),
         orden: updated.orden,
+        templateId: updated.templateId,
       },
     }
   } catch (err) {
@@ -292,6 +299,7 @@ export async function updateActividadAction(
       if (err.code === "EVENTO_LOCKED") return { error: "El evento ya tiene puntajes cargados; no se pueden modificar las actividades" }
       if (err.code === "ACTIVIDAD_NO_ENCONTRADA") return { error: "Actividad no encontrada" }
       if (err.code === "NOT_FOUND") return { error: "Evento no encontrado" }
+      if (err.code === "PLANTILLA_INVALIDA") return { error: "La plantilla seleccionada no es válida o está archivada" }
     }
     throw err
   }

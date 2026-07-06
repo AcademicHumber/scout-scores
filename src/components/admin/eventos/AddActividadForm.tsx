@@ -6,9 +6,11 @@ import messages from "@/messages/es.json"
 
 const m = messages.admin.eventos
 
-type Props = { eventoId: string }
+type Template = { id: string; nombre: string; archivedAt: Date | null }
 
-export function AddActividadForm({ eventoId }: Props) {
+type Props = { eventoId: string; templates: Template[] }
+
+export function AddActividadForm({ eventoId, templates }: Props) {
   const [state, action, pending] = useActionState(addActividadAction, {})
 
   return (
@@ -75,6 +77,19 @@ export function AddActividadForm({ eventoId }: Props) {
             maxLength={1000}
             className="w-full rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
           />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">{m.actividades.row.plantilla}</label>
+          <select
+            name="templateId"
+            className="w-full rounded border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            <option value="">{m.actividades.row.plantillaSinAsignar}</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>{t.nombre}</option>
+            ))}
+          </select>
         </div>
       </div>
 

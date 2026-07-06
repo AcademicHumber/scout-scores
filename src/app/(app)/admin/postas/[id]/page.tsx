@@ -1,9 +1,9 @@
 import { requireRole } from "@/lib/auth-helpers"
 import { findPostaById } from "@/repositories/posta.repo"
-import { listScoreTemplates } from "@/repositories/score-template.repo"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { PostaDetailForm } from "@/components/admin/postas/PostaDetailForm"
+import { CriteriosDescripcionesForm } from "@/components/admin/postas/CriteriosDescripcionesForm"
 import messages from "@/messages/es.json"
 
 const m = messages.admin.postas
@@ -18,20 +18,34 @@ export default async function PostaDetailPage({ params }: { params: Promise<{ id
   const org = await requireRole(["ADMIN"])
   const { id } = await params
 
-  const [posta, allTemplates] = await Promise.all([
-    findPostaById(org.organizationId, id),
-    listScoreTemplates(org.organizationId),
-  ])
+  const posta = await findPostaById(org.organizationId, id)
 
   if (!posta) notFound()
-
-  const templates = allTemplates
-    .filter((t) => !t.archivedAt || t.id === posta.templateId)
-    .map((t) => ({ id: t.id, nombre: t.nombre, archivedAt: t.archivedAt }))
 
   const materiales = Array.isArray(posta.materiales)
     ? (posta.materiales as Array<{ nombre: string; cantidad?: string }>)
     : []
+
+  const templatesVistos = new Set<string>()
+  const templates = []
+  for (const asig of posta.asignaciones) {
+    const template = asig.actividad.template
+    if (!template || templatesVistos.has(template.id)) continue
+    templatesVistos.add(template.id)
+    templates.push({
+      id: template.id,
+      nombre: template.nombre,
+      modo: template.modo,
+      valoresValidos: template.valoresValidos.map(Number),
+      valoresValidosDesempate: template.valoresValidosDesempate.map(Number),
+      criterios: template.criterios.map((c) => ({ id: c.id, nombre: c.nombre, tipo: c.tipo })),
+    })
+  }
+
+  const criteriosDescripciones = (posta.criteriosDescripciones ?? {}) as {
+    criterios?: Record<string, Record<string, string>>
+    unico?: Record<string, string>
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -50,12 +64,9 @@ export default async function PostaDetailPage({ params }: { params: Promise<{ id
             nombre: posta.nombre,
             descripcion: posta.descripcion,
             duracionMinutos: posta.duracionMinutos,
-            templateId: posta.templateId,
-            template: posta.template,
             materiales,
             asignacionesCount: posta.asignaciones.length,
           }}
-          templates={templates}
         />
       </div>
 
@@ -86,6 +97,19 @@ export default async function PostaDetailPage({ params }: { params: Promise<{ id
             ))}
           </div>
         )}
+      </div>
+
+      {/* Leyenda de puntajes */}
+      <div className="rounded-xl border bg-white p-6 shadow-sm">
+        <h2 className="mb-1 text-lg font-semibold text-gray-900">Leyenda de puntajes</h2>
+        <p className="mb-4 text-sm text-gray-500">
+          Qué significa cada puntaje posible para esta posta (ej: &quot;10 = llegó primero&quot;). Se muestra al juez al cargar la planilla.
+        </p>
+        <CriteriosDescripcionesForm
+          postaId={posta.id}
+          templates={templates}
+          criteriosDescripciones={criteriosDescripciones}
+        />
       </div>
     </div>
   )

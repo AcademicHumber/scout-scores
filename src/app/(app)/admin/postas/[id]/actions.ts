@@ -3,7 +3,7 @@
 import { z } from "zod"
 import { redirect } from "next/navigation"
 import { requireRole } from "@/lib/auth-helpers"
-import { updatePosta, deletePosta } from "@/repositories/posta.repo"
+import { updatePosta, deletePosta, updateCriteriosDescripciones } from "@/repositories/posta.repo"
 import { BusinessError } from "@/lib/errors"
 
 const MaterialSchema = z.object({
@@ -15,14 +15,13 @@ const PostaSchema = z.object({
   nombre: z.string().trim().min(2).max(100),
   descripcion: z.string().trim().max(1000).optional(),
   duracionMinutos: z.coerce.number().int().min(1).max(480).optional().nullable(),
-  templateId: z.string().optional().nullable(),
   materiales: z.array(MaterialSchema).default([]),
 })
 
 export type UpdatePostaState = {
   error?: string
   fieldErrors?: Record<string, string[]>
-  posta?: { id: string; nombre: string; descripcion: string | null; duracionMinutos: number | null; templateId: string | null; materiales: unknown }
+  posta?: { id: string; nombre: string; descripcion: string | null; duracionMinutos: number | null; materiales: unknown }
 }
 
 export async function updatePostaAction(
@@ -44,7 +43,6 @@ export async function updatePostaAction(
     nombre: formData.get("nombre") as string,
     descripcion: (formData.get("descripcion") as string) || undefined,
     duracionMinutos: (formData.get("duracionMinutos") as string) || undefined,
-    templateId: (formData.get("templateId") as string) || null,
     materiales,
   }
 
@@ -61,14 +59,12 @@ export async function updatePostaAction(
         nombre: updated.nombre,
         descripcion: updated.descripcion,
         duracionMinutos: updated.duracionMinutos,
-        templateId: updated.templateId,
         materiales: updated.materiales,
       },
     }
   } catch (err) {
     if (err instanceof BusinessError) {
       if (err.code === "NOMBRE_POSTA_DUPLICADO") return { error: "Ya existe una posta con ese nombre en el distrito" }
-      if (err.code === "PLANTILLA_INVALIDA") return { error: "La plantilla seleccionada no es válida o está archivada" }
       if (err.code === "POSTA_NO_ENCONTRADA") return { error: "Posta no encontrada" }
     }
     throw err
@@ -98,4 +94,46 @@ export async function deletePostaAction(
   }
 
   redirect("/admin/postas")
+}
+
+const CriteriosDescripcionesSchema = z.object({
+  scope: z.string().min(1),
+  valores: z.record(z.string(), z.string()),
+})
+
+export type UpdateCriteriosDescripcionesState = { error?: string; success?: boolean }
+
+export async function updateCriteriosDescripcionesAction(
+  _prev: UpdateCriteriosDescripcionesState,
+  formData: FormData,
+): Promise<UpdateCriteriosDescripcionesState> {
+  const org = await requireRole(["ADMIN"])
+  const postaId = formData.get("postaId") as string
+
+  let valores: Record<string, string> = {}
+  try {
+    valores = JSON.parse((formData.get("valores") as string) || "{}")
+  } catch {
+    valores = {}
+  }
+
+  const result = CriteriosDescripcionesSchema.safeParse({
+    scope: formData.get("scope") as string,
+    valores,
+  })
+  if (!result.success) {
+    return { error: "Datos inválidos" }
+  }
+
+  const scope = result.data.scope === "unico" ? { unico: true as const } : { criterioId: result.data.scope }
+
+  try {
+    await updateCriteriosDescripciones(org.organizationId, postaId, scope, result.data.valores, org.userId)
+    return { success: true }
+  } catch (err) {
+    if (err instanceof BusinessError) {
+      if (err.code === "POSTA_NO_ENCONTRADA") return { error: "Posta no encontrada" }
+    }
+    throw err
+  }
 }

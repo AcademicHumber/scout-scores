@@ -11,11 +11,7 @@ const m = messages.admin.eventos
 type Asignacion = {
   id: string
   postaId: string
-  posta: {
-    nombre: string
-    templateId: string | null
-    template: { id: string; nombre: string; archivedAt: Date | null } | null
-  }
+  posta: { nombre: string }
   juezUserId: string | null
   juezUser: { id: string; name: string | null; email: string } | null
   encargado: string | null
@@ -27,11 +23,11 @@ type Asignacion = {
 type PostaDisponible = {
   id: string
   nombre: string
-  templateId: string | null
-  template: { id: string; nombre: string; archivedAt: Date | null } | null
   duracionMinutos: number | null
   asignadaEnActividad: string | null
 }
+
+type Template = { id: string; nombre: string; archivedAt: Date | null }
 
 type Actividad = {
   id: string
@@ -39,6 +35,7 @@ type Actividad = {
   descripcion: string | null
   tipo: ActividadTipo
   pesoRelativo: string
+  templateId: string | null
   orden: number
   asignaciones: Asignacion[]
 }
@@ -51,9 +48,10 @@ type Props = {
   isLocked: boolean
   postasDisponibles: PostaDisponible[]
   jueces: Array<{ userId: string; name: string | null; email: string }>
+  templates: Template[]
 }
 
-export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, postasDisponibles, jueces }: Props) {
+export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, postasDisponibles, jueces, templates }: Props) {
   const [editState, editAction, editPending] = useActionState(updateActividadAction, {})
   const [deleteState, deleteAction, deletePending] = useActionState(deleteActividadAction, {})
   const [, upAction, upPending] = useActionState(reorderActividadAction, {})
@@ -63,17 +61,20 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, p
   const [descripcion, setDescripcion] = useState(actividad.descripcion ?? "")
   const [tipo, setTipo] = useState<ActividadTipo>(actividad.tipo)
   const [peso, setPeso] = useState(actividad.pesoRelativo)
+  const [templateId, setTemplateId] = useState(actividad.templateId ?? "")
 
   const [savedNombre, setSavedNombre] = useState(actividad.nombre)
   const [savedDescripcion, setSavedDescripcion] = useState(actividad.descripcion ?? "")
   const [savedTipo, setSavedTipo] = useState<ActividadTipo>(actividad.tipo)
   const [savedPeso, setSavedPeso] = useState(actividad.pesoRelativo)
+  const [savedTemplateId, setSavedTemplateId] = useState(actividad.templateId ?? "")
 
   const isDirty =
     nombre !== savedNombre ||
     descripcion !== savedDescripcion ||
     tipo !== savedTipo ||
-    peso !== savedPeso
+    peso !== savedPeso ||
+    templateId !== savedTemplateId
 
   useEffect(() => {
     if (editState.actividad) {
@@ -81,6 +82,7 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, p
       setSavedDescripcion(editState.actividad.descripcion ?? "")
       setSavedTipo(editState.actividad.tipo)
       setSavedPeso(editState.actividad.pesoRelativo)
+      setSavedTemplateId(editState.actividad.templateId ?? "")
     }
   }, [editState])
 
@@ -137,6 +139,7 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, p
               <input type="hidden" name="descripcion" value={descripcion} />
               <input type="hidden" name="tipo" value={tipo} />
               <input type="hidden" name="pesoRelativo" value={peso} />
+              <input type="hidden" name="templateId" value={templateId} />
               <button
                 type="submit"
                 disabled={editPending}
@@ -193,6 +196,22 @@ export function ActividadRow({ actividad, eventoId, isFirst, isLast, isLocked, p
           className="w-full rounded border px-2 py-1 text-xs text-gray-500 focus:outline-none focus:ring-1 focus:ring-brand"
           placeholder={m.actividades.row.descripcion}
         />
+      </div>
+
+      <div className="mt-2 flex items-center gap-2">
+        <label className="text-xs font-medium text-gray-500">{m.actividades.row.plantilla}</label>
+        <select
+          value={templateId}
+          onChange={(e) => setTemplateId(e.target.value)}
+          className="rounded border px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand"
+        >
+          <option value="">{m.actividades.row.plantillaSinAsignar}</option>
+          {templates.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nombre}{t.archivedAt ? " [archivada]" : ""}
+            </option>
+          ))}
+        </select>
       </div>
 
       <AsignacionesInActividad

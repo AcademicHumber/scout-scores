@@ -17,12 +17,11 @@ async function _findById(organizationId: string, id: string) {
       actividades: {
         orderBy: { orden: "asc" },
         include: {
+          template: { select: { id: true, nombre: true, archivedAt: true } },
           asignaciones: {
             orderBy: { orden: "asc" },
             include: {
-              posta: {
-                include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
-              },
+              posta: true,
               juezUser: { select: { id: true, name: true, email: true } },
             },
           },
@@ -69,10 +68,12 @@ async function canTransitionToActivo(eventoId: string): Promise<void> {
     where: { id: eventoId },
     include: {
       actividades: {
-        include: {
-          asignaciones: {
-            include: { posta: { select: { id: true, nombre: true, templateId: true } } },
-          },
+        select: {
+          id: true,
+          nombre: true,
+          pesoRelativo: true,
+          templateId: true,
+          asignaciones: { select: { id: true } },
         },
       },
       patrullas: { select: { id: true } },
@@ -105,14 +106,12 @@ async function canTransitionToActivo(eventoId: string): Promise<void> {
     })
   }
 
-  // 3. Cada posta asignada tiene plantilla
-  const postasSinPlantilla = evento.actividades.flatMap((a) =>
-    a.asignaciones
-      .filter((asig) => asig.posta.templateId === null)
-      .map((asig) => ({ id: asig.posta.id, nombre: asig.posta.nombre, actividadNombre: a.nombre })),
-  )
-  if (postasSinPlantilla.length > 0) {
-    errores.push({ code: "POSTA_SIN_PLANTILLA", meta: { postas: postasSinPlantilla } })
+  // 3. Cada actividad tiene plantilla asignada
+  const actividadesSinPlantilla = evento.actividades
+    .filter((a) => a.templateId === null)
+    .map((a) => ({ id: a.id, nombre: a.nombre }))
+  if (actividadesSinPlantilla.length > 0) {
+    errores.push({ code: "ACTIVIDAD_SIN_PLANTILLA", meta: { actividades: actividadesSinPlantilla } })
   }
 
   // 4. ≥ 1 patrulla
@@ -411,6 +410,15 @@ type ActividadData = {
   descripcion?: string
   tipo: ActividadTipo
   pesoRelativo: Decimal
+  templateId?: string | null
+}
+
+async function validateTemplateId(organizationId: string, templateId: string | null | undefined) {
+  if (!templateId) return
+  const template = await prisma.scoreTemplate.findFirst({
+    where: { id: templateId, organizationId, archivedAt: null },
+  })
+  if (!template) throw new BusinessError("PLANTILLA_INVALIDA")
 }
 
 export async function addActividad(
@@ -423,6 +431,8 @@ export async function addActividad(
   if (!evento) throw new BusinessError("NOT_FOUND")
 
   if (await isEventoLocked(eventoId)) throw new BusinessError("EVENTO_LOCKED")
+
+  await validateTemplateId(organizationId, data.templateId)
 
   const maxOrden = await prisma.actividad.aggregate({
     where: { eventoId },
@@ -440,6 +450,7 @@ export async function addActividad(
         descripcion: data.descripcion,
         tipo: data.tipo,
         pesoRelativo: data.pesoRelativo,
+        templateId: data.templateId ?? null,
         orden: nextOrden,
       },
     })
@@ -475,6 +486,8 @@ export async function updateActividad(
   const actividad = await prisma.actividad.findFirst({ where: { id: actividadId, eventoId } })
   if (!actividad) throw new BusinessError("ACTIVIDAD_NO_ENCONTRADA")
 
+  await validateTemplateId(organizationId, data.templateId)
+
   let updated: Awaited<ReturnType<typeof prisma.actividad.update>>
 
   await prisma.$transaction(async (tx) => {
@@ -485,6 +498,7 @@ export async function updateActividad(
         descripcion: data.descripcion,
         tipo: data.tipo,
         pesoRelativo: data.pesoRelativo,
+        templateId: data.templateId ?? null,
       },
     })
     await tx.auditLog.create({

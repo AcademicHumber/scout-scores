@@ -58,7 +58,9 @@ export default function JuezPage() {
             children: (
               <>
                 Para cada criterio, seleccioná el valor en la escala (ej: 0 / 1 / 2 / 3).
-                Podés dejar criterios sin completar y guardar un borrador.
+                Si el administrador cargó una leyenda para esa posta, vas a ver debajo de cada
+                valor qué significa (ej. &ldquo;10 = llegó primero&rdquo;). Podés dejar criterios
+                sin completar y guardar un borrador.
               </>
             ),
           },

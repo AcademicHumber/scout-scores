@@ -7,12 +7,10 @@ import messages from "@/messages/es.json"
 
 const m = messages.admin.eventos.postas
 
-type Template = { id: string; nombre: string; archivedAt: Date | null } | null
-
 type Asignacion = {
   id: string
   postaId: string
-  posta: { nombre: string; templateId: string | null; template: Template }
+  posta: { nombre: string }
   juezUserId: string | null
   juezUser: { id: string; name: string | null; email: string } | null
   encargado: string | null
@@ -24,8 +22,6 @@ type Asignacion = {
 type PostaDisponible = {
   id: string
   nombre: string
-  templateId: string | null
-  template: Template
   duracionMinutos: number | null
   asignadaEnActividad: string | null
 }

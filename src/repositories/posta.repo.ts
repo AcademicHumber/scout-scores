@@ -11,7 +11,6 @@ async function _listPostas(organizationId: string) {
   return prisma.posta.findMany({
     where: { organizationId },
     include: {
-      template: { select: { id: true, nombre: true, archivedAt: true } },
       _count: { select: { asignaciones: true } },
     },
     orderBy: { nombre: "asc" },
@@ -22,12 +21,14 @@ async function _findPostaById(organizationId: string, postaId: string) {
   return prisma.posta.findFirst({
     where: { id: postaId, organizationId },
     include: {
-      template: { select: { id: true, nombre: true, archivedAt: true } },
       asignaciones: {
         include: {
           actividad: {
             include: {
               evento: { select: { id: true, nombre: true, fechaInicio: true, estado: true } },
+              template: {
+                include: { criterios: { orderBy: { orden: "asc" } } },
+              },
             },
           },
           juezUser: { select: { id: true, name: true, email: true } },
@@ -42,7 +43,6 @@ async function _listPostasParaEvento(organizationId: string, eventoId: string) {
   const [postas, asignacionesDelEvento] = await Promise.all([
     prisma.posta.findMany({
       where: { organizationId },
-      include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
       orderBy: { nombre: "asc" },
     }),
     prisma.asignacionPosta.findMany({
@@ -72,9 +72,7 @@ async function _listAsignacionesByActividad(organizationId: string, actividadId:
       actividad: { evento: { organizationId } },
     },
     include: {
-      posta: {
-        include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
-      },
+      posta: true,
       juezUser: { select: { id: true, name: true, email: true } },
     },
     orderBy: { orden: "asc" },
@@ -144,7 +142,6 @@ type CreatePostaData = {
   nombre: string
   descripcion?: string
   duracionMinutos?: number | null
-  templateId?: string | null
   materiales?: Material[]
 }
 
@@ -153,13 +150,6 @@ export async function createPosta(
   data: CreatePostaData,
   actorUserId: string,
 ): Promise<{ id: string }> {
-  if (data.templateId) {
-    const template = await prisma.scoreTemplate.findFirst({
-      where: { id: data.templateId, organizationId, archivedAt: null },
-    })
-    if (!template) throw new BusinessError("PLANTILLA_INVALIDA")
-  }
-
   let createdId: string
 
   await prisma.$transaction(async (tx) => {
@@ -169,7 +159,6 @@ export async function createPosta(
         nombre: data.nombre,
         descripcion: data.descripcion ?? null,
         duracionMinutos: data.duracionMinutos ?? null,
-        templateId: data.templateId ?? null,
         materiales: data.materiales ?? [],
       },
     })
@@ -203,13 +192,6 @@ export async function updatePosta(
 ) {
   await requirePosta(organizationId, postaId)
 
-  if (data.templateId) {
-    const template = await prisma.scoreTemplate.findFirst({
-      where: { id: data.templateId, organizationId, archivedAt: null },
-    })
-    if (!template) throw new BusinessError("PLANTILLA_INVALIDA")
-  }
-
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.posta.update({
       where: { id: postaId },
@@ -217,10 +199,8 @@ export async function updatePosta(
         nombre: data.nombre,
         descripcion: data.descripcion ?? null,
         duracionMinutos: data.duracionMinutos ?? null,
-        templateId: data.templateId ?? null,
         materiales: data.materiales ?? [],
       },
-      include: { template: { select: { id: true, nombre: true, archivedAt: true } } },
     })
     await tx.auditLog.create({
       data: {
@@ -240,6 +220,48 @@ export async function updatePosta(
 
   revalidateTag(cacheTags.postas(organizationId))
   return updated
+}
+
+type CriteriosDescripciones = {
+  criterios?: Record<string, Record<string, string>>
+  unico?: Record<string, string>
+}
+
+type CriteriosDescripcionesScope = { criterioId: string } | { unico: true }
+
+export async function updateCriteriosDescripciones(
+  organizationId: string,
+  postaId: string,
+  scope: CriteriosDescripcionesScope,
+  valores: Record<string, string>,
+  actorUserId: string,
+): Promise<void> {
+  const posta = await requirePosta(organizationId, postaId)
+  const current = (posta.criteriosDescripciones ?? {}) as CriteriosDescripciones
+
+  const updatedJson: CriteriosDescripciones =
+    "unico" in scope
+      ? { ...current, unico: valores }
+      : { ...current, criterios: { ...(current.criterios ?? {}), [scope.criterioId]: valores } }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.posta.update({
+      where: { id: postaId },
+      data: { criteriosDescripciones: updatedJson },
+    })
+    await tx.auditLog.create({
+      data: {
+        organizationId,
+        actorUserId,
+        action: "posta.criteriosDescripcionesUpdated",
+        targetType: "Posta",
+        targetId: postaId,
+        metadata: { scope: "unico" in scope ? "unico" : scope.criterioId },
+      },
+    })
+  })
+
+  revalidateTag(cacheTags.postas(organizationId))
 }
 
 export async function deletePosta(
@@ -396,7 +418,7 @@ export async function updateAsignacion(
         weight: data.weight ?? new Decimal(1.0),
       },
       include: {
-        posta: { include: { template: { select: { id: true, nombre: true, archivedAt: true } } } },
+        posta: { select: { nombre: true } },
         juezUser: { select: { id: true, name: true, email: true } },
       },
     })

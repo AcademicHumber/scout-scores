@@ -97,7 +97,7 @@ export default function AdminPage() {
       <SectionHeader number={4} title="Plantillas de puntaje" />
       <p className="mb-3 text-sm text-gray-600">
         Andá a <strong>Admin → Plantillas → Nueva plantilla</strong>. Una plantilla define cómo
-        se puntúa una posta. Elegí el modo:
+        se puntúa una actividad. Elegí el modo:
       </p>
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
         {[
@@ -143,6 +143,11 @@ export default function AdminPage() {
         Cada actividad tiene un <strong>peso porcentual</strong> que indica cuánto aporta al
         puntaje total. La suma de todos los pesos debe ser exactamente <strong>100%</strong>.
       </p>
+      <p className="mb-3 text-sm text-gray-600">
+        Al crear la actividad también elegís su <strong>plantilla de puntaje</strong>. Todas las
+        postas que asignes a esa actividad se puntúan con esa misma plantilla — no hace falta
+        elegirla de nuevo por cada posta.
+      </p>
       <Callout type="important">
         Ejemplo: Mañana (40%) + Tarde (40%) + Noche (20%) = 100%. Si la suma no cierra,
         el botón <strong>&ldquo;Activar&rdquo;</strong> mostrará un error.
@@ -152,11 +157,17 @@ export default function AdminPage() {
       <SectionHeader number={6} title="Biblioteca de postas" />
       <p className="mb-3 text-sm text-gray-600">
         Antes de asignar postas a actividades, creá tus postas en <strong>Admin → Postas → Nueva posta</strong>.
-        Cada posta tiene nombre, descripción, duración estimada, materiales necesarios y una plantilla de puntaje.
+        Cada posta tiene nombre, descripción, duración estimada y materiales necesarios.
       </p>
-      <p className="text-sm text-gray-600">
+      <p className="mb-3 text-sm text-gray-600">
         Las postas viven en tu biblioteca del distrito y pueden reutilizarse en distintos eventos.
         El historial de usos aparece en el detalle de cada posta.
+      </p>
+      <p className="text-sm text-gray-600">
+        Una vez que la posta está asignada a una actividad, en su página de detalle podés cargar la{" "}
+        <strong>leyenda de puntajes</strong>: qué significa cada valor posible de la escala para esa
+        posta puntual (ej. &ldquo;10 = llegó primero&rdquo;). Esa leyenda se le muestra al juez al
+        cargar la planilla.
       </p>
 
       {/* Section 7 */}
@@ -192,8 +203,8 @@ export default function AdminPage() {
       <ul className="mb-4 space-y-1.5 text-sm text-gray-600">
         {[
           "Las actividades suman exactamente 100%.",
+          "Cada actividad tiene una plantilla de puntaje asignada.",
           "Cada actividad tiene al menos una posta asignada.",
-          "Cada posta tiene un juez asignado.",
           "Hay al menos una patrulla.",
         ].map((check) => (
           <li key={check} className="flex gap-2">

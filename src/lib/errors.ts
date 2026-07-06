@@ -26,7 +26,7 @@ export class BusinessError extends Error {
 // PATRULLA_NOMBRE_DUPLICADO — ya existe una patrulla con ese nombre en el evento
 // JUEZ_INVALIDO            — usuario sin rol JUEZ o ADMIN en la org
 // ACTIVIDAD_SIN_POSTAS     — actividad no tiene postas al intentar activar
-// POSTA_SIN_PLANTILLA      — posta sin plantilla asignada al intentar activar
+// ACTIVIDAD_SIN_PLANTILLA  — actividad sin plantilla asignada al intentar activar (Plan 15)
 // EVENTO_SIN_PATRULLAS     — evento sin patrullas al intentar activar
 // GRUPO_SCOUT_INVALIDO     — grupo scout no pertenece a la org
 // PLANTILLA_INVALIDA       — plantilla no pertenece a la org o está archivada

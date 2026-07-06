@@ -3,12 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from "react"
 import { asignarPostaAction, updateAsignacionAction } from "@/app/(app)/admin/eventos/[id]/actions"
 
-type Template = { id: string; nombre: string; archivedAt: Date | null } | null
-
 type Asignacion = {
   id: string
   postaId: string
-  posta: { nombre: string; templateId: string | null; template: Template }
+  posta: { nombre: string }
   juezUserId: string | null
   encargado: string | null
   ayudantes: string | null
@@ -18,8 +16,6 @@ type Asignacion = {
 type PostaDisponible = {
   id: string
   nombre: string
-  templateId: string | null
-  template: Template
   duracionMinutos: number | null
   asignadaEnActividad: string | null
 }
@@ -113,24 +109,13 @@ export function AsignacionPostaDialog({ actividadId, asignacion, postasDisponibl
         {isEditing && (
           <div className="rounded bg-gray-50 px-3 py-2 text-sm text-gray-700">
             <span className="font-medium">{asignacion.posta.nombre}</span>
-            {asignacion.posta.template && (
-              <span className="ml-2 text-xs text-gray-500">— {asignacion.posta.template.nombre}</span>
-            )}
           </div>
         )}
 
         {/* Previsualización de posta seleccionada */}
-        {!isEditing && postaSeleccionada && (
+        {!isEditing && postaSeleccionada && postaSeleccionada.duracionMinutos && (
           <div className="rounded bg-gray-50 px-3 py-2 text-xs text-gray-600 space-y-0.5">
-            {postaSeleccionada.template && (
-              <p>Plantilla: <span className="font-medium">{postaSeleccionada.template.nombre}</span></p>
-            )}
-            {!postaSeleccionada.template && (
-              <p className="text-amber-600">Sin plantilla asignada</p>
-            )}
-            {postaSeleccionada.duracionMinutos && (
-              <p>Duración estimada: {postaSeleccionada.duracionMinutos} min</p>
-            )}
+            <p>Duración estimada: {postaSeleccionada.duracionMinutos} min</p>
           </div>
         )}
 

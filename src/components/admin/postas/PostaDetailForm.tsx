@@ -14,15 +14,12 @@ type Props = {
     nombre: string
     descripcion: string | null
     duracionMinutos: number | null
-    templateId: string | null
-    template: { id: string; nombre: string; archivedAt: Date | null } | null
     materiales: Material[]
     asignacionesCount: number
   }
-  templates: Array<{ id: string; nombre: string; archivedAt: Date | null }>
 }
 
-export function PostaDetailForm({ posta, templates }: Props) {
+export function PostaDetailForm({ posta }: Props) {
   const [updateState, updateAction, updatePending] = useActionState(updatePostaAction, {})
   const [deleteState, deleteAction, deletePending] = useActionState(deletePostaAction, {})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -30,20 +27,17 @@ export function PostaDetailForm({ posta, templates }: Props) {
   const [nombre, setNombre] = useState(posta.nombre)
   const [descripcion, setDescripcion] = useState(posta.descripcion ?? "")
   const [duracionMinutos, setDuracionMinutos] = useState(posta.duracionMinutos?.toString() ?? "")
-  const [templateId, setTemplateId] = useState(posta.templateId ?? "")
   const [materiales, setMateriales] = useState<Material[]>(posta.materiales)
 
   const [savedNombre, setSavedNombre] = useState(posta.nombre)
   const [savedDescripcion, setSavedDescripcion] = useState(posta.descripcion ?? "")
   const [savedDuracion, setSavedDuracion] = useState(posta.duracionMinutos?.toString() ?? "")
-  const [savedTemplateId, setSavedTemplateId] = useState(posta.templateId ?? "")
   const [savedMateriales, setSavedMateriales] = useState(JSON.stringify(posta.materiales))
 
   const isDirty =
     nombre !== savedNombre ||
     descripcion !== savedDescripcion ||
     duracionMinutos !== savedDuracion ||
-    templateId !== savedTemplateId ||
     JSON.stringify(materiales) !== savedMateriales
 
   useEffect(() => {
@@ -51,7 +45,6 @@ export function PostaDetailForm({ posta, templates }: Props) {
       setSavedNombre(updateState.posta.nombre)
       setSavedDescripcion(updateState.posta.descripcion ?? "")
       setSavedDuracion(updateState.posta.duracionMinutos?.toString() ?? "")
-      setSavedTemplateId(updateState.posta.templateId ?? "")
       const mats = Array.isArray(updateState.posta.materiales)
         ? (updateState.posta.materiales as Material[])
         : []
@@ -122,24 +115,6 @@ export function PostaDetailForm({ posta, templates }: Props) {
             max={480}
             className="w-full sm:w-32 rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
-        </div>
-
-        {/* Plantilla */}
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">{m.fields.plantilla}</label>
-          <select
-            name="templateId"
-            value={templateId}
-            onChange={(e) => setTemplateId(e.target.value)}
-            className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-          >
-            <option value="">{m.fields.plantillaSinAsignar}</option>
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.nombre}{t.archivedAt ? " [archivada]" : ""}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Materiales */}

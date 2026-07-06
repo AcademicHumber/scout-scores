@@ -16,14 +16,15 @@ async function _findAsignacionAccesible(
   const asignacion = await prisma.asignacionPosta.findFirst({
     where: { id: asignacionId, actividad: { evento: { organizationId } } },
     include: {
-      actividad: { include: { evento: { select: { id: true, estado: true } } } },
-      posta: {
+      actividad: {
         include: {
+          evento: { select: { id: true, estado: true } },
           template: {
             include: { criterios: { orderBy: { orden: "asc" } } },
           },
         },
       },
+      posta: true,
     },
   })
   if (!asignacion) throw new BusinessError("ASIGNACION_NO_ENCONTRADA")
@@ -45,7 +46,7 @@ function _validateValoresEnEscala(
   asignacion: AsignacionConTemplate,
   data: SaveScoreSheetData,
 ): void {
-  const template = asignacion.posta.template
+  const template = asignacion.actividad.template
   if (!template) return
 
   // Comparar como string para evitar divergencias de representación Decimal
@@ -88,7 +89,7 @@ function _calcularTotales(
   asignacion: AsignacionConTemplate,
   data: SaveScoreSheetData,
 ): { totalPuntuable: Decimal; totalDesempate: Decimal } {
-  const template = asignacion.posta.template
+  const template = asignacion.actividad.template
   const weight = asignacion.weight
 
   let sumaPuntuable = new Decimal(0)
@@ -178,10 +179,11 @@ export function listPlanillasPorEventoAdmin(organizationId: string, eventoId: st
           actividades: {
             orderBy: { orden: "asc" },
             include: {
+              template: { select: { modo: true } },
               asignaciones: {
                 orderBy: { orden: "asc" },
                 include: {
-                  posta: { include: { template: { select: { modo: true } } } },
+                  posta: true,
                   juezUser: { select: { name: true } },
                   scoreSheets: {
                     include: {
@@ -227,7 +229,7 @@ export function listPlanillasPorEventoAdmin(organizationId: string, eventoId: st
             asignacionId: asignacion.id,
             postaNombre: asignacion.posta.nombre,
             juezNombre: asignacion.juezUser?.name ?? null,
-            plantillaModo: (asignacion.posta.template?.modo ?? null) as "CRITERIOS" | "PUNTAJE_UNICO" | null,
+            plantillaModo: (actividad.template?.modo ?? null) as "CRITERIOS" | "PUNTAJE_UNICO" | null,
             filas,
           })
         }
@@ -262,7 +264,15 @@ export type SnapshotEntry = {
     modo: "CRITERIOS" | "PUNTAJE_UNICO"
     valoresValidos: number[]
     valoresValidosDesempate: number[]
-    criterios: { id: string; nombre: string; descripcion: string | null; tipo: "PUNTUABLE" | "DESEMPATE"; orden: number }[]
+    criterios: {
+      id: string
+      nombre: string
+      descripcion: string | null
+      tipo: "PUNTUABLE" | "DESEMPATE"
+      orden: number
+      descripcionesPorValor?: Record<string, string>
+    }[]
+    descripcionesPuntajeUnico?: Record<string, string>
   } | null
   scoreSheet: {
     id: string
@@ -293,14 +303,11 @@ export async function getSnapshotParaJuez(
       patrullas: { include: { grupoScout: { select: { nombre: true } } } },
       actividades: {
         include: {
+          template: { include: { criterios: { orderBy: { orden: "asc" } } } },
           asignaciones: {
             where: isAdmin ? {} : { juezUserId: userId },
             include: {
-              posta: {
-                include: {
-                  template: { include: { criterios: { orderBy: { orden: "asc" } } } },
-                },
-              },
+              posta: true,
               scoreSheets: {
                 include: { entries: { select: { criterionId: true, valor: true } } },
               },
@@ -316,7 +323,11 @@ export async function getSnapshotParaJuez(
   for (const evento of eventos) {
     for (const actividad of evento.actividades) {
       for (const asignacion of actividad.asignaciones) {
-        const template = asignacion.posta.template
+        const template = actividad.template
+        const criteriosDescripciones = (asignacion.posta.criteriosDescripciones ?? {}) as {
+          criterios?: Record<string, Record<string, string>>
+          unico?: Record<string, string>
+        }
         for (const patrulla of evento.patrullas) {
           const sheet = asignacion.scoreSheets.find((s) => s.patrullaId === patrulla.id) ?? null
           entries.push({
@@ -346,7 +357,9 @@ export async function getSnapshotParaJuez(
                     descripcion: c.descripcion,
                     tipo: c.tipo as "PUNTUABLE" | "DESEMPATE",
                     orden: c.orden,
+                    descripcionesPorValor: criteriosDescripciones.criterios?.[c.id],
                   })),
+                  descripcionesPuntajeUnico: criteriosDescripciones.unico,
                 }
               : null,
             scoreSheet: sheet

@@ -74,9 +74,6 @@ function makeAsignacion({
     weight: new Decimal("1.5"),
     actividad: {
       evento: { id: "ev-1", estado: eventoEstado },
-    },
-    posta: {
-      nombre: "Amarres básicos",
       template: {
         id: "tpl-1",
         modo: templateModo,
@@ -84,6 +81,10 @@ function makeAsignacion({
         valoresValidosDesempate: valoresValidosDesempate.map((v) => new Decimal(v)),
         criterios,
       },
+    },
+    posta: {
+      nombre: "Amarres básicos",
+      criteriosDescripciones: {},
     },
   }
 }

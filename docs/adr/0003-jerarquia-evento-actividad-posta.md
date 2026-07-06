@@ -4,6 +4,8 @@
 **Fecha:** 2026-05-02  
 **Planes afectados:** Plan 6a (introduce Actividad), Plan 6b (introduce Posta con FK a Actividad), Plan 7 (scoring y leaderboard), Plan 8 (cierre y publicación)
 
+> **Nota post-ejecución (Plan 15):** la línea 19 ("las postas... cada una con su plantilla de puntaje") y el diagrama de la línea 33 (`Posta (plantilla, ScoreSheet por patrulla)`) reflejan el modelo previo al Plan 15. Ese plan movió `templateId` de `Posta` a `Actividad`: todas las postas de una actividad comparten un único template de puntaje, definido al crear la actividad. `Posta` conserva en cambio `criteriosDescripciones`, una leyenda de qué significa cada valor de la escala, específica de esa posta. El cuerpo del ADR se conserva sin editar como registro histórico de la decisión original.
+
 ---
 
 ## Contexto

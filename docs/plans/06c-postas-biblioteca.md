@@ -1,6 +1,8 @@
 # Plan 6c — Postas como entidad de biblioteca reutilizable
 
 > Estado: ejecutado. Redactado con Claude Sonnet 4.6 en conversación con el usuario, siguiendo el workflow de planeación establecido en CLAUDE.md.
+>
+> **Nota post-ejecución (Plan 15):** el `templateId` de `Posta` (heredado de Plan 6b) se movió a `Actividad` — todas las postas asignadas a una actividad comparten un único template. `Posta` incorporó en cambio `criteriosDescripciones`, una leyenda de qué significa cada valor de la escala. Ver `docs/plans/15-template-por-actividad.md`.
 
 ---
 

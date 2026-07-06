@@ -15,7 +15,6 @@ const PostaSchema = z.object({
   nombre: z.string().trim().min(2).max(100),
   descripcion: z.string().trim().max(1000).optional(),
   duracionMinutos: z.coerce.number().int().min(1).max(480).optional().nullable(),
-  templateId: z.string().optional().nullable(),
   materiales: z.array(MaterialSchema).default([]),
 })
 
@@ -39,7 +38,6 @@ export async function createPostaAction(
     nombre: formData.get("nombre") as string,
     descripcion: (formData.get("descripcion") as string) || undefined,
     duracionMinutos: (formData.get("duracionMinutos") as string) || undefined,
-    templateId: (formData.get("templateId") as string) || null,
     materiales,
   }
 
@@ -55,7 +53,6 @@ export async function createPostaAction(
   } catch (err) {
     if (err instanceof BusinessError) {
       if (err.code === "NOMBRE_POSTA_DUPLICADO") return { error: "Ya existe una posta con ese nombre en el distrito" }
-      if (err.code === "PLANTILLA_INVALIDA") return { error: "La plantilla seleccionada no es válida o está archivada" }
     }
     throw err
   }

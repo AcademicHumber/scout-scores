@@ -82,7 +82,7 @@ export async function countScoreTemplates(
 }
 
 export async function isTemplateLocked(templateId: string): Promise<boolean> {
-  const count = await prisma.posta.count({ where: { templateId } })
+  const count = await prisma.actividad.count({ where: { templateId } })
   return count > 0
 }
 

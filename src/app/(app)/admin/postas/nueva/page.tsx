@@ -1,5 +1,4 @@
 import { requireRole } from "@/lib/auth-helpers"
-import { listScoreTemplates } from "@/repositories/score-template.repo"
 import Link from "next/link"
 import { PostaForm } from "@/components/admin/postas/PostaForm"
 import messages from "@/messages/es.json"
@@ -7,11 +6,7 @@ import messages from "@/messages/es.json"
 const m = messages.admin.postas
 
 export default async function NuevaPostaPage() {
-  const org = await requireRole(["ADMIN"])
-  const allTemplates = await listScoreTemplates(org.organizationId)
-  const templates = allTemplates
-    .filter((t) => !t.archivedAt)
-    .map((t) => ({ id: t.id, nombre: t.nombre }))
+  await requireRole(["ADMIN"])
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -23,7 +18,7 @@ export default async function NuevaPostaPage() {
       </div>
 
       <div className="rounded-xl border bg-white p-6 shadow-sm">
-        <PostaForm templates={templates} />
+        <PostaForm />
       </div>
     </div>
   )

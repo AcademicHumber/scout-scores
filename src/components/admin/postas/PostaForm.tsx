@@ -8,11 +8,7 @@ const m = messages.admin.postas
 
 type Material = { nombre: string; cantidad?: string }
 
-type Props = {
-  templates: Array<{ id: string; nombre: string }>
-}
-
-export function PostaForm({ templates }: Props) {
+export function PostaForm() {
   const [state, action, pending] = useActionState(createPostaAction, {})
   const [materiales, setMateriales] = useState<Material[]>([])
 
@@ -73,20 +69,6 @@ export function PostaForm({ templates }: Props) {
           max={480}
           className="w-full sm:w-32 rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
-      </div>
-
-      {/* Plantilla */}
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">{m.fields.plantilla}</label>
-        <select
-          name="templateId"
-          className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-        >
-          <option value="">{m.fields.plantillaSinAsignar}</option>
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>{t.nombre}</option>
-          ))}
-        </select>
       </div>
 
       {/* Materiales */}

@@ -3,6 +3,8 @@
 > Estado: ejecutado. Redactado con Claude Opus en plan mode siguiendo el workflow Opus/Sonnet establecido en CLAUDE.md.
 >
 > **Nota post-ejecución:** el modelo `Posta` que este plan introduce (con `actividadId` directo) fue refactorizado en **Plan 6c**. `Posta` pasó a ser una entidad standalone del distrito (con `organizationId`), y la vinculación con actividades se delega a la tabla `AsignacionPosta`. Ver `docs/plans/06c-postas-biblioteca.md`.
+>
+> **Nota post-ejecución (Plan 15):** el `templateId` que este plan agrega a `Posta` se movió a `Actividad` — todas las postas de una actividad comparten un único template. Ver `docs/plans/15-template-por-actividad.md`.
 
 ---
 

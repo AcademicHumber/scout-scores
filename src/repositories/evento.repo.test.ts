@@ -18,6 +18,7 @@ const {
   mockActividadDelete,
   mockActividadAggregate,
   mockScoreSheetCount,
+  mockScoreTemplateFindFirst,
   mockTransaction,
 } = vi.hoisted(() => ({
   mockEventoFindFirst:  vi.fn(),
@@ -34,6 +35,7 @@ const {
   mockActividadDelete:  vi.fn(),
   mockActividadAggregate: vi.fn(),
   mockScoreSheetCount:  vi.fn(),
+  mockScoreTemplateFindFirst: vi.fn(),
   mockTransaction:      vi.fn(),
 }))
 
@@ -57,6 +59,7 @@ vi.mock("@/lib/db", () => ({
       aggregate:  mockActividadAggregate,
     },
     scoreSheet: { count: mockScoreSheetCount },
+    scoreTemplate: { findFirst: mockScoreTemplateFindFirst },
     auditLog: { create: vi.fn() },
     $transaction: mockTransaction,
   },
@@ -167,14 +170,20 @@ describe("deleteEvento", () => {
 // ─── transicionarEstado ───────────────────────────────────────────────────────
 
 // Helper: construye un evento fake con el shape que espera canTransitionToActivo
-function makeEventoActivo(actividadesConPesos: number[], conPatrulla = true, conAsignaciones = true) {
+function makeEventoActivo(
+  actividadesConPesos: number[],
+  conPatrulla = true,
+  conAsignaciones = true,
+  conTemplate = true,
+) {
   return {
     id: "ev-1",
     actividades: actividadesConPesos.map((peso, i) => ({
       id: `a${i + 1}`,
       nombre: `Actividad ${i + 1}`,
       pesoRelativo: new Decimal(String(peso)),
-      asignaciones: conAsignaciones ? [{ posta: { id: "p1", nombre: "Posta 1", templateId: "tpl-1" } }] : [],
+      templateId: conTemplate ? "tpl-1" : null,
+      asignaciones: conAsignaciones ? [{ id: "asig-1" }] : [],
     })),
     patrullas: conPatrulla ? [{ id: "pat-1" }] : [],
   }
@@ -226,6 +235,25 @@ describe("transicionarEstado", () => {
     await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).rejects.toMatchObject({ code: "PRE_ACTIVACION_INCOMPLETA" })
   })
 
+  it("BORRADOR → ACTIVO con actividad sin plantilla lanza PRE_ACTIVACION_INCOMPLETA con ACTIVIDAD_SIN_PLANTILLA (Plan 15)", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
+    mockEventoFindUnique.mockResolvedValue(makeEventoActivo([100], true, true, false))
+
+    const err = await transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1").catch((e) => e)
+    expect(err).toMatchObject({ code: "PRE_ACTIVACION_INCOMPLETA" })
+    expect(err.meta.errores).toContainEqual(
+      expect.objectContaining({ code: "ACTIVIDAD_SIN_PLANTILLA" }),
+    )
+  })
+
+  it("BORRADOR → ACTIVO con todas las actividades con plantilla es válido", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
+    mockEventoFindUnique.mockResolvedValue(makeEventoActivo([100], true, true, true))
+    mockEventoUpdate.mockResolvedValue({})
+
+    await expect(transicionarEstado("org-1", "ev-1", "ACTIVO", "user-1")).resolves.toBeUndefined()
+  })
+
   it("ACTIVO → CERRADO setea closedAt cuando todas las planillas están enviadas", async () => {
     mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "ACTIVO" })
     // canTransitionToCerrado: evento sin actividades → producto cartesiano vacío → no hay faltantes
@@ -272,6 +300,34 @@ describe("addActividad", () => {
     expect(result.id).toBe("act-1")
     expect(mockActividadCreate.mock.calls[0][0].data.orden).toBe(1)
   })
+
+  it("agrega actividad con templateId válido y lo persiste", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
+    mockScoreTemplateFindFirst.mockResolvedValue({ id: "tpl-1", archivedAt: null })
+    mockActividadAggregate.mockResolvedValue({ _max: { orden: 0 } })
+    mockActividadCreate.mockResolvedValue({ id: "act-1" })
+
+    await addActividad(
+      "org-1", "ev-1",
+      { nombre: "Test", tipo: "COMPETICION", pesoRelativo: new Decimal("50"), templateId: "tpl-1" },
+      "user-1",
+    )
+
+    expect(mockActividadCreate.mock.calls[0][0].data.templateId).toBe("tpl-1")
+  })
+
+  it("agrega actividad con templateId inválido lanza PLANTILLA_INVALIDA", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
+    mockScoreTemplateFindFirst.mockResolvedValue(null)
+
+    await expect(
+      addActividad(
+        "org-1", "ev-1",
+        { nombre: "Test", tipo: "COMPETICION", pesoRelativo: new Decimal("50"), templateId: "tpl-invalido" },
+        "user-1",
+      ),
+    ).rejects.toMatchObject({ code: "PLANTILLA_INVALIDA" })
+  })
 })
 
 // ─── updateActividad ──────────────────────────────────────────────────────────
@@ -295,6 +351,20 @@ describe("updateActividad", () => {
     await expect(
       updateActividad("org-1", "ev-1", "no-existe", { nombre: "X", tipo: "COCINA", pesoRelativo: new Decimal("10") }, "user-1"),
     ).rejects.toMatchObject({ code: "ACTIVIDAD_NO_ENCONTRADA" })
+  })
+
+  it("lanza PLANTILLA_INVALIDA con templateId archivado", async () => {
+    mockEventoFindFirst.mockResolvedValue({ id: "ev-1", estado: "BORRADOR" })
+    mockActividadFindFirst.mockResolvedValue({ id: "act-1", eventoId: "ev-1" })
+    mockScoreTemplateFindFirst.mockResolvedValue(null) // archivedAt: null en el where descarta la archivada
+
+    await expect(
+      updateActividad(
+        "org-1", "ev-1", "act-1",
+        { nombre: "X", tipo: "COCINA", pesoRelativo: new Decimal("10"), templateId: "tpl-archivada" },
+        "user-1",
+      ),
+    ).rejects.toMatchObject({ code: "PLANTILLA_INVALIDA" })
   })
 })
 

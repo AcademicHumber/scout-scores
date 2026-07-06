@@ -317,12 +317,14 @@ async function main() {
   });
 
   // ── 8. Postas del distrito (biblioteca) ──────────────────────────────────────
+  // Leyenda de puntajes (Plan 15): criteriosDescripciones queda vacío acá porque
+  // depende de los criterionId reales, que recién se conocen tras crear las
+  // actividades y sus asignaciones — se completa más abajo (paso 9b).
   const postasData = [
     {
       nombre: "Amarres básicos",
       descripcion: "Evaluación de nudos de amarre cuadrado y diagonal con cuerdas de 5mm",
       duracionMinutos: 15,
-      templateId: templateConstruccion.id,
       materiales: [
         { nombre: "Cuerdas de 5mm", cantidad: "20 metros" },
         { nombre: "Palos de 1m", cantidad: "10 unidades" },
@@ -332,7 +334,6 @@ async function main() {
       nombre: "Torre de pionerismo",
       descripcion: "Construcción de una torre de al menos 1.5m usando palos y cuerdas",
       duracionMinutos: 30,
-      templateId: templateConstruccion.id,
       materiales: [
         { nombre: "Palos de 2m", cantidad: "6 unidades" },
         { nombre: "Cuerdas de 8mm", cantidad: "15 metros" },
@@ -342,7 +343,6 @@ async function main() {
       nombre: "Desayuno de campamento",
       descripcion: "Preparación de un desayuno completo en fogón",
       duracionMinutos: 45,
-      templateId: templateCocina.id,
       materiales: [
         { nombre: "Utensilios de cocina", cantidad: "1 set" },
         { nombre: "Ingredientes", cantidad: "según receta" },
@@ -352,7 +352,6 @@ async function main() {
       nombre: "Orientación con brújula",
       descripcion: "Navegación por puntos usando brújula y mapa topográfico",
       duracionMinutos: 20,
-      templateId: templatePuntajeUnico.id,
       materiales: [
         { nombre: "Brújulas", cantidad: "1 por participante" },
         { nombre: "Mapas topográficos", cantidad: "1 por patrulla" },
@@ -366,7 +365,7 @@ async function main() {
         .findFirst({ where: { organizationId: distrito.id, nombre: p.nombre } })
         .then((existing) =>
           existing
-            ? prisma.posta.update({ where: { id: existing.id }, data: { descripcion: p.descripcion, duracionMinutos: p.duracionMinutos, templateId: p.templateId, materiales: p.materiales } })
+            ? prisma.posta.update({ where: { id: existing.id }, data: { descripcion: p.descripcion, duracionMinutos: p.duracionMinutos, materiales: p.materiales } })
             : prisma.posta.create({ data: { organizationId: distrito.id, ...p, materiales: p.materiales } }),
         ),
     ),
@@ -401,13 +400,15 @@ async function main() {
       },
     });
 
-    // Actividades
+    // Actividades — cada una define su propia plantilla (Plan 15): todas las
+    // postas asignadas a una actividad puntúan con el mismo criterio.
     const actConstruccion = await prisma.actividad.create({
       data: {
         eventoId: eventoBase.id,
         nombre: "Construcción y pionerismo",
         tipo: ActividadTipo.CONSTRUCCION,
-        pesoRelativo: 60,
+        pesoRelativo: 50,
+        templateId: templateConstruccion.id,
         orden: 1,
       },
     });
@@ -417,8 +418,20 @@ async function main() {
         eventoId: eventoBase.id,
         nombre: "Cocina de campamento",
         tipo: ActividadTipo.COCINA,
-        pesoRelativo: 40,
+        pesoRelativo: 30,
+        templateId: templateCocina.id,
         orden: 2,
+      },
+    });
+
+    const actOrientacion = await prisma.actividad.create({
+      data: {
+        eventoId: eventoBase.id,
+        nombre: "Orientación y navegación",
+        tipo: ActividadTipo.OTRO,
+        pesoRelativo: 20,
+        templateId: templatePuntajeUnico.id,
+        orden: 3,
       },
     });
 
@@ -457,15 +470,15 @@ async function main() {
         orden: 1,
       },
     });
-    const asig4 = await prisma.asignacionPosta.create({
+    await prisma.asignacionPosta.create({
       data: {
         id: createId(),
         postaId: postaOrientacion!.id,
-        actividadId: actCocina.id,
+        actividadId: actOrientacion.id,
         juezUserId: juez2User!.id,
         encargado: "Laura Méndez",
         weight: 1.0,
-        orden: 2,
+        orden: 1,
       },
     });
 
@@ -482,6 +495,35 @@ async function main() {
       orderBy: { orden: "asc" },
     });
     const [cTecnica, cSolidez, cPresentacion, cEspiritu] = criteriosConstruccion;
+
+    // Leyenda de puntajes (Plan 15): qué significa cada valor de la escala,
+    // por criterio (postaAmarres, template CRITERIOS) y por eje único
+    // (postaOrientacion, template PUNTAJE_UNICO) — demuestra que no se mezclan.
+    await prisma.posta.update({
+      where: { id: postaAmarres!.id },
+      data: {
+        criteriosDescripciones: {
+          criterios: {
+            [cTecnica!.id]: { "1": "Nudos sueltos, se deshacen al tensar", "3": "Nudos correctos con alguna imperfección", "5": "Nudos perfectos y firmes" },
+            [cSolidez!.id]: { "1": "La estructura colapsa al tacto", "3": "Se mantiene en pie pero con holguras", "5": "Totalmente rígida, soporta peso" },
+          },
+        },
+      },
+    });
+    await prisma.posta.update({
+      where: { id: postaOrientacion!.id },
+      data: {
+        criteriosDescripciones: {
+          unico: {
+            "0": "No completó el circuito",
+            "25": "Completó menos de la mitad de los puntos",
+            "50": "Completó la mitad de los puntos",
+            "75": "Completó casi todos los puntos",
+            "100": "Completó todos los puntos con precisión",
+          },
+        },
+      },
+    });
 
     const sheetHalconesEnviada = await prisma.scoreSheet.create({
       data: {

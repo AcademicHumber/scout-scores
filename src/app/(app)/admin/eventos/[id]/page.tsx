@@ -3,6 +3,7 @@ import { findEventoById, isEventoLocked } from "@/repositories/evento.repo"
 import { listJuecesAsignables } from "@/repositories/membership.repo"
 import { listPostasParaEvento } from "@/repositories/posta.repo"
 import { listGrupos } from "@/repositories/grupo.repo"
+import { listScoreTemplates } from "@/repositories/score-template.repo"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import messages from "@/messages/es.json"
@@ -43,15 +44,18 @@ export default async function EventoDetailPage({
   const org = await requireRole(["ADMIN"])
   const { id } = await params
 
-  const [evento, locked, jueces, postasDisponibles, grupos] = await Promise.all([
+  const [evento, locked, jueces, postasDisponibles, grupos, allTemplates] = await Promise.all([
     findEventoById(org.organizationId, id),
     isEventoLocked(id),
     listJuecesAsignables(org.organizationId),
     listPostasParaEvento(org.organizationId, id),
     listGrupos(org.organizationId),
+    listScoreTemplates(org.organizationId),
   ])
 
   if (!evento) notFound()
+
+  const templates = allTemplates.map((t) => ({ id: t.id, nombre: t.nombre, archivedAt: t.archivedAt }))
 
   const suma = evento.actividades.reduce(
     (acc, a) => acc + parseFloat(a.pesoRelativo.toString()),
@@ -165,15 +169,12 @@ export default async function EventoDetailPage({
                   descripcion: a.descripcion,
                   tipo: a.tipo,
                   pesoRelativo: a.pesoRelativo.toString(),
+                  templateId: a.templateId,
                   orden: a.orden,
                   asignaciones: a.asignaciones.map((asig) => ({
                     id: asig.id,
                     postaId: asig.postaId,
-                    posta: {
-                      nombre: asig.posta.nombre,
-                      templateId: asig.posta.templateId,
-                      template: asig.posta.template,
-                    },
+                    posta: { nombre: asig.posta.nombre },
                     juezUserId: asig.juezUserId,
                     juezUser: asig.juezUser,
                     encargado: asig.encargado,
@@ -189,18 +190,17 @@ export default async function EventoDetailPage({
                 postasDisponibles={postasDisponibles.map((p) => ({
                   id: p.id,
                   nombre: p.nombre,
-                  templateId: p.templateId,
-                  template: p.template,
                   duracionMinutos: p.duracionMinutos,
                   asignadaEnActividad: p.asignadaEnActividad,
                 }))}
                 jueces={jueces}
+                templates={templates}
               />
             ))}
           </div>
         )}
 
-        {!locked && <AddActividadForm eventoId={evento.id} />}
+        {!locked && <AddActividadForm eventoId={evento.id} templates={templates} />}
       </section>
 
       {/* Patrullas */}

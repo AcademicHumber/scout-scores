@@ -6,12 +6,10 @@ import messages from "@/messages/es.json"
 
 const m = messages.admin.eventos.postas
 
-type Template = { id: string; nombre: string; archivedAt: Date | null } | null
-
 type Asignacion = {
   id: string
   postaId: string
-  posta: { nombre: string; templateId: string | null; template: Template }
+  posta: { nombre: string }
   juezUserId: string | null
   juezUser: { id: string; name: string | null; email: string } | null
   encargado: string | null
@@ -34,7 +32,6 @@ export function AsignacionRow({ asignacion, isFirst, isLast, isLocked, onEdit }:
   const [, downAction, downPending] = useActionState(reorderAsignacionAction, {})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const template = asignacion.posta.template
   const juez = asignacion.juezUser
 
   return (
@@ -67,15 +64,6 @@ export function AsignacionRow({ asignacion, isFirst, isLast, isLocked, onEdit }:
       {/* Fila inferior: datos a la izquierda + acciones a la derecha */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          {/* Template badge */}
-          {template ? (
-            <span className="rounded bg-brand/10 px-1.5 py-0.5 text-xs text-brand">
-              {template.nombre}{template.archivedAt ? " [archivada]" : ""}
-            </span>
-          ) : (
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{m.sinPlantilla}</span>
-          )}
-
           {/* Juez */}
           <span className="text-xs text-gray-500">
             {juez ? `Juez: ${juez.name ?? juez.email}` : m.sinJuez}

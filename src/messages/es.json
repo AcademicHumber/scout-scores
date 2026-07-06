@@ -294,19 +294,12 @@
       "nueva": "Nueva posta",
       "nuevoCTA": "+ Nuevo",
       "buscar": "Buscar por nombre…",
-      "filtros": {
-        "todas": "Todas",
-        "conPlantilla": "Con plantilla",
-        "sinPlantilla": "Sin plantilla"
-      },
       "sinResultados": "No hay postas que coincidan.",
       "sinResultadosHint": "Intentá con otro nombre o cambiá el filtro.",
       "fields": {
         "nombre": "Nombre",
         "descripcion": "Descripción / funcionamiento",
         "duracionMinutos": "Duración estimada (minutos)",
-        "plantilla": "Plantilla de evaluación",
-        "plantillaSinAsignar": "Sin plantilla",
         "materiales": "Materiales",
         "agregarMaterial": "+ Agregar material",
         "materialNombre": "Material",
@@ -378,6 +371,8 @@
           "tipo": "Tipo",
           "peso": "Peso (%)",
           "descripcion": "Descripción (opcional)",
+          "plantilla": "Plantilla de puntaje",
+          "plantillaSinAsignar": "Sin plantilla",
           "save": "Guardar",
           "delete": "Eliminar",
           "moveUp": "Subir",
@@ -399,7 +394,6 @@
         "desasignarConfirm": "¿Desasignar esta posta de la actividad?",
         "dialogTitle": "Asignar posta a actividad",
         "dialogTitleEditar": "Editar asignación de posta",
-        "sinPlantilla": "Sin plantilla",
         "sinJuez": "Sin juez",
         "confirmar": "Confirmar",
         "cancelar": "Cancelar",
@@ -448,8 +442,8 @@
           "intro": "No se puede activar el evento. Resolvé estos puntos:",
           "actividadSinPostas": "{{count}} actividad sin postas: {{nombres}}",
           "actividadesSinPostas": "{{count}} actividades sin postas: {{nombres}}",
-          "postaSinPlantilla": "{{count}} posta sin plantilla: {{nombres}}",
-          "postasSinPlantilla": "{{count}} postas sin plantilla: {{nombres}}",
+          "actividadSinPlantilla": "{{count}} actividad sin plantilla: {{nombres}}",
+          "actividadesSinPlantilla": "{{count}} actividades sin plantilla: {{nombres}}",
           "eventoSinPatrullas": "El evento no tiene patrullas inscritas"
         }
       }

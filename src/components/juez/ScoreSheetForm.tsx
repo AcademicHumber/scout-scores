@@ -20,6 +20,7 @@ type Criterio = {
   descripcion: string | null
   tipo: "PUNTUABLE" | "DESEMPATE"
   orden: number
+  descripcionesPorValor?: Record<string, string>
 }
 
 type Template = {
@@ -28,6 +29,7 @@ type Template = {
   valoresValidos: number[]
   valoresValidosDesempate: number[]
   criterios: Criterio[]
+  descripcionesPuntajeUnico?: Record<string, string>
 }
 
 function ScaleButtons({
@@ -35,32 +37,49 @@ function ScaleButtons({
   selected,
   onSelect,
   disabled,
+  descripciones,
 }: {
   valores: number[]
   selected: number | null
   onSelect: (v: number) => void
   disabled?: boolean
+  descripciones?: Record<string, string>
 }) {
+  const leyenda = valores
+    .map((v) => ({ v, texto: descripciones?.[String(v)] }))
+    .filter((e): e is { v: number; texto: string } => !!e.texto)
+
   return (
-    <div className="flex flex-wrap gap-2.5">
-      {valores.map((v) => (
-        <button
-          key={v}
-          type="button"
-          onClick={() => !disabled && onSelect(v)}
-          disabled={disabled}
-          className={[
-            "min-h-[56px] min-w-[60px] rounded-xl border-2 text-lg font-bold transition-all",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1",
-            selected === v
-              ? "border-brand bg-brand text-white shadow-md scale-[1.04]"
-              : "border-gray-200 bg-white text-gray-700 hover:border-brand/60 hover:text-brand active:scale-95",
-            disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-          ].join(" ")}
-        >
-          {v}
-        </button>
-      ))}
+    <div>
+      <div className="flex flex-wrap gap-2.5">
+        {valores.map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => !disabled && onSelect(v)}
+            disabled={disabled}
+            className={[
+              "min-h-[56px] min-w-[60px] rounded-xl border-2 text-lg font-bold transition-all",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1",
+              selected === v
+                ? "border-brand bg-brand text-white shadow-md scale-[1.04]"
+                : "border-gray-200 bg-white text-gray-700 hover:border-brand/60 hover:text-brand active:scale-95",
+              disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+            ].join(" ")}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      {leyenda.length > 0 && (
+        <ul className="mt-2 space-y-0.5">
+          {leyenda.map(({ v, texto }) => (
+            <li key={v} className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-600">{v}</span> → {texto}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -251,6 +270,7 @@ export function ScoreSheetForm({
             selected={puntajeUnico}
             onSelect={setPuntajeUnico}
             disabled={disabled}
+            descripciones={template?.descripcionesPuntajeUnico}
           />
         </div>
       ) : (
@@ -270,6 +290,7 @@ export function ScoreSheetForm({
                   selected={entries.get(c.id) ?? null}
                   onSelect={(v) => setEntries(new Map(entries).set(c.id, v))}
                   disabled={disabled}
+                  descripciones={c.descripcionesPorValor}
                 />
               </div>
             ))}
@@ -294,6 +315,7 @@ export function ScoreSheetForm({
                   selected={entries.get(c.id) ?? null}
                   onSelect={(v) => setEntries(new Map(entries).set(c.id, v))}
                   disabled={disabled}
+                  descripciones={c.descripcionesPorValor}
                 />
               </div>
             ))}
