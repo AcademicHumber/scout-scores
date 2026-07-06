@@ -38,7 +38,7 @@ function isLeyendaCompleta(template: ActividadTemplate, criteriosDescripciones: 
   if (template.modo === "PUNTAJE_UNICO") {
     return !!cd.unico && Object.keys(cd.unico).length > 0
   }
-  return template.criterios.every((c) => {
+  return (template.criterios ?? []).every((c) => {
     const entry = cd.criterios?.[c.id]
     return !!entry && Object.keys(entry).length > 0
   })
