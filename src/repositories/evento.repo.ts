@@ -23,7 +23,12 @@ async function _findById(organizationId: string, id: string) {
               nombre: true,
               archivedAt: true,
               modo: true,
-              criterios: { select: { id: true, tipo: true } },
+              valoresValidos: true,
+              valoresValidosDesempate: true,
+              criterios: {
+                select: { id: true, nombre: true, tipo: true, orden: true },
+                orderBy: { orden: "asc" },
+              },
             },
           },
           asignaciones: {

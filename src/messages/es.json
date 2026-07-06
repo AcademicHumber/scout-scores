@@ -609,15 +609,43 @@
       "title": "Eventos en planificación",
       "subtitle": "Cargá tu posta antes de que el evento se active",
       "empty": "No hay eventos en planificación.",
-      "cargarPosta": "Cargar mi posta"
+      "cargarPosta": "Cargar mi posta",
+      "volver": "← Eventos en planificación",
+      "actividades": {
+        "empty": "Este evento todavía no tiene actividades.",
+        "sinPlantilla": "Sin plantilla",
+        "asignacionesTitle": "Postas cargadas",
+        "asignacionesEmpty": "Todavía nadie cargó una posta para esta actividad.",
+        "sinJuez": "Sin juez asignado",
+        "tuPosta": "Tu posta"
+      },
+      "dialog": {
+        "title": "Cargar posta para {{actividad}}",
+        "nombreLabel": "Nombre de la posta",
+        "nombrePlaceholder": "Ej: Nudos y amarres",
+        "coincidenciaTitle": "Ya existe una posta con un nombre parecido",
+        "usarExistente": "Usar esta",
+        "crearNueva": "‹ Prefiero crear una posta nueva",
+        "encargado": "Encargado",
+        "ayudantes": "Ayudantes",
+        "leyendaToggle": "Agregar leyenda de puntajes (opcional)",
+        "leyendaHint": "Qué significa cada puntaje posible (ej: \"10 = llegó primero\"). El juez la va a ver al cargar el puntaje.",
+        "leyendaPlaceholder": "Qué significa este puntaje",
+        "cancelar": "Cancelar",
+        "guardar": "Cargar posta",
+        "asignar": "Usar esta posta",
+        "guardando": "Guardando…"
+      }
     },
     "errors": {
       "postaNoPropia": "Solo podés editar las postas que vos cargaste",
       "postaYaAsignada": "Esa posta ya está asignada en este evento",
+      "postaNoEncontrada": "Posta no encontrada",
       "eventoNoEncontrado": "Evento no encontrado o ya no está en planificación",
       "actividadNoEncontrada": "Actividad no encontrada",
       "eventoLocked": "El evento ya tiene puntajes cargados",
-      "nombreDuplicado": "Ya existe una posta con ese nombre en el distrito"
+      "nombreDuplicado": "Ya existe una posta con ese nombre en el distrito",
+      "juezInvalido": "El usuario no tiene rol de juez en este distrito"
     }
   }
 }
