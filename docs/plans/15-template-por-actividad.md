@@ -300,6 +300,20 @@ Verificación: `src/lib/offline/snapshot.ts` y `ScoringView.tsx` no deberían ne
   - Sección 9 ("Activar el evento"): el checklist de gates debe reflejar `ACTIVIDAD_SIN_PLANTILLA` (ej. "Cada actividad tiene una plantilla asignada") en vez de implicar que la plantilla es de la posta.
 - **`src/app/(docs)/docs/juez/page.tsx`**: en la sección "Evaluá cada criterio", agregar que cada valor de la escala puede tener una leyenda que explica qué significa (cuando el admin la cargó).
 
+## Cambio adicional (post-plan): discoverability de la leyenda incompleta
+
+Al hacer el click-through manual (Verificación #2), surgió un hueco: el dialog de asignar posta a actividad no muestra la leyenda a propósito (decisión #10 — evita sobrecargarlo), pero eso dejaba sin ningún indicio de que faltaba completarla tras asignar.
+
+**Fix**: `AsignacionRow` ahora muestra un badge "⚠ Sin leyenda de puntajes" con link a `/admin/postas/[id]` cuando `criteriosDescripciones` de la posta no cubre todos los criterios (o el eje único) del template vigente de la actividad. Se calcula server-side en `/admin/eventos/[id]/page.tsx` (`isLeyendaCompleta`), comparando contra `actividad.template.criterios` — expandido el `select` de `template` en `evento.repo.ts` (`_findById`) para incluir `modo` y `criterios`. Verificado con un script runtime contra datos reales, incluyendo el caso "posta reusada con un template distinto" (decisión #8): vuelve a marcar incompleta para el nuevo contexto sin romper nada.
+
+### Archivos
+
+- `src/repositories/evento.repo.ts`: `_findById` — `template.select` agrega `modo` y `criterios: { select: { id, tipo } }`.
+- `src/app/(app)/admin/eventos/[id]/page.tsx`: función `isLeyendaCompleta`, computada por asignación.
+- `src/components/admin/eventos/ActividadRow.tsx`, `AsignacionesInActividad.tsx`: tipo `Asignacion` agrega `leyendaCompleta: boolean`.
+- `src/components/admin/eventos/AsignacionRow.tsx`: renderiza el badge.
+- `src/messages/es.json`: `admin.eventos.postas.leyendaIncompleta`.
+
 ---
 
 ## Verificación
