@@ -26,6 +26,8 @@ type Props = {
 }
 
 export function CriteriosDescripcionesForm({ postaId, templates, criteriosDescripciones }: Props) {
+  const [activeId, setActiveId] = useState(templates[0]?.id)
+
   if (templates.length === 0) {
     return (
       <p className="text-sm text-gray-500">
@@ -34,39 +36,61 @@ export function CriteriosDescripcionesForm({ postaId, templates, criteriosDescri
     )
   }
 
+  const active = templates.find((t) => t.id === activeId) ?? templates[0]!
+
   return (
-    <div className="space-y-6">
-      {templates.map((t) => (
-        <div key={t.id} className="space-y-3">
-          <p className="text-sm font-medium text-gray-700">{t.nombre}</p>
-          {t.modo === "PUNTAJE_UNICO" ? (
-            <LeyendaRow
-              postaId={postaId}
-              scope="unico"
-              valores={t.valoresValidos}
-              initial={criteriosDescripciones.unico ?? {}}
-            />
-          ) : (
-            <div className="space-y-4">
-              {t.criterios.map((c) => (
-                <div key={c.id}>
-                  <p className="mb-1 text-xs font-medium text-gray-500">{c.nombre}</p>
-                  <LeyendaRow
-                    postaId={postaId}
-                    scope={c.id}
-                    valores={
-                      c.tipo === "DESEMPATE" && t.valoresValidosDesempate.length > 0
-                        ? t.valoresValidosDesempate
-                        : t.valoresValidos
-                    }
-                    initial={criteriosDescripciones.criterios?.[c.id] ?? {}}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+    <div className="space-y-4">
+      {templates.length > 1 && (
+        <div className="relative">
+          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActiveId(t.id)}
+                className={[
+                  "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                  t.id === active.id
+                    ? "bg-brand text-white"
+                    : "border border-gray-200 text-gray-600 hover:border-brand/40 hover:bg-brand/5 hover:text-brand",
+                ].join(" ")}
+              >
+                {t.nombre}
+              </button>
+            ))}
+          </div>
+          {/* Fade hint that content scrolls */}
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-white" />
         </div>
-      ))}
+      )}
+
+      <div className="space-y-4">
+        {active.modo === "PUNTAJE_UNICO" ? (
+          <LeyendaRow
+            key={`${active.id}-unico`}
+            postaId={postaId}
+            scope="unico"
+            valores={active.valoresValidos}
+            initial={criteriosDescripciones.unico ?? {}}
+          />
+        ) : (
+          active.criterios.map((c) => (
+            <div key={`${active.id}-${c.id}`}>
+              <p className="mb-1 text-xs font-medium text-gray-500">{c.nombre}</p>
+              <LeyendaRow
+                postaId={postaId}
+                scope={c.id}
+                valores={
+                  c.tipo === "DESEMPATE" && active.valoresValidosDesempate.length > 0
+                    ? active.valoresValidosDesempate
+                    : active.valoresValidos
+                }
+                initial={criteriosDescripciones.criterios?.[c.id] ?? {}}
+              />
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }
@@ -94,32 +118,40 @@ function LeyendaRow({
   const isDirty = JSON.stringify(values) !== JSON.stringify(saved)
 
   return (
-    <form action={action} className="flex flex-wrap items-end gap-2">
+    <form action={action} className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/60 p-3">
       <input type="hidden" name="postaId" value={postaId} />
       <input type="hidden" name="scope" value={scope} />
       <input type="hidden" name="valores" value={JSON.stringify(values)} />
-      {valores.map((v) => (
-        <div key={v}>
-          <label className="mb-0.5 block text-xs text-gray-400">{v}</label>
-          <input
-            value={values[String(v)] ?? ""}
-            onChange={(e) => setValues((prev) => ({ ...prev, [String(v)]: e.target.value }))}
-            placeholder="Qué significa este puntaje"
-            maxLength={200}
-            className="w-44 rounded border px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand"
-          />
-        </div>
-      ))}
-      {isDirty && (
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded bg-brand px-2 py-1.5 text-xs font-medium text-white hover:bg-brand/90 disabled:opacity-50"
-        >
-          {pending ? "..." : "Guardar"}
-        </button>
-      )}
-      {state.error && <p className="text-xs text-red-600">{state.error}</p>}
+
+      <div className="space-y-2">
+        {valores.map((v) => (
+          <div key={v} className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-gray-200 bg-white text-sm font-bold text-gray-700">
+              {v}
+            </span>
+            <input
+              value={values[String(v)] ?? ""}
+              onChange={(e) => setValues((prev) => ({ ...prev, [String(v)]: e.target.value }))}
+              placeholder="Qué significa este puntaje"
+              maxLength={200}
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3 pt-1">
+        {isDirty && (
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand/90 disabled:opacity-50"
+          >
+            {pending ? "Guardando..." : "Guardar"}
+          </button>
+        )}
+        {state.error && <p className="text-xs text-red-600">{state.error}</p>}
+      </div>
     </form>
   )
 }
