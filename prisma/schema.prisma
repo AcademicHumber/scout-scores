@@ -277,7 +277,7 @@ model ScoreTemplate {
 
   organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   criterios    TemplateCriterion[]
-  postas       Posta[]
+  actividades  Actividad[]
 
   @@unique([organizationId, nombre])
   @@index([organizationId])
@@ -392,15 +392,18 @@ model Actividad {
   descripcion  String?
   tipo         ActividadTipo
   pesoRelativo Decimal       @db.Decimal(5, 2)
+  templateId   String?
   orden        Int
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   evento       Evento            @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  template     ScoreTemplate?    @relation(fields: [templateId], references: [id], onDelete: Restrict)
   asignaciones AsignacionPosta[]
 
   @@unique([eventoId, orden])
   @@index([eventoId])
+  @@index([templateId])
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -408,23 +411,21 @@ model Actividad {
 // ──────────────────────────────────────────────────────────────
 
 model Posta {
-  id              String   @id @default(cuid(2))
-  organizationId  String
-  nombre          String
-  descripcion     String?
-  duracionMinutos Int?
-  templateId      String?
-  materiales      Json     @default("[]")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                     String   @id @default(cuid(2))
+  organizationId         String
+  nombre                 String
+  descripcion            String?
+  duracionMinutos        Int?
+  materiales             Json     @default("[]")
+  criteriosDescripciones Json     @default("{}")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  template     ScoreTemplate?  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   asignaciones AsignacionPosta[]
 
   @@unique([organizationId, nombre])
   @@index([organizationId])
-  @@index([templateId])
 }
 
 // ──────────────────────────────────────────────────────────────
