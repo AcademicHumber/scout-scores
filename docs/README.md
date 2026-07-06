@@ -29,7 +29,7 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [13b — Refresh de sesión tras cambio de rol hecho por otro usuario](plans/13b-refresh-sesion-post-cambio-rol.md) ✓
 - [13c — Server Actions interceptadas por el middleware de onboarding](plans/13c-server-actions-middleware-redirect.md) ✓
 - 14 — Migración de Caddy a Coolify como reverse proxy _(ejecutado, sin doc de plan formal)_
-- [15 — Mover ScoreTemplate de Posta a Actividad](plans/15-template-por-actividad.md) _(propuesto)_
+- [15 — Mover ScoreTemplate de Posta a Actividad + leyenda de puntajes](plans/15-template-por-actividad.md) ✓
 - [16 — Postas creadas por jueces (preplan, a redactar con Opus)](plans/16-postas-por-juez-preplan.md) _(preplan)_
 
 > **Renumeración**: el deploy estaba previsto inicialmente como Plan 9. Tras intercalar el Plan 9 (login propio), el deploy pasó a Plan 10. Las referencias a "Plan 9" en los planes históricos 01–08 reflejan el estado del proyecto en el momento en que se escribieron y se mantienen como artefacto educativo.
