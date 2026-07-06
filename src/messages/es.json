@@ -604,6 +604,20 @@
         "lugar": "Lugar",
         "verResultados": "Ver resultados"
       }
+    },
+    "planificacion": {
+      "title": "Eventos en planificación",
+      "subtitle": "Cargá tu posta antes de que el evento se active",
+      "empty": "No hay eventos en planificación.",
+      "cargarPosta": "Cargar mi posta"
+    },
+    "errors": {
+      "postaNoPropia": "Solo podés editar las postas que vos cargaste",
+      "postaYaAsignada": "Esa posta ya está asignada en este evento",
+      "eventoNoEncontrado": "Evento no encontrado o ya no está en planificación",
+      "actividadNoEncontrada": "Actividad no encontrada",
+      "eventoLocked": "El evento ya tiene puntajes cargados",
+      "nombreDuplicado": "Ya existe una posta con ese nombre en el distrito"
     }
   }
 }

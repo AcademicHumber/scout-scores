@@ -1,6 +1,9 @@
 import { requireOrg } from "@/lib/auth-helpers"
 import { listEventos } from "@/repositories/evento.repo"
 import Link from "next/link"
+import messages from "@/messages/es.json"
+
+const mp = messages.eventos.planificacion
 
 function formatFecha(iso: Date): string {
   return new Date(iso).toLocaleDateString("es-BO", {
@@ -10,11 +13,55 @@ function formatFecha(iso: Date): string {
 
 export default async function EventosPublicosPage() {
   const org = await requireOrg()
+  const puedeVerPlanificacion = org.role === "JUEZ" || org.role === "ADMIN"
 
   const eventos = await listEventos(org.organizationId, { estados: ["PUBLICADO"] })
+  const eventosBorrador = puedeVerPlanificacion
+    ? await listEventos(org.organizationId, { estados: ["BORRADOR"] })
+    : []
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-12">
+    <div className="mx-auto max-w-3xl space-y-10 pb-12">
+      {puedeVerPlanificacion && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">{mp.title}</h2>
+            <p className="mt-0.5 text-sm text-gray-500">{mp.subtitle}</p>
+          </div>
+
+          {eventosBorrador.length === 0 ? (
+            <p className="rounded-xl border border-dashed bg-white px-5 py-4 text-sm text-gray-400">
+              {mp.empty}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {eventosBorrador.map((evento) => (
+                <Link
+                  key={evento.id}
+                  href={`/eventos/${evento.id}/postas`}
+                  className="flex items-center justify-between rounded-xl border bg-white p-5 shadow-sm hover:border-brand/40 hover:shadow-md transition-all group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 group-hover:text-brand transition-colors">
+                      {evento.nombre}
+                    </p>
+                    <div className="mt-0.5 flex flex-wrap gap-x-3 text-sm text-gray-500">
+                      <span>{formatFecha(evento.fechaInicio)}</span>
+                      {evento.lugar && <span>· {evento.lugar}</span>}
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-shrink-0">
+                    <span className="rounded-full bg-amber-100 px-3 py-0.5 text-sm font-medium text-amber-700">
+                      {mp.cargarPosta} →
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Eventos</h1>
         <p className="mt-1 text-gray-500">Resultados publicados del distrito</p>
