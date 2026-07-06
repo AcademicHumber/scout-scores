@@ -143,6 +143,7 @@ model User {
   miembrosScout                 MiembroScout[]
   auditLogs                     AuditLog[]        @relation("AuditLogActor")
   asignacionesJuez              AsignacionPosta[] @relation("AsignacionPostaJuez")
+  postasCreadas                 Posta[]           @relation("PostaCreador")
   scoreSheetsEnviadas           ScoreSheet[]      @relation("ScoreSheetEnviadaBy")
   scoreSheetsReabiertas         ScoreSheet[]      @relation("ScoreSheetReopenedBy")
   leaderboardSnapshotsGenerated EventLeaderboardSnapshot[] @relation("LeaderboardSnapshotGeneratedBy")
@@ -418,14 +419,17 @@ model Posta {
   duracionMinutos        Int?
   materiales             Json     @default("[]")
   criteriosDescripciones Json     @default("{}")
+  creadoPorUserId        String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  asignaciones AsignacionPosta[]
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creadoPorUser User?             @relation("PostaCreador", fields: [creadoPorUserId], references: [id], onDelete: SetNull)
+  asignaciones  AsignacionPosta[]
 
   @@unique([organizationId, nombre])
   @@index([organizationId])
+  @@index([creadoPorUserId])
 }
 
 // ──────────────────────────────────────────────────────────────
