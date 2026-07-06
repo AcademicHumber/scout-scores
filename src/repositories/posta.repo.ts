@@ -262,6 +262,9 @@ export async function updateCriteriosDescripciones(
   })
 
   revalidateTag(cacheTags.postas(organizationId))
+  // findEventoById también lee posta.criteriosDescripciones (para el badge de
+  // "leyenda incompleta" en AsignacionRow) y está cacheado bajo eventos:orgId.
+  revalidateTag(cacheTags.eventos(organizationId))
 }
 
 export async function deletePosta(

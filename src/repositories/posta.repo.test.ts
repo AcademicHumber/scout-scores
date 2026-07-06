@@ -7,11 +7,13 @@ const {
   mockPostaUpdate,
   mockAuditLogCreate,
   mockTransaction,
+  mockRevalidateTag,
 } = vi.hoisted(() => ({
   mockPostaFindFirst: vi.fn(),
   mockPostaUpdate:    vi.fn(),
   mockAuditLogCreate: vi.fn(),
   mockTransaction:    vi.fn(),
+  mockRevalidateTag:  vi.fn(),
 }))
 
 vi.mock("@/lib/db", () => ({
@@ -24,7 +26,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("next/cache", () => ({
   unstable_cache: (_fn: () => unknown) => _fn,
-  revalidateTag: vi.fn(),
+  revalidateTag: mockRevalidateTag,
 }))
 
 vi.mock("./evento.repo", () => ({
@@ -65,6 +67,19 @@ describe("updateCriteriosDescripciones", () => {
     expect(data.criteriosDescripciones).toEqual({
       criterios: { "crit-1": { "5": "tercero", "10": "primero" } },
     })
+  })
+
+  it("invalida tanto postas:orgId como eventos:orgId (findEventoById también lee criteriosDescripciones)", async () => {
+    mockPostaFindFirst.mockResolvedValue({ id: "posta-1", criteriosDescripciones: {} })
+    mockPostaUpdate.mockResolvedValue({})
+
+    await updateCriteriosDescripciones(
+      "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "texto" }, "user-1",
+    )
+
+    const tagsInvalidados = mockRevalidateTag.mock.calls.map((c) => c[0])
+    expect(tagsInvalidados).toContain("postas:org-1")
+    expect(tagsInvalidados).toContain("eventos:org-1")
   })
 
   it("merge-patch: agregar un criterio no pisa la leyenda de otro criterio ya guardado", async () => {
