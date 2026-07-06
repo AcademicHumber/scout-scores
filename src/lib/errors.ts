@@ -44,3 +44,4 @@ export class BusinessError extends Error {
 // SCORE_SHEET_NO_ENVIADA   — intento de reabrir una planilla en BORRADOR
 // CIERRE_INCOMPLETO        — no todas las planillas están ENVIADAS (meta: { faltantes: [{postaNombre,actividadNombre,patrullaNombre,estado}] })
 // VERSION_CONFLICT         — ScoreSheet.version no coincide con expectedVersion del cliente (meta: { currentVersion, scoreSheetId, estado, enviadaAt, reopenedAt })
+// POSTA_NO_PROPIA          — un JUEZ intenta editar/borrar una posta creada por otro usuario (Plan 16)

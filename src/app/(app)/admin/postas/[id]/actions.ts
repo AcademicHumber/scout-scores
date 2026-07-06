@@ -52,7 +52,7 @@ export async function updatePostaAction(
   }
 
   try {
-    const updated = await updatePosta(org.organizationId, postaId, result.data, org.userId)
+    const updated = await updatePosta(org.organizationId, postaId, result.data, org.userId, org.role)
     return {
       posta: {
         id: updated.id,
@@ -81,7 +81,7 @@ export async function deletePostaAction(
   const postaId = formData.get("postaId") as string
 
   try {
-    await deletePosta(org.organizationId, postaId, org.userId)
+    await deletePosta(org.organizationId, postaId, org.userId, org.role)
   } catch (err) {
     if (err instanceof BusinessError) {
       if (err.code === "POSTA_EN_USO") {

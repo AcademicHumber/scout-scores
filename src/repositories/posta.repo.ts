@@ -4,6 +4,7 @@ import { cacheTags } from "./cache-tags"
 import { BusinessError } from "@/lib/errors"
 import { Decimal } from "@prisma/client/runtime/client"
 import { isEventoLocked } from "./evento.repo"
+import type { Role } from "@/generated/prisma/enums"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -125,6 +126,16 @@ async function requirePosta(organizationId: string, postaId: string) {
   return posta
 }
 
+function requireOwnership(
+  posta: { creadoPorUserId: string | null },
+  actorUserId: string,
+  actorRole: Role,
+) {
+  if (actorRole !== "ADMIN" && posta.creadoPorUserId !== actorUserId) {
+    throw new BusinessError("POSTA_NO_PROPIA")
+  }
+}
+
 async function requireAsignacion(organizationId: string, asignacionId: string) {
   const asignacion = await prisma.asignacionPosta.findFirst({
     where: { id: asignacionId, actividad: { evento: { organizationId } } },
@@ -182,6 +193,96 @@ export async function createPosta(
   return { id: createdId! }
 }
 
+type CrearPostaYAsignarData = {
+  nombre: string
+  descripcion?: string
+  duracionMinutos?: number | null
+  materiales?: Material[]
+  encargado?: string | null
+  ayudantes?: string | null
+  criteriosDescripciones?: CriteriosDescripciones
+}
+
+// Crea una Posta y la auto-asigna a una actividad en una única transacción — pensado
+// para el flujo del juez (Plan 16), donde ambos pasos deben ser atómicos: si la
+// posta se crea pero la asignación falla, no debe quedar una posta huérfana sin usar.
+export async function crearPostaYAsignar(
+  organizationId: string,
+  actividadId: string,
+  data: CrearPostaYAsignarData,
+  actorUserId: string,
+): Promise<{ postaId: string; asignacionId: string }> {
+  const actividad = await prisma.actividad.findFirst({
+    where: { id: actividadId, evento: { organizationId } },
+    select: { eventoId: true },
+  })
+  if (!actividad) throw new BusinessError("ACTIVIDAD_NO_ENCONTRADA")
+
+  if (await isEventoLocked(actividad.eventoId)) throw new BusinessError("EVENTO_LOCKED")
+
+  const maxOrden = await prisma.asignacionPosta.aggregate({
+    where: { actividadId },
+    _max: { orden: true },
+  })
+  const nextOrden = (maxOrden._max.orden ?? 0) + 1
+
+  let postaId: string
+  let asignacionId: string
+
+  await prisma.$transaction(async (tx) => {
+    const posta = await tx.posta.create({
+      data: {
+        organizationId,
+        nombre: data.nombre,
+        descripcion: data.descripcion ?? null,
+        duracionMinutos: data.duracionMinutos ?? null,
+        materiales: data.materiales ?? [],
+        criteriosDescripciones: data.criteriosDescripciones ?? {},
+        creadoPorUserId: actorUserId,
+      },
+    })
+    const asignacion = await tx.asignacionPosta.create({
+      data: {
+        postaId: posta.id,
+        actividadId,
+        juezUserId: actorUserId,
+        encargado: data.encargado ?? null,
+        ayudantes: data.ayudantes ?? null,
+        orden: nextOrden,
+      },
+    })
+    await tx.auditLog.create({
+      data: {
+        organizationId,
+        actorUserId,
+        action: "posta.created",
+        targetType: "Posta",
+        targetId: posta.id,
+        metadata: { nombre: posta.nombre, origen: "juez" },
+      },
+    })
+    await tx.auditLog.create({
+      data: {
+        organizationId,
+        actorUserId,
+        action: "asignacionPosta.created",
+        targetType: "AsignacionPosta",
+        targetId: asignacion.id,
+        metadata: { postaId: posta.id, actividadId, origen: "juez" },
+      },
+    })
+    postaId = posta.id
+    asignacionId = asignacion.id
+  }).catch((e: { code?: string }) => {
+    if (e?.code === "P2002") throw new BusinessError("NOMBRE_POSTA_DUPLICADO")
+    throw e
+  })
+
+  revalidateTag(cacheTags.postas(organizationId))
+  revalidateTag(cacheTags.eventos(organizationId))
+  return { postaId: postaId!, asignacionId: asignacionId! }
+}
+
 type UpdatePostaData = CreatePostaData
 
 export async function updatePosta(
@@ -189,8 +290,10 @@ export async function updatePosta(
   postaId: string,
   data: UpdatePostaData,
   actorUserId: string,
+  actorRole: Role,
 ) {
-  await requirePosta(organizationId, postaId)
+  const posta = await requirePosta(organizationId, postaId)
+  requireOwnership(posta, actorUserId, actorRole)
 
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.posta.update({
@@ -271,8 +374,10 @@ export async function deletePosta(
   organizationId: string,
   postaId: string,
   actorUserId: string,
+  actorRole: Role,
 ): Promise<void> {
   const posta = await requirePosta(organizationId, postaId)
+  requireOwnership(posta, actorUserId, actorRole)
 
   const asignaciones = await prisma.asignacionPosta.findMany({
     where: { postaId },
@@ -380,6 +485,11 @@ export async function asignarPosta(
       },
     })
     createdId = asignacion.id
+  }).catch((e: { code?: string }) => {
+    // Red de seguridad contra la carrera entre el pre-check de arriba y este create:
+    // dos jueces asignando casi simultáneamente la misma posta a la misma actividad.
+    if (e?.code === "P2002") throw new BusinessError("POSTA_YA_ASIGNADA_EN_EVENTO")
+    throw e
   })
 
   revalidateTag(cacheTags.eventos(organizationId))
