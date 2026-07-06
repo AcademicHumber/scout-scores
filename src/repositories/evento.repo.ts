@@ -17,7 +17,15 @@ async function _findById(organizationId: string, id: string) {
       actividades: {
         orderBy: { orden: "asc" },
         include: {
-          template: { select: { id: true, nombre: true, archivedAt: true } },
+          template: {
+            select: {
+              id: true,
+              nombre: true,
+              archivedAt: true,
+              modo: true,
+              criterios: { select: { id: true, tipo: true } },
+            },
+          },
           asignaciones: {
             orderBy: { orden: "asc" },
             include: {

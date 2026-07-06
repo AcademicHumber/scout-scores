@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState, useState } from "react"
+import Link from "next/link"
 import { desasignarPostaAction, reorderAsignacionAction } from "@/app/(app)/admin/eventos/[id]/actions"
 import messages from "@/messages/es.json"
 
@@ -16,6 +17,7 @@ type Asignacion = {
   ayudantes: string | null
   weight: string
   orden: number
+  leyendaCompleta: boolean
 }
 
 type Props = {
@@ -77,6 +79,16 @@ export function AsignacionRow({ asignacion, isFirst, isLast, isLocked, onEdit }:
           {/* Peso (solo si ≠ 1) */}
           {asignacion.weight !== "1" && asignacion.weight !== "1.00" && (
             <span className="text-xs text-gray-400">×{asignacion.weight}</span>
+          )}
+
+          {/* Leyenda de puntajes incompleta */}
+          {!asignacion.leyendaCompleta && (
+            <Link
+              href={`/admin/postas/${asignacion.postaId}`}
+              className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 hover:bg-amber-200"
+            >
+              {m.leyendaIncompleta}
+            </Link>
           )}
         </div>
 

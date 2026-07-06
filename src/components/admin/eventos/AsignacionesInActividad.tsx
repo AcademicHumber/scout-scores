@@ -17,6 +17,7 @@ type Asignacion = {
   ayudantes: string | null
   weight: string
   orden: number
+  leyendaCompleta: boolean
 }
 
 type PostaDisponible = {

@@ -24,6 +24,26 @@ const ESTADO_COLORS: Record<EventoEstado, string> = {
   PUBLICADO: "bg-blue-100 text-blue-700",
 }
 
+type ActividadTemplate = {
+  modo: "CRITERIOS" | "PUNTAJE_UNICO"
+  criterios: Array<{ id: string; tipo: "PUNTUABLE" | "DESEMPATE" }>
+} | null
+
+function isLeyendaCompleta(template: ActividadTemplate, criteriosDescripciones: unknown): boolean {
+  if (!template) return true
+  const cd = (criteriosDescripciones ?? {}) as {
+    criterios?: Record<string, Record<string, string>>
+    unico?: Record<string, string>
+  }
+  if (template.modo === "PUNTAJE_UNICO") {
+    return !!cd.unico && Object.keys(cd.unico).length > 0
+  }
+  return template.criterios.every((c) => {
+    const entry = cd.criterios?.[c.id]
+    return !!entry && Object.keys(entry).length > 0
+  })
+}
+
 function formatFechas(fechaInicio: Date, fechaFin: Date | null): string {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }
   const locale = "es-BO"
@@ -181,6 +201,7 @@ export default async function EventoDetailPage({
                     ayudantes: asig.ayudantes,
                     weight: asig.weight.toString(),
                     orden: asig.orden,
+                    leyendaCompleta: isLeyendaCompleta(a.template, asig.posta.criteriosDescripciones),
                   })),
                 }}
                 eventoId={evento.id}

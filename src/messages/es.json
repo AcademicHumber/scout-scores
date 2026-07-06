@@ -395,6 +395,7 @@
         "dialogTitle": "Asignar posta a actividad",
         "dialogTitleEditar": "Editar asignación de posta",
         "sinJuez": "Sin juez",
+        "leyendaIncompleta": "⚠ Sin leyenda de puntajes",
         "confirmar": "Confirmar",
         "cancelar": "Cancelar",
         "errors": {
