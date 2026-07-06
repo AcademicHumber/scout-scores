@@ -462,7 +462,8 @@
       "subtitle": "Eventos activos donde tenés postas asignadas",
       "empty": "No tenés postas asignadas en eventos activos.",
       "emptyHint": "Avisale al admin si pensás que es un error.",
-      "verPublicados": "Ver eventos publicados →"
+      "verPublicados": "Ver eventos publicados →",
+      "verPublicadosOffline": "Requiere conexión"
     },
     "evento": {
       "postasTitle": "Mis postas en este evento",

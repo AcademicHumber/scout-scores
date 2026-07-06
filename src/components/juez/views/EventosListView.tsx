@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { JuezLink } from "@/lib/offline/juez-router"
 import { useJuezData } from "@/lib/offline/use-juez-data"
+import { useOnlineStatus } from "@/lib/offline/use-online-status"
 import { readEventosFromSnapshot, type EventoSummary } from "@/lib/offline/snapshot"
 import messages from "@/messages/es.json"
 
@@ -70,6 +71,7 @@ export function EventosListView() {
   const { data: session } = useSession()
   const userId = session?.user.id
   const orgId = session?.user.activeOrganizationId ?? undefined
+  const isOnline = useOnlineStatus()
 
   const state = useJuezData(
     readEventosFromSnapshot,
@@ -107,13 +109,20 @@ export function EventosListView() {
       <div className="mt-8 text-center space-y-3">
         {/* Navegación real de Next.js (no JuezLink): sale del SPA de /juez hacia /eventos,
             una sección distinta de la app con permisos "inferiores" (visible para
-            cualquier miembro, no solo jueces). */}
-        <Link
-          href="/eventos"
-          className="block text-sm text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          {t.eventos.verPublicados}
-        </Link>
+            cualquier miembro, no solo jueces). Deshabilitado sin conexión: /eventos
+            no forma parte del SPA offline y fallaría sin red. */}
+        {isOnline ? (
+          <Link
+            href="/eventos"
+            className="block text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {t.eventos.verPublicados}
+          </Link>
+        ) : (
+          <span className="block text-sm text-gray-300 cursor-not-allowed">
+            {t.eventos.verPublicados} · {t.eventos.verPublicadosOffline}
+          </span>
+        )}
         <JuezLink
           href="/juez/pendientes"
           className="block text-xs text-gray-400 hover:text-gray-600 transition-colors"
