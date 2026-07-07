@@ -74,3 +74,9 @@ Invalida absolutamente todo. Funciona pero elimina cualquier beneficio de caché
 ## Proceso de decisión
 
 El problema de `defaultValue` stale en `MembershipRow` expuso que la ausencia de una capa de cache con identidad de datos hacía imposible la invalidación quirúrgica. El repositorio con `unstable_cache` y tags por organización es la solución estándar de Next.js App Router para este patrón. La excepción de invitaciones se documentó explícitamente para que el side-effect en el render sea visible y pueda eliminarse en un plan futuro.
+
+---
+
+## Addendum (2026-07-06)
+
+Las excepciones a la regla "ningún archivo fuera de `src/repositories/` importa `@/lib/db`" se acumularon con los planes posteriores (bootstrap pre-tenant, health check, infraestructura de sync offline). Para evitar que este ADR y las convenciones diverjan, la **lista canónica y actualizada de excepciones vive en un único lugar: la convención #14 de `CLAUDE.md`**. Este ADR documenta la decisión y su racional; no mantiene la lista.

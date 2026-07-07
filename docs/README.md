@@ -3,6 +3,8 @@
 Esta carpeta versiona los **planes de implementación** y ADRs del proyecto.
 Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (ver master plan).
 
+- [Best practices y caveats](best-practices.md) — documento de traspaso: principios innegociables, los tres subsistemas complejos (auth, cache, offline), caveats comunes y raros, guía de upgrades y checklist de cierre.
+
 ## Planes — Capa 1: Scoring (MVP)
 
 - [00 — Master plan](plans/00-master-plan.md) — visión completa del sistema y roadmap.
@@ -28,21 +30,21 @@ Filosofía: cada plan documenta el qué, el por qué y el cómo se planificó (v
 - [13 — Refactor del onboarding: unirse como Espectador](plans/13-onboarding-refactor.md) ✓
 - [13b — Refresh de sesión tras cambio de rol hecho por otro usuario](plans/13b-refresh-sesion-post-cambio-rol.md) ✓
 - [13c — Server Actions interceptadas por el middleware de onboarding](plans/13c-server-actions-middleware-redirect.md) ✓
-- 14 — Migración de Caddy a Coolify como reverse proxy _(ejecutado, sin doc de plan formal)_
+- [14 — Migración de Caddy a Coolify como reverse proxy](plans/14-coolify-migration.md) ✓
 - [15 — Mover ScoreTemplate de Posta a Actividad + leyenda de puntajes](plans/15-template-por-actividad.md) ✓
-- [16 — Postas creadas por jueces (preplan, a redactar con Opus)](plans/16-postas-por-juez-preplan.md) _(preplan)_
+- [16 — Postas creadas por jueces](plans/16-postas-por-juez.md) ✓ ([preplan](plans/16-postas-por-juez-preplan.md))
 
 > **Renumeración**: el deploy estaba previsto inicialmente como Plan 9. Tras intercalar el Plan 9 (login propio), el deploy pasó a Plan 10. Las referencias a "Plan 9" en los planes históricos 01–08 reflejan el estado del proyecto en el momento en que se escribieron y se mantienen como artefacto educativo.
 
 ## Planes — Capa 2: Personas y progresión (post-MVP)
 
-Números tentativos; se confirman al planificar cada uno.
+Números tentativos; se confirman al planificar cada uno. (Los números 14–16 previstos originalmente para esta capa quedaron usados por planes de la Capa 1.)
 
-- 14 — Padrón de miembros del grupo _(pendiente)_
-- 15 — Asociar miembros a patrullas _(pendiente)_
-- 16 — Inscripción anual digitalizada _(pendiente)_
-- 17 — Cartilla de progresión _(pendiente)_
-- 18 — Perfil del scout _(pendiente)_
+- 17 — Padrón de miembros del grupo _(pendiente)_
+- 18 — Asociar miembros a patrullas _(pendiente)_
+- 19 — Inscripción anual digitalizada _(pendiente)_
+- 20 — Cartilla de progresión _(pendiente)_
+- 21 — Perfil del scout _(pendiente)_
 
 ## ADRs
 
