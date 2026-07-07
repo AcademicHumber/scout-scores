@@ -25,6 +25,15 @@ export default async function EventosPublicosPage() {
     <div className="mx-auto max-w-3xl space-y-10 pb-12">
       {puedeVerPlanificacion && (
         <div className="space-y-3">
+          <div>
+            <Link
+              href="/juez/eventos"
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              {mp.volverAJuez}
+            </Link>
+          </div>
+
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold text-gray-900">{mp.title}</h2>

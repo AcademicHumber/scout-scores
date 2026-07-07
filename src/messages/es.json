@@ -612,6 +612,7 @@
       "empty": "No hay eventos en planificación.",
       "cargarPosta": "Cargar mi posta",
       "volver": "← Eventos en planificación",
+      "volverAJuez": "← Eventos activos",
       "soloMisPostas": "Solo mis postas",
       "actividades": {
         "empty": "Este evento todavía no tiene actividades.",
