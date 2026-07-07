@@ -106,23 +106,43 @@ export function EventosListView() {
 
       {state.status === "ready" && <EventosList eventos={state.data} />}
 
-      <div className="mt-8 text-center space-y-3">
-        {/* Navegación real de Next.js (no JuezLink): sale del SPA de /juez hacia /eventos,
-            una sección distinta de la app con permisos "inferiores" (visible para
-            cualquier miembro, no solo jueces). Deshabilitado sin conexión: /eventos
-            no forma parte del SPA offline y fallaría sin red. */}
-        {isOnline ? (
-          <Link
-            href="/eventos"
-            className="block text-sm text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {t.eventos.verPublicados}
-          </Link>
-        ) : (
-          <span className="block text-sm text-gray-300 cursor-not-allowed">
-            {t.eventos.verPublicados} · {t.eventos.verPublicadosOffline}
+            {/* Navegación real de Next.js (no JuezLink): sale del SPA de /juez hacia /eventos,
+          una sección distinta de la app con permisos "inferiores" (visible para
+          cualquier miembro, no solo jueces). Deshabilitado sin conexión: /eventos
+          no forma parte del SPA offline y fallaría sin red.
+          Prominente a propósito: para un juez nuevo, cargar su posta en un evento
+          en planificación suele ser la primera acción en toda la app. */}
+      {isOnline ? (
+        <Link
+          href="/eventos"
+          className="mb-3 mt-6 flex min-h-[64px] items-center gap-3 rounded-2xl border-2 border-brand/20 bg-brand-light px-4 py-3.5 transition-all hover:border-brand/40 active:scale-[0.99]"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
           </span>
-        )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold text-brand">{t.eventos.planificacionCta}</span>
+            <span className="block truncate text-xs text-brand/70">{t.eventos.planificacionCtaHint}</span>
+          </span>
+          <span className="shrink-0 text-xl text-brand/40">›</span>
+        </Link>
+      ) : (
+        <div className="mb-6 mt-6 flex min-h-[64px] items-center gap-3 rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-3.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-300 text-white">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold text-gray-400">{t.eventos.planificacionCta}</span>
+            <span className="block truncate text-xs text-gray-400">{t.eventos.offlineTag}</span>
+          </span>
+        </div>
+      )}
+
+      <div className="mt-8 text-center">
         <JuezLink
           href="/juez/pendientes"
           className="block text-xs text-gray-400 hover:text-gray-600 transition-colors"

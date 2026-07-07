@@ -462,8 +462,9 @@
       "subtitle": "Eventos activos donde tenés postas asignadas",
       "empty": "No tenés postas asignadas en eventos activos.",
       "emptyHint": "Avisale al admin si pensás que es un error.",
-      "verPublicados": "Ver eventos publicados →",
-      "verPublicadosOffline": "Requiere conexión"
+      "planificacionCta": "Eventos",
+      "planificacionCtaHint": "Revisa eventos en planificación o publicados",
+      "offlineTag": "Requiere conexión"
     },
     "evento": {
       "postasTitle": "Mis postas en este evento",
@@ -611,13 +612,16 @@
       "empty": "No hay eventos en planificación.",
       "cargarPosta": "Cargar mi posta",
       "volver": "← Eventos en planificación",
+      "soloMisPostas": "Solo mis postas",
       "actividades": {
         "empty": "Este evento todavía no tiene actividades.",
         "sinPlantilla": "Sin plantilla",
         "asignacionesTitle": "Postas cargadas",
         "asignacionesEmpty": "Todavía nadie cargó una posta para esta actividad.",
+        "asignacionesEmptyFiltro": "No cargaste ninguna posta en esta actividad.",
         "sinJuez": "Sin juez asignado",
-        "tuPosta": "Tu posta"
+        "tuPosta": "Tu posta",
+        "editar": "Editar"
       },
       "dialog": {
         "title": "Cargar posta para {{actividad}}",
@@ -654,7 +658,8 @@
       "verMisPostas": "Mis postas →",
       "asignaciones": "{{count}} evento",
       "asignacionesPlural": "{{count}} eventos",
-      "volver": "← Mis postas"
+      "volver": "← Mis postas",
+      "volverGenerico": "← Volver"
     }
   }
 }

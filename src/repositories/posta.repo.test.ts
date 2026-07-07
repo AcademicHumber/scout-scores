@@ -90,8 +90,35 @@ describe("updateCriteriosDescripciones", () => {
     mockPostaFindFirst.mockResolvedValue(null)
 
     await expect(
-      updateCriteriosDescripciones("org-1", "posta-x", { criterioId: "crit-1" }, { "5": "texto" }, "user-1"),
+      updateCriteriosDescripciones(
+        "org-1", "posta-x", { criterioId: "crit-1" }, { "5": "texto" }, "user-1", "ADMIN",
+      ),
     ).rejects.toMatchObject({ code: "POSTA_NO_ENCONTRADA" })
+  })
+
+  it("lanza POSTA_NO_PROPIA si un JUEZ intenta editar la leyenda de la posta de otro", async () => {
+    mockPostaFindFirst.mockResolvedValue({
+      id: "posta-1", criteriosDescripciones: {}, creadoPorUserId: "user-otro",
+    })
+
+    await expect(
+      updateCriteriosDescripciones(
+        "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "texto" }, "user-1", "JUEZ",
+      ),
+    ).rejects.toMatchObject({ code: "POSTA_NO_PROPIA" })
+  })
+
+  it("permite a un JUEZ editar la leyenda de su propia posta", async () => {
+    mockPostaFindFirst.mockResolvedValue({
+      id: "posta-1", criteriosDescripciones: {}, creadoPorUserId: "user-1",
+    })
+    mockPostaUpdate.mockResolvedValue({})
+
+    await expect(
+      updateCriteriosDescripciones(
+        "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "texto" }, "user-1", "JUEZ",
+      ),
+    ).resolves.toBeUndefined()
   })
 
   it("guarda la leyenda de un criterio nuevo en un JSON vacío", async () => {
@@ -99,7 +126,7 @@ describe("updateCriteriosDescripciones", () => {
     mockPostaUpdate.mockResolvedValue({})
 
     await updateCriteriosDescripciones(
-      "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "tercero", "10": "primero" }, "user-1",
+      "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "tercero", "10": "primero" }, "user-1", "ADMIN",
     )
 
     const data = mockPostaUpdate.mock.calls[0][0].data
@@ -113,7 +140,7 @@ describe("updateCriteriosDescripciones", () => {
     mockPostaUpdate.mockResolvedValue({})
 
     await updateCriteriosDescripciones(
-      "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "texto" }, "user-1",
+      "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "texto" }, "user-1", "ADMIN",
     )
 
     const tagsInvalidados = mockRevalidateTag.mock.calls.map((c) => c[0])
@@ -129,7 +156,7 @@ describe("updateCriteriosDescripciones", () => {
     mockPostaUpdate.mockResolvedValue({})
 
     await updateCriteriosDescripciones(
-      "org-1", "posta-1", { criterioId: "crit-2" }, { "5": "nuevo" }, "user-1",
+      "org-1", "posta-1", { criterioId: "crit-2" }, { "5": "nuevo" }, "user-1", "ADMIN",
     )
 
     const data = mockPostaUpdate.mock.calls[0][0].data
@@ -149,7 +176,7 @@ describe("updateCriteriosDescripciones", () => {
     mockPostaUpdate.mockResolvedValue({})
 
     await updateCriteriosDescripciones(
-      "org-1", "posta-1", { unico: true }, { "100": "primero" }, "user-1",
+      "org-1", "posta-1", { unico: true }, { "100": "primero" }, "user-1", "ADMIN",
     )
 
     const data = mockPostaUpdate.mock.calls[0][0].data
@@ -167,7 +194,7 @@ describe("updateCriteriosDescripciones", () => {
     mockPostaUpdate.mockResolvedValue({})
 
     await updateCriteriosDescripciones(
-      "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "nuevo" }, "user-1",
+      "org-1", "posta-1", { criterioId: "crit-1" }, { "5": "nuevo" }, "user-1", "ADMIN",
     )
 
     const data = mockPostaUpdate.mock.calls[0][0].data

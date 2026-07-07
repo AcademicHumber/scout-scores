@@ -3,9 +3,13 @@
 import { z } from "zod"
 import { redirect } from "next/navigation"
 import { requireRole } from "@/lib/auth-helpers"
-import { updatePosta, deletePosta } from "@/repositories/posta.repo"
+import { updatePosta, deletePosta, updateCriteriosDescripciones } from "@/repositories/posta.repo"
 import { BusinessError } from "@/lib/errors"
-import type { UpdatePostaState, DeletePostaState } from "@/app/(app)/admin/postas/[id]/actions"
+import type {
+  UpdatePostaState,
+  DeletePostaState,
+  UpdateCriteriosDescripcionesState,
+} from "@/app/(app)/admin/postas/[id]/actions"
 import messages from "@/messages/es.json"
 
 const me = messages.eventos.errors
@@ -20,6 +24,11 @@ const PostaSchema = z.object({
   descripcion: z.string().trim().max(1000).optional(),
   duracionMinutos: z.coerce.number().int().min(1).max(480).optional().nullable(),
   materiales: z.array(MaterialSchema).default([]),
+})
+
+const CriteriosDescripcionesSchema = z.object({
+  scope: z.string().min(1),
+  valores: z.record(z.string(), z.string()),
 })
 
 export async function updatePostaComoJuezAction(
@@ -92,4 +101,47 @@ export async function deletePostaComoJuezAction(
   }
 
   redirect("/eventos/postas")
+}
+
+export async function updateCriteriosDescripcionesComoJuezAction(
+  _prev: UpdateCriteriosDescripcionesState,
+  formData: FormData,
+): Promise<UpdateCriteriosDescripcionesState> {
+  const org = await requireRole(["JUEZ", "ADMIN"])
+  const postaId = formData.get("postaId") as string
+
+  let valores: Record<string, string> = {}
+  try {
+    valores = JSON.parse((formData.get("valores") as string) || "{}")
+  } catch {
+    valores = {}
+  }
+
+  const result = CriteriosDescripcionesSchema.safeParse({
+    scope: formData.get("scope") as string,
+    valores,
+  })
+  if (!result.success) {
+    return { error: "Datos inválidos" }
+  }
+
+  const scope = result.data.scope === "unico" ? { unico: true as const } : { criterioId: result.data.scope }
+
+  try {
+    await updateCriteriosDescripciones(
+      org.organizationId,
+      postaId,
+      scope,
+      result.data.valores,
+      org.userId,
+      org.role,
+    )
+    return { success: true }
+  } catch (err) {
+    if (err instanceof BusinessError) {
+      if (err.code === "POSTA_NO_ENCONTRADA") return { error: me.postaNoEncontrada }
+      if (err.code === "POSTA_NO_PROPIA") return { error: me.postaNoPropia }
+    }
+    throw err
+  }
 }

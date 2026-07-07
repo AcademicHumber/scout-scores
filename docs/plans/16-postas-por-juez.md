@@ -1,6 +1,6 @@
 # Plan 16 — Postas creadas por jueces
 
-> Estado: redactado (formal), pendiente de ejecución. Reemplaza a `docs/plans/16-postas-por-juez-preplan.md` como referencia primaria — el preplan queda como registro histórico de la conversación de alineación de producto.
+> Estado: **completado** (ver commits `7698b17`..`de97cfd` y `17ea5d7`). Reemplaza a `docs/plans/16-postas-por-juez-preplan.md` como referencia primaria — el preplan queda como registro histórico de la conversación de alineación de producto. Ver la sección "Adenda — cambios posteriores a la ejecución" al final de este documento para el trabajo de seguimiento hecho en sesiones posteriores, fuera del alcance original.
 
 ---
 
@@ -331,3 +331,91 @@ pnpm build                  # build exitoso
 - `docs/plans/15-template-por-actividad.md` — prerrequisito ejecutado (`Actividad.templateId`, `Posta.criteriosDescripciones`, `CriteriosDescripcionesForm`).
 - `docs/plans/06c-postas-biblioteca.md` — modelo `Posta`/`AsignacionPosta` que este plan extiende.
 - `docs/adr/0004-modo-offline-pwa-spa.md` — reglas permanentes del SPA offline; recibe nota de alcance en este plan.
+
+---
+
+## Adenda — cambios posteriores a la ejecución
+
+Trabajo de seguimiento hecho en sesiones de chat posteriores al cierre formal del plan (commit `de97cfd`) y a la vista "mis postas" (commit `17ea5d7`), a pedido directo del usuario sobre la superficie que este plan dejó construida. No estaba previsto en el alcance original — se registra acá para que el plan quede como fuente de verdad completa del feature, según la convención de este repo de versionar toda la planificación. Al momento de escribir esta adenda, los cambios están en el working tree, todavía sin commitear.
+
+### 1. Bug — `findEventoById` con cache stale tras ensanchar el `select` (Plan 16 lección #53)
+
+Runtime error `Cannot read properties of undefined (reading 'map')` en `actividad.template.valoresValidos` dentro de `eventos/[id]/postas/page.tsx`. El código del repo ya traía el campo correcto (consistente con la convención #53) — la causa fue que `unstable_cache` persiste en `.next/cache/fetch-cache` en dev y no se invalida solo porque el código cambió, solo vía `revalidateTag`. Sin ningún cambio de datos que disparara esa invalidación, quedó una entrada vieja de antes de que el `select` se hubiera ensanchado. Fix: borrar `.next/cache/fetch-cache` (no requiere cambio de código). Sin archivo modificado — se deja registrado como advertencia operativa para la próxima vez que aparezca un síntoma similar tras cambiar un `select` de una función cacheada.
+
+### 2. Fix — editor de leyenda de puntajes ausente y sin ownership en la vista del juez
+
+`CriteriosDescripcionesForm` (leyenda de valores por criterio, Plan 15) solo estaba montado en `/admin/postas/[id]`, nunca en `/eventos/postas/[id]` (la vista "mis postas" del Plan 16/commit `17ea5d7`) — un `JUEZ` no tenía forma de editar la leyenda de su propia posta salvo pidiéndoselo a un admin. Además, `updateCriteriosDescripciones` en el repo no tenía ningún chequeo de ownership (a diferencia de `updatePosta`/`deletePosta`), así que habilitarlo para `JUEZ` sin ese chequeo hubiera permitido editar la leyenda de postas ajenas.
+
+- `src/repositories/posta.repo.ts` — `updateCriteriosDescripciones` gana el parámetro `actorRole: Role` y llama a `requireOwnership` (mismo patrón que `updatePosta`/`deletePosta`); lanza `POSTA_NO_PROPIA` si un `JUEZ` toca una posta ajena.
+- `src/app/(app)/admin/postas/[id]/actions.ts` — pasa `org.role` al repo; agrega manejo de `POSTA_NO_PROPIA` (defensivo, nunca dispara desde acá porque la ruta ya es `ADMIN`-only).
+- `src/app/(app)/eventos/postas/actions.ts` — nueva `updateCriteriosDescripcionesComoJuezAction` (`requireRole(["JUEZ","ADMIN"])`).
+- `src/app/(app)/eventos/postas/[id]/page.tsx` — monta `CriteriosDescripcionesForm` (antes ausente), construyendo el array `templates` a partir de datos que `findPostaById` ya traía pero que la página no usaba.
+- `src/repositories/posta.repo.test.ts` — casos nuevos: `JUEZ` sobre posta ajena → `POSTA_NO_PROPIA`; `JUEZ` sobre su propia posta → éxito.
+
+### 3. Feature — link "Editar" directo desde la planificación del evento
+
+En `/eventos/[id]/postas`, las asignaciones marcadas "Tu posta" no tenían forma de editarse desde ahí — había que volver a `/eventos` y entrar a "Mis postas" para encontrar la misma posta. Se agregó un link "Editar" junto a cada asignación propia, apuntando a `/eventos/postas/[postaId]`.
+
+- `src/app/(app)/eventos/[id]/postas/page.tsx` — pasa `postaId` en cada asignación.
+- `src/components/juez/postas/PlanificacionActividadCard.tsx` — nuevo link "Editar" (alineado a la derecha del list item con `ml-auto`, a pedido explícito de UI).
+- `src/messages/es.json` — clave `eventos.planificacion.actividades.editar`.
+
+### 4. Refactor — reemplazo del popup `CrearPostaDialog` por una página dedicada
+
+A pedido explícito del usuario ("prefiero una página nueva"): el botón "Cargar posta" abría un `<dialog>` modal (`CrearPostaDialog`, construido en el Paso 5 del plan original); se reemplazó por una navegación a una ruta nueva con el mismo formulario.
+
+- **Eliminado**: `src/components/juez/postas/CrearPostaDialog.tsx`.
+- **Nuevo**: `src/components/juez/postas/CrearPostaForm.tsx` — mismos campos/lógica (autocomplete de posta existente, encargado/ayudantes, leyenda), sin el wrapper `<dialog>`; "Cancelar" es un `Link` de vuelta a la lista en vez de un `onClose`.
+- **Nuevo**: `src/app/(app)/eventos/[id]/postas/[actividadId]/nueva/page.tsx` — ruta nueva, estilo visual igual al de las páginas de edición (breadcrumb `← {evento.nombre}`, cards `rounded-xl border bg-white p-6 shadow-sm`).
+- `src/components/juez/postas/PlanificacionActividadCard.tsx` — "Cargar posta" pasa de `<button onClick>` con estado de dialog a un `<Link>` a la ruta nueva; ya no necesita `"use client"`.
+- `src/app/(app)/eventos/[id]/postas/actions.ts` — `crearPostaComoJuezAction`/`asignarPostaExistenteComoJuezAction` ahora reciben `eventoId` y hacen `redirect()` de vuelta a la lista al terminar, en vez de devolver `{ success: true }` para que un dialog se cerrara solo (mismo patrón que `deletePostaAction`).
+
+### 5. Refactor — unificación visual de la leyenda de puntajes entre crear y editar
+
+El formulario de crear posta tenía su propia implementación de la leyenda (una sola sección colapsable, sin soporte multi-template, bundle a un hidden input), visualmente distinta del editor usado en las páginas de edición (`CriteriosDescripcionesForm`, con tabs por template y guardado inmediato por fila vía server action). A pedido del usuario, se unificó reusando los mismos componentes con un modo de envío opcional en vez de mantener dos implementaciones.
+
+- **Nuevo**: `src/components/admin/postas/LeyendaValores.tsx` — extrae el renderizado de fila (badge de valor + input de texto), compartido por ambos modos.
+- `src/components/admin/postas/CriteriosDescripcionesForm.tsx` — gana un prop discriminante `mode: "persist" | "controlled"`:
+  - `"persist"` (comportamiento previo): `postaId` + `updateAction`, guarda cada criterio/eje inmediatamente vía server action con su propio botón "Guardar". Sigue siendo el modo de `/admin/postas/[id]` y `/eventos/postas/[id]`.
+  - `"controlled"` (nuevo): `onChange`, sin action ni botón propio — las ediciones fluyen directo al estado del formulario padre para que viajen en el submit único de creación de la posta.
+  - (Nota técnica: el narrowing de TypeScript sobre la unión discriminada no funcionaba de forma confiable con props opcionales tipadas `?: never`; se resolvió con un campo `mode` literal explícito en vez de inferir el modo por qué props vinieron seteadas — promovido a convención #55.)
+- `src/components/juez/postas/CrearPostaForm.tsx` — reemplaza su leyenda propia por `<CriteriosDescripcionesForm mode="controlled">`; un solo estado `criteriosDescripciones` en vez de `criteriosValues`/`unicoValues` separados.
+- `src/app/(app)/eventos/[id]/postas/[actividadId]/nueva/page.tsx` — el objeto `template` que arma para `CrearPostaForm` ahora incluye `id`/`nombre` (requeridos por el tipo compartido `TemplateInfo`, aunque el flujo de creación siempre tiene un único template — sin tabs).
+
+### 6. UX — la leyenda deja de estar colapsada en el form de creación
+
+A pedido del usuario: la sección de leyenda pasó de un toggle "Agregar leyenda de puntajes (opcional)" a una sección siempre visible, con encabezado propio ("Leyenda de puntajes" + subtítulo), igual que en el form de editar. Esto llevó a partir el único `<form>` de creación en dos bloques con estilo de card (`rounded-xl border bg-white p-6 shadow-sm`) — uno para los datos de la posta y otro para la leyenda — sin dejar de ser un único formulario/submit.
+
+- `src/components/juez/postas/CrearPostaForm.tsx` — se elimina el estado `leyendaOpen` y el botón toggle; la leyenda queda en su propia card dentro del mismo `<form>`.
+- `src/app/(app)/eventos/[id]/postas/[actividadId]/nueva/page.tsx` — deja de envolver `CrearPostaForm` en una card única (ahora el propio componente arma sus cards internas).
+
+### 7. Feature — filtro "Solo mis postas"
+
+En `/eventos/[id]/postas`, un toggle que filtra las asignaciones mostradas por actividad a solo las propias. Implementado vía query param (`?soloMias=1`) siguiendo la convención #44 (Server Component + Client Component chico para leer/escribir `useSearchParams`), no estado de cliente en la página — sobrevive a reloads y botón atrás del navegador.
+
+- **Nuevo**: `src/components/juez/postas/SoloMisPostasToggle.tsx`.
+- `src/app/(app)/eventos/[id]/postas/page.tsx` — acepta `searchParams`, filtra `asignaciones` por actividad cuando el filtro está activo, y pasa un mensaje de "vacío" distinto (`asignacionesEmptyFiltro`) para no confundir "nadie cargó nada" con "vos no cargaste nada acá". Las cards de actividad siguen mostrándose aunque el filtro deje la lista vacía, para no esconder el botón "Cargar posta".
+- `src/components/juez/postas/PlanificacionActividadCard.tsx` — nuevo prop opcional `asignacionesEmptyMessage`.
+- `src/messages/es.json` — claves `eventos.planificacion.soloMisPostas` y `eventos.planificacion.actividades.asignacionesEmptyFiltro`.
+
+### 8. Fix — navegación rota del botón "volver" al editar desde la planificación
+
+Al entrar a editar una posta propia desde el link agregado en el punto 3, el botón "volver" de `/eventos/postas/[id]` siempre apuntaba a `/eventos/postas` ("Mis postas") — un callejón sin salida hacia la lista de planificación del evento desde la que realmente se había navegado.
+
+- `src/components/juez/postas/PlanificacionActividadCard.tsx` — el link "Editar" agrega `?volver=${encodeURIComponent(...)}` apuntando de vuelta a `/eventos/${eventoId}/postas`.
+- `src/app/(app)/eventos/postas/[id]/page.tsx` — lee `searchParams.volver`; lo usa como `href` del botón "volver" solo si es una ruta relativa same-origin válida (rechaza valores que no empiecen con `/` y los que empiecen con `//`, para evitar un open redirect); si no viene o es inválido, cae al default `/eventos/postas`. El label cambia entre "← Mis postas" y "← Volver" según el origen.
+- `src/messages/es.json` — clave `eventos.misPostas.volverGenerico`.
+
+### Verificación
+
+Verificado manualmente en browser el 2026-07-07, los 7 escenarios sin discrepancias:
+
+1. El error de cache stale no reaparece tras un `pnpm dev` limpio.
+2. Un `JUEZ` puede editar la leyenda de su propia posta desde `/eventos/postas/[id]`; un `ADMIN` sigue pudiendo editar cualquiera desde `/admin/postas/[id]`.
+3. El link "Editar" en `/eventos/[id]/postas` aparece solo en asignaciones propias, alineado a la derecha, y navega a la posta correcta.
+4. "Cargar posta" navega a una página nueva (no popup); tanto crear una posta nueva como asignar una existente vía autocomplete redirigen de vuelta a la lista al terminar.
+5. La leyenda en el form de creación se ve igual que en los forms de edición (mismos badges/inputs) y está visible sin necesidad de expandir nada.
+6. El filtro "Solo mis postas" oculta correctamente las asignaciones ajenas y el toggle persiste al recargar la página (por ir en la URL).
+7. Volver desde una posta editada vía el link de planificación regresa a `/eventos/[id]/postas`; volver desde `/eventos/postas` (mis postas) sigue yendo ahí.
+
+Adenda cerrada — sin trabajo pendiente. Cambios todavía sin commitear en el working tree al momento de escribir esto.

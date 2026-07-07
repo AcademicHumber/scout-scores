@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { PostaDetailForm } from "@/components/admin/postas/PostaDetailForm"
 import { CriteriosDescripcionesForm } from "@/components/admin/postas/CriteriosDescripcionesForm"
-import { updatePostaAction, deletePostaAction } from "./actions"
+import { updatePostaAction, deletePostaAction, updateCriteriosDescripcionesAction } from "./actions"
 import messages from "@/messages/es.json"
 
 const m = messages.admin.postas
@@ -109,9 +109,11 @@ export default async function PostaDetailPage({ params }: { params: Promise<{ id
           Qué significa cada puntaje posible para esta posta (ej: &quot;10 = llegó primero&quot;). Se muestra al juez al cargar la planilla.
         </p>
         <CriteriosDescripcionesForm
+          mode="persist"
           postaId={posta.id}
           templates={templates}
           criteriosDescripciones={criteriosDescripciones}
+          updateAction={updateCriteriosDescripcionesAction}
         />
       </div>
     </div>

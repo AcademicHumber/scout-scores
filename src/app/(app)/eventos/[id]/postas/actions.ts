@@ -1,6 +1,7 @@
 "use server"
 
 import { z } from "zod"
+import { redirect } from "next/navigation"
 import { requireRole } from "@/lib/auth-helpers"
 import { crearPostaYAsignar, asignarPosta } from "@/repositories/posta.repo"
 import { BusinessError } from "@/lib/errors"
@@ -43,7 +44,6 @@ const CrearPostaSchema = z.object({
 export type CrearPostaJuezState = {
   error?: string
   fieldErrors?: Record<string, string[]>
-  success?: boolean
 }
 
 export async function crearPostaComoJuezAction(
@@ -52,6 +52,7 @@ export async function crearPostaComoJuezAction(
 ): Promise<CrearPostaJuezState> {
   const org = await requireRole(["JUEZ", "ADMIN"])
   const actividadId = formData.get("actividadId") as string
+  const eventoId = formData.get("eventoId") as string
 
   let materiales: unknown[] = []
   try {
@@ -84,18 +85,19 @@ export async function crearPostaComoJuezAction(
 
   try {
     await crearPostaYAsignar(org.organizationId, actividadId, result.data, org.userId)
-    return { success: true }
   } catch (err) {
     if (err instanceof BusinessError) return { error: mapError(err.code) }
     throw err
   }
+
+  redirect(`/eventos/${eventoId}/postas`)
 }
 
 const AsignarExistenteSchema = z.object({
   postaId: z.string().min(1),
 })
 
-export type AsignarExistenteJuezState = { error?: string; success?: boolean }
+export type AsignarExistenteJuezState = { error?: string }
 
 export async function asignarPostaExistenteComoJuezAction(
   _prev: AsignarExistenteJuezState,
@@ -103,6 +105,7 @@ export async function asignarPostaExistenteComoJuezAction(
 ): Promise<AsignarExistenteJuezState> {
   const org = await requireRole(["JUEZ", "ADMIN"])
   const actividadId = formData.get("actividadId") as string
+  const eventoId = formData.get("eventoId") as string
 
   const result = AsignarExistenteSchema.safeParse({ postaId: formData.get("postaId") as string })
   if (!result.success) return { error: "Datos inválidos" }
@@ -114,9 +117,10 @@ export async function asignarPostaExistenteComoJuezAction(
       { postaId: result.data.postaId, juezUserId: org.userId },
       org.userId,
     )
-    return { success: true }
   } catch (err) {
     if (err instanceof BusinessError) return { error: mapError(err.code) }
     throw err
   }
+
+  redirect(`/eventos/${eventoId}/postas`)
 }

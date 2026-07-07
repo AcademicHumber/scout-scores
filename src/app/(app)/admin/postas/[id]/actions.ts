@@ -128,11 +128,19 @@ export async function updateCriteriosDescripcionesAction(
   const scope = result.data.scope === "unico" ? { unico: true as const } : { criterioId: result.data.scope }
 
   try {
-    await updateCriteriosDescripciones(org.organizationId, postaId, scope, result.data.valores, org.userId)
+    await updateCriteriosDescripciones(
+      org.organizationId,
+      postaId,
+      scope,
+      result.data.valores,
+      org.userId,
+      org.role,
+    )
     return { success: true }
   } catch (err) {
     if (err instanceof BusinessError) {
       if (err.code === "POSTA_NO_ENCONTRADA") return { error: "Posta no encontrada" }
+      if (err.code === "POSTA_NO_PROPIA") return { error: "Solo podés editar las postas que vos cargaste" }
     }
     throw err
   }

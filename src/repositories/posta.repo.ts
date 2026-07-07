@@ -358,8 +358,10 @@ export async function updateCriteriosDescripciones(
   scope: CriteriosDescripcionesScope,
   valores: Record<string, string>,
   actorUserId: string,
+  actorRole: Role,
 ): Promise<void> {
   const posta = await requirePosta(organizationId, postaId)
+  requireOwnership(posta, actorUserId, actorRole)
   const current = (posta.criteriosDescripciones ?? {}) as CriteriosDescripciones
 
   const updatedJson: CriteriosDescripciones =
