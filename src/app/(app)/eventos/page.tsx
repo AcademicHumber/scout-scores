@@ -4,6 +4,7 @@ import Link from "next/link"
 import messages from "@/messages/es.json"
 
 const mp = messages.eventos.planificacion
+const mmp = messages.eventos.misPostas
 
 function formatFecha(iso: Date): string {
   return new Date(iso).toLocaleDateString("es-BO", {
@@ -24,9 +25,17 @@ export default async function EventosPublicosPage() {
     <div className="mx-auto max-w-3xl space-y-10 pb-12">
       {puedeVerPlanificacion && (
         <div className="space-y-3">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">{mp.title}</h2>
-            <p className="mt-0.5 text-sm text-gray-500">{mp.subtitle}</p>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">{mp.title}</h2>
+              <p className="mt-0.5 text-sm text-gray-500">{mp.subtitle}</p>
+            </div>
+            <Link
+              href="/eventos/postas"
+              className="shrink-0 text-sm text-brand hover:underline"
+            >
+              {mmp.verMisPostas}
+            </Link>
           </div>
 
           {eventosBorrador.length === 0 ? (

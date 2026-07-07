@@ -646,6 +646,15 @@
       "eventoLocked": "El evento ya tiene puntajes cargados",
       "nombreDuplicado": "Ya existe una posta con ese nombre en el distrito",
       "juezInvalido": "El usuario no tiene rol de juez en este distrito"
+    },
+    "misPostas": {
+      "title": "Mis postas",
+      "subtitle": "Postas que cargaste vos. Podés editarlas mientras el evento siga en planificación.",
+      "empty": "Todavía no cargaste ninguna posta.",
+      "verMisPostas": "Mis postas →",
+      "asignaciones": "{{count}} evento",
+      "asignacionesPlural": "{{count}} eventos",
+      "volver": "← Mis postas"
     }
   }
 }

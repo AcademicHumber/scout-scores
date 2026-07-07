@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { PostaDetailForm } from "@/components/admin/postas/PostaDetailForm"
 import { CriteriosDescripcionesForm } from "@/components/admin/postas/CriteriosDescripcionesForm"
+import { updatePostaAction, deletePostaAction } from "./actions"
 import messages from "@/messages/es.json"
 
 const m = messages.admin.postas
@@ -67,6 +68,8 @@ export default async function PostaDetailPage({ params }: { params: Promise<{ id
             materiales,
             asignacionesCount: posta.asignaciones.length,
           }}
+          updateAction={updatePostaAction}
+          deleteAction={deletePostaAction}
         />
       </div>
 

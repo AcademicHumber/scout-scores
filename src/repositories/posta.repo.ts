@@ -40,6 +40,18 @@ async function _findPostaById(organizationId: string, postaId: string) {
   })
 }
 
+async function _listPostasCreadasPor(organizationId: string, userId: string) {
+  return prisma.posta.findMany({
+    where: { organizationId, creadoPorUserId: userId },
+    include: {
+      _count: { select: { asignaciones: true } },
+    },
+    orderBy: { nombre: "asc" },
+  })
+}
+
+export type PostaCreadaPor = Awaited<ReturnType<typeof _listPostasCreadasPor>>[number]
+
 async function _listPostasParaEvento(organizationId: string, eventoId: string) {
   const [postas, asignacionesDelEvento] = await Promise.all([
     prisma.posta.findMany({
@@ -88,6 +100,14 @@ export function listPostas(organizationId: string) {
   return unstable_cache(
     async () => _listPostas(organizationId),
     ["postas", organizationId],
+    { tags: [cacheTags.postas(organizationId)] },
+  )()
+}
+
+export function listPostasCreadasPor(organizationId: string, userId: string) {
+  return unstable_cache(
+    async () => _listPostasCreadasPor(organizationId, userId),
+    ["postasCreadasPor", organizationId, userId],
     { tags: [cacheTags.postas(organizationId)] },
   )()
 }

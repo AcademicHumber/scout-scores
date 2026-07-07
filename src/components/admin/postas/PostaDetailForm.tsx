@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState, useEffect, useState } from "react"
-import { updatePostaAction, deletePostaAction } from "@/app/(app)/admin/postas/[id]/actions"
+import type { UpdatePostaState, DeletePostaState } from "@/app/(app)/admin/postas/[id]/actions"
 import messages from "@/messages/es.json"
 
 const m = messages.admin.postas
@@ -17,11 +17,13 @@ type Props = {
     materiales: Material[]
     asignacionesCount: number
   }
+  updateAction: (prevState: UpdatePostaState, formData: FormData) => Promise<UpdatePostaState>
+  deleteAction: (prevState: DeletePostaState, formData: FormData) => Promise<DeletePostaState>
 }
 
-export function PostaDetailForm({ posta }: Props) {
-  const [updateState, updateAction, updatePending] = useActionState(updatePostaAction, {})
-  const [deleteState, deleteAction, deletePending] = useActionState(deletePostaAction, {})
+export function PostaDetailForm({ posta, updateAction: updateActionProp, deleteAction: deleteActionProp }: Props) {
+  const [updateState, updateAction, updatePending] = useActionState(updateActionProp, {})
+  const [deleteState, deleteAction, deletePending] = useActionState(deleteActionProp, {})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const [nombre, setNombre] = useState(posta.nombre)
